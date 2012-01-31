@@ -7,7 +7,7 @@ from setuptools import setup, find_packages, Extension
 setup(
     name='lz4',
     version='0.1',
-    description=open('README.md', 'r').read(),
+    description=open('README.rst', 'r').read(),
     author='Steeve Morin',
     author_email='steeve.morin@gmail.com',
     url='https://github.com/steeve/python-lz4',
