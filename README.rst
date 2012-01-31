@@ -31,25 +31,50 @@ Is it fast ?
 ============
 Yes. Here are the results on my 2011 Macbook Pro i7: ::
 
+    Compression:
     200000 calls - LZ4:
-      Best: 3.418643 seconds
-      Worst: 3.473787 seconds
+      Best: 2.918570 seconds
+      Worst: 2.966427 seconds
     200000 calls - Snappy:
-      Best: 4.203340 seconds
-      Worst: 4.272133 seconds
+      Best: 3.634658 seconds
+      Worst: 3.670079 seconds
+    Decompression
+    200000 calls - LZ4:
+      Best: 0.458944 seconds
+      Worst: 0.483467 seconds
+    200000 calls - Snappy:
+      Best: 0.714303 seconds
+      Worst: 0.753677 seconds
 
 With the following code: ::
 
     >>> import uuid
     >>> import timeit
+    >>> import lz4
+    >>> import snappy
     >>> from timeit import Timer
+
     >>> DATA = "".join([ str(uuid.uuid4()) for _ in xrange(200)])
+    >>> LZ4_DATA = lz4.compress(DATA)
+    >>> SNAPPY_DATA = snappy.compress(DATA)
     >>> LOOPS = 200000
-    >>> times = [Timer("lz4.dumps(DATA)", "from __main__ import DATA; import lz4").timeit(number=LOOPS) for x in xrange(10)]
+
+    >>> print "Compression:"
+    >>> times = [Timer("lz4.compress(DATA)", "from __main__ import DATA; import lz4").timeit(number=LOOPS) for x in xrange(10)]
     >>> print "%d calls - LZ4:" % LOOPS
     >>> print "  Best: %f seconds" % min(times)
     >>> print "  Worst: %f seconds" % max(times)
     >>> times = [Timer("snappy.compress(DATA)", "from __main__ import DATA; import snappy").timeit(number=LOOPS) for x in xrange(10)]
+    >>> print "%d calls - Snappy:" % LOOPS
+    >>> print "  Best: %f seconds" % min(times)
+    >>> print "  Worst: %f seconds" % max(times)
+
+    >>> print "Decompression"
+    >>> times = [Timer("lz4.uncompress(LZ4_DATA)", "from __main__ import LZ4_DATA; import lz4").timeit(number=LOOPS) for x in xrange(10)]
+    >>> print "%d calls - LZ4:" % LOOPS
+    >>> print "  Best: %f seconds" % min(times)
+    >>> print "  Worst: %f seconds" % max(times)
+    >>> times = [Timer("snappy.uncompress(SNAPPY_DATA)", "from __main__ import SNAPPY_DATA; import snappy").timeit(number=LOOPS) for x in xrange(10)]
     >>> print "%d calls - Snappy:" % LOOPS
     >>> print "  Best: %f seconds" % min(times)
     >>> print "  Worst: %f seconds" % max(times)
