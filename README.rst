@@ -6,6 +6,13 @@ Overview
 ========
 This package provides bindings for the `lz4 compression library <http://code.google.com/p/lz4/>`_ by Yann Collet.
 
+Install
+=======
+The package is hosted on `PyPI <http://pypi.python.org/pypi/lz4>`_::
+
+    $ pip install lz4
+    $ easy_install lz4
+
 Usage
 =====
 The library is pretty simple to use::
