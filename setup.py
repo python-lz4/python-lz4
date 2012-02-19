@@ -6,7 +6,7 @@ from setuptools import setup, find_packages, Extension
 
 setup(
     name='lz4',
-    version='0.1',
+    version='0.2',
     description=open('README.rst', 'r').read(),
     author='Steeve Morin',
     author_email='steeve.morin@gmail.com',
