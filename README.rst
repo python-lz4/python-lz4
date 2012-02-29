@@ -1,6 +1,6 @@
 ==========
-python-lz4 
-========== 
+python-lz4
+==========
 
 .. image:: https://secure.travis-ci.org/steeve/python-lz4.png?branch=master
 
@@ -38,55 +38,19 @@ The bindings provides some aliases too:
 
 Is it fast ?
 ============
-Yes. Here are the results on my 2011 Macbook Pro i7: ::
+Yes. Here are the results on my 2011 Macbook Pro i7 with 128kb random data: ::
 
-    Compression:
-    200000 calls - LZ4:
-      Best: 2.918570 seconds
-      Worst: 2.966427 seconds
-    200000 calls - Snappy:
-      Best: 3.634658 seconds
-      Worst: 3.670079 seconds
-    Decompression
-    200000 calls - LZ4:
-      Best: 0.458944 seconds
-      Worst: 0.483467 seconds
-    200000 calls - Snappy:
-      Best: 0.714303 seconds
-      Worst: 0.753677 seconds
-
-With the following code: ::
-
-    >>> import uuid
-    >>> import timeit
-    >>> import lz4
-    >>> import snappy
-    >>> from timeit import Timer
-
-    >>> DATA = "".join([ str(uuid.uuid4()) for _ in xrange(200)])
-    >>> LZ4_DATA = lz4.compress(DATA)
-    >>> SNAPPY_DATA = snappy.compress(DATA)
-    >>> LOOPS = 200000
-
-    >>> print "Compression:"
-    >>> times = [Timer("lz4.compress(DATA)", "from __main__ import DATA; import lz4").timeit(number=LOOPS) for x in xrange(10)]
-    >>> print "%d calls - LZ4:" % LOOPS
-    >>> print "  Best: %f seconds" % min(times)
-    >>> print "  Worst: %f seconds" % max(times)
-    >>> times = [Timer("snappy.compress(DATA)", "from __main__ import DATA; import snappy").timeit(number=LOOPS) for x in xrange(10)]
-    >>> print "%d calls - Snappy:" % LOOPS
-    >>> print "  Best: %f seconds" % min(times)
-    >>> print "  Worst: %f seconds" % max(times)
-
-    >>> print "Decompression"
-    >>> times = [Timer("lz4.uncompress(LZ4_DATA)", "from __main__ import LZ4_DATA; import lz4").timeit(number=LOOPS) for x in xrange(10)]
-    >>> print "%d calls - LZ4:" % LOOPS
-    >>> print "  Best: %f seconds" % min(times)
-    >>> print "  Worst: %f seconds" % max(times)
-    >>> times = [Timer("snappy.uncompress(SNAPPY_DATA)", "from __main__ import SNAPPY_DATA; import snappy").timeit(number=LOOPS) for x in xrange(10)]
-    >>> print "%d calls - Snappy:" % LOOPS
-    >>> print "  Best: %f seconds" % min(times)
-    >>> print "  Worst: %f seconds" % max(times)
+    $ python tests/bench.py
+    Data Size:
+      Input: 131072
+      LZ4: 131601
+      Snappy: 131087
+      LZ4 / Snappy: 1.003921
+    Benchmark: 200000 calls
+      LZ4 Compression: 3.651002s
+      Snappy Compression: 8.066482s
+      LZ4 Decompression: 1.482934s
+      Snappy Decompression : 3.193481s
 
 Important note
 ==============
