@@ -78,7 +78,7 @@ py_lz4_uncompress(PyObject *self, PyObject *args)
 
     dest = (char *)malloc(dest_size);
     osize = LZ4_uncompress(source + sizeof(int), dest, dest_size);
-    PyObject *result = Py_BuildValue("s#", dest, osize);
+    PyObject *result = Py_BuildValue("s#", dest, dest_size);
     free(dest);
 
     return result;
