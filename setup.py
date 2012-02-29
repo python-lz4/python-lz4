@@ -4,10 +4,13 @@
 
 from setuptools import setup, find_packages, Extension
 
+VERSION = (0, 3, 0)
+
 setup(
     name='lz4',
-    version='0.2.1',
-    description=open('README.rst', 'r').read(),
+    version=".".join([str(x) for x in VERSION]),
+    description="LZ4 Bindings for Python",
+    long_description=open('README.rst', 'r').read(),
     author='Steeve Morin',
     author_email='steeve.morin@gmail.com',
     url='https://github.com/steeve/python-lz4',
