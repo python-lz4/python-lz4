@@ -1,7 +1,5 @@
 #include "Python.h"
 
-static PyObject *py_lz4_compress_on_stack(char *source, int source_size);
-static PyObject *py_lz4_uncompress_on_stack(char *source, int source_size);
 static PyObject *py_lz4_compress(PyObject *self, PyObject *args);
 static PyObject *py_lz4_uncompress(PyObject *self, PyObject *args);
 
