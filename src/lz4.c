@@ -45,6 +45,13 @@
 // The default value (6) is recommended
 #define NOTCOMPRESSIBLE_CONFIRMATION 6
 
+// LZ4_COMPRESSMIN :
+// Compression function will *fail* if it is not successful at compressing input by at least LZ4_COMPRESSMIN bytes
+// Since the compression function stops working prematurely, it results in a speed gain
+// The output however is unusable. Compression function result will be zero.
+// Default : 0 = disabled
+#define LZ4_COMPRESSMIN 0
+
 // BIG_ENDIAN_NATIVE_BUT_INCOMPATIBLE :
 // This will provide a boost to performance for big endian cpu, but the resulting compressed stream will be incompatible with little-endian CPU.
 // You can set this option to 1 in situations where data will stay within closed environment
@@ -70,15 +77,15 @@
 // Little Endian assumed. PDP Endian and other very rare endian format are unsupported.
 #endif
 
-// Unaligned memory access ?
-// This feature is automatically enabled for "common" CPU, such as x86.
-// For others CPU, you may want to force this option manually to improve performance if your target CPU supports unaligned memory access
+// Unaligned memory access is automatically enabled for "common" CPU, such as x86.
+// For others CPU, the compiler will be more cautious, and insert extra code to ensure aligned access is respected
+// If you know your target CPU supports unaligned memory access, you may want to force this option manually to improve performance
 #if defined(__ARM_FEATURE_UNALIGNED)
 #define LZ4_FORCE_UNALIGNED_ACCESS 1
 #endif
 
-// Uncomment this parameter if your target system does not support hardware bit count
-//#define _FORCE_SW_BITCOUNT
+// Uncomment this parameter if your target system or compiler does not support hardware bit count
+//#define LZ4_FORCE_SW_BITCOUNT
 
 
 
@@ -92,19 +99,13 @@
 #endif
 
 #ifdef _MSC_VER
-#define inline __forceinline    // Visual is not C99, but supports inline
-#endif
-
-#if (defined(__GNUC__) && (!defined(LZ4_FORCE_UNALIGNED_ACCESS)))
-#define _PACKED __attribute__ ((packed))
-#else
-#define _PACKED
+#define inline __forceinline    // Visual is not C99, but supports some kind of inline
 #endif
 
 #ifdef _MSC_VER  // Visual Studio
-#define bswap16(i) _byteswap_ushort(i)
+#define bswap16(x) _byteswap_ushort(x)
 #else
-#define bswap16(i) (((i)>>8) | ((i)<<8))
+#define bswap16(x)  ((unsigned short int) ((((x) >> 8) & 0xffu) | (((x) & 0xffu) << 8)))
 #endif
 
 
@@ -134,11 +135,32 @@
 #define U64		uint64_t
 #endif
 
+#ifndef LZ4_FORCE_UNALIGNED_ACCESS
+#pragma pack(push, 1) 
+#endif
+
+typedef struct _U16_S { U16 v; } U16_S;
+typedef struct _U32_S { U32 v; } U32_S;
+typedef struct _U64_S { U64 v; } U64_S;
+
+#ifndef LZ4_FORCE_UNALIGNED_ACCESS
+#pragma pack(pop) 
+#endif
+
+#define A64(x) (((U64_S *)(x))->v)
+#define A32(x) (((U32_S *)(x))->v)
+#define A16(x) (((U16_S *)(x))->v)
+
 
 //**************************************
 // Constants
 //**************************************
 #define MINMATCH 4
+
+#define HASH_LOG COMPRESSIONLEVEL
+#define HASHTABLESIZE (1 << HASH_LOG)
+#define HASH_MASK (HASHTABLESIZE - 1)
+
 #define SKIPSTRENGTH (NOTCOMPRESSIBLE_CONFIRMATION>2?NOTCOMPRESSIBLE_CONFIRMATION:2)
 #define STACKLIMIT 13
 #define HEAPMODE (HASH_LOG>STACKLIMIT)  // Defines if memory is allocated into the stack (local variable), or into the heap (malloc()).
@@ -149,10 +171,6 @@
 
 #define MAXD_LOG 16
 #define MAX_DISTANCE ((1 << MAXD_LOG) - 1)
-
-#define HASH_LOG COMPRESSIONLEVEL
-#define HASHTABLESIZE (1 << HASH_LOG)
-#define HASH_MASK (HASHTABLESIZE - 1)
 
 #define ML_BITS 4
 #define ML_MASK ((1U<<ML_BITS)-1)
@@ -200,25 +218,6 @@ struct refTables
 	HTYPE hashTable[HASHTABLESIZE];
 };
 
-typedef struct _U64_S
-{
-	U64 v;
-} _PACKED U64_S;
-
-typedef struct _U32_S
-{
-	U32 v;
-} _PACKED U32_S;
-
-typedef struct _U16_S
-{
-	U16 v;
-} _PACKED U16_S;
-
-#define A64(x) (((U64_S *)(x))->v)
-#define A32(x) (((U32_S *)(x))->v)
-#define A16(x) (((U16_S *)(x))->v)
-
 
 //**************************************
 // Macros
@@ -237,11 +236,11 @@ typedef struct _U16_S
 inline static int LZ4_NbCommonBytes (register U64 val)
 {
 #if defined(LZ4_BIG_ENDIAN)
-    #if defined(_MSC_VER) && !defined(_FORCE_SW_BITCOUNT)
+    #if defined(_MSC_VER) && !defined(LZ4_FORCE_SW_BITCOUNT)
     unsigned long r = 0;
     _BitScanReverse64( &r, val );
     return (int)(r>>3);
-    #elif defined(__GNUC__) && !defined(_FORCE_SW_BITCOUNT)
+    #elif defined(__GNUC__) && ((__GNUC__ * 100 + __GNUC_MINOR__) >= 304) && !defined(LZ4_FORCE_SW_BITCOUNT)
     return (__builtin_clzll(val) >> 3); 
     #else
 	int r;
@@ -251,11 +250,11 @@ inline static int LZ4_NbCommonBytes (register U64 val)
 	return r;
     #endif
 #else
-    #if defined(_MSC_VER) && !defined(_FORCE_SW_BITCOUNT)
+    #if defined(_MSC_VER) && !defined(LZ4_FORCE_SW_BITCOUNT)
     unsigned long r = 0;
     _BitScanForward64( &r, val );
     return (int)(r>>3);
-    #elif defined(__GNUC__) && !defined(_FORCE_SW_BITCOUNT)
+    #elif defined(__GNUC__) && ((__GNUC__ * 100 + __GNUC_MINOR__) >= 304) && !defined(LZ4_FORCE_SW_BITCOUNT)
     return (__builtin_ctzll(val) >> 3); 
     #else
 	static const int DeBruijnBytePos[64] = { 0, 0, 0, 0, 0, 1, 1, 2, 0, 3, 1, 3, 1, 4, 2, 7, 0, 2, 3, 6, 1, 5, 3, 5, 1, 3, 4, 4, 2, 5, 6, 7, 7, 0, 1, 2, 3, 3, 4, 6, 2, 6, 5, 5, 3, 4, 5, 6, 7, 1, 2, 4, 6, 4, 4, 5, 7, 2, 6, 5, 7, 6, 7, 7 };
@@ -269,11 +268,11 @@ inline static int LZ4_NbCommonBytes (register U64 val)
 inline static int LZ4_NbCommonBytes (register U32 val)
 {
 #if defined(LZ4_BIG_ENDIAN)
-    #if defined(_MSC_VER) && !defined(_FORCE_SW_BITCOUNT)
+    #if defined(_MSC_VER) && !defined(LZ4_FORCE_SW_BITCOUNT)
     unsigned long r = 0;
     _BitScanReverse( &r, val );
     return (int)(r>>3);
-    #elif defined(__GNUC__) && !defined(_FORCE_SW_BITCOUNT)
+    #elif defined(__GNUC__) && ((__GNUC__ * 100 + __GNUC_MINOR__) >= 304) && !defined(LZ4_FORCE_SW_BITCOUNT)
     return (__builtin_clz(val) >> 3); 
     #else
 	int r;
@@ -282,15 +281,15 @@ inline static int LZ4_NbCommonBytes (register U32 val)
 	return r;
     #endif
 #else
-    #if defined(_MSC_VER) && !defined(_FORCE_SW_BITCOUNT)
+    #if defined(_MSC_VER) && !defined(LZ4_FORCE_SW_BITCOUNT)
     unsigned long r = 0;
     _BitScanForward( &r, val );
     return (int)(r>>3);
-    #elif defined(__GNUC__) && !defined(_FORCE_SW_BITCOUNT)
+    #elif defined(__GNUC__) && ((__GNUC__ * 100 + __GNUC_MINOR__) >= 304) && !defined(LZ4_FORCE_SW_BITCOUNT)
     return (__builtin_ctz(val) >> 3); 
     #else
 	static const int DeBruijnBytePos[32] = { 0, 0, 3, 0, 3, 1, 3, 0, 3, 2, 2, 1, 3, 2, 0, 1, 3, 3, 1, 2, 2, 2, 2, 0, 3, 1, 2, 0, 1, 0, 1, 1 };
-	return DeBruijnBytePos[((U32)((val & -val) * 0x077CB531U)) >> 27];
+	return DeBruijnBytePos[((U32)((val & -(S32)val) * 0x077CB531U)) >> 27];
     #endif
 #endif
 }
@@ -437,6 +436,7 @@ _last_literals:
 	// Encode Last Literals
 	{
 		int lastRun = iend - anchor;
+		if ((LZ4_COMPRESSMIN>0) && (((op - (BYTE*)dest) + lastRun + 1 + ((lastRun-15)/255)) > isize - LZ4_COMPRESSMIN)) return 0;
 		if (lastRun>=(int)RUN_MASK) { *op++=(RUN_MASK<<ML_BITS); lastRun-=RUN_MASK; for(; lastRun > 254 ; lastRun-=255) *op++ = 255; *op++ = (BYTE) lastRun; }
 		else *op++ = (lastRun<<ML_BITS);
 		memcpy(op, anchor, iend - anchor);
@@ -578,6 +578,7 @@ _last_literals:
 	// Encode Last Literals
 	{
 		int lastRun = iend - anchor;
+		if ((LZ4_COMPRESSMIN>0) && (((op - (BYTE*)dest) + lastRun + 1 + ((lastRun-15)/255)) > isize - LZ4_COMPRESSMIN)) return 0;
 		if (lastRun>=(int)RUN_MASK) { *op++=(RUN_MASK<<ML_BITS); lastRun-=RUN_MASK; for(; lastRun > 254 ; lastRun-=255) *op++ = 255; *op++ = (BYTE) lastRun; }
 		else *op++ = (lastRun<<ML_BITS);
 		memcpy(op, anchor, iend - anchor);
