@@ -1,6 +1,8 @@
 ==========
-python-lz4
-==========
+python-lz4 
+========== 
+
+.. image:: https://secure.travis-ci.org/steeve/python-lz4.png?branch=master
 
 Overview
 ========
