@@ -38,7 +38,7 @@ The bindings provides some aliases too::
 
 Is it fast ?
 ============
-Yes. Here are the results on my 2011 Macbook Pro i7 with 128kb random data: ::
+Yes. Here are the results on my 2011 Macbook Pro i7 with lz4.c as input data: ::
 
     $ python tests/bench.py
     Data Size:
