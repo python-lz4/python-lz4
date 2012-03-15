@@ -18,7 +18,7 @@ py_lz4_compress(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "s#", &source, &source_size))
         return NULL;
 
-    dest_size = sizeof(int) + source_size + MAX(8, (int)ceil(source_size * 0.004f));
+    dest_size = sizeof(int) + LZ4_compressBound(source_size);
     PyObject *result = PyString_FromStringAndSize(NULL, (Py_ssize_t)dest_size);
     dest = (char *)PyString_AsString(result);
     *((int *)dest) = source_size;
