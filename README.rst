@@ -27,7 +27,7 @@ The library is pretty simple to use::
 
 Methods
 =======
-The bindings provides some aliases too:
+The bindings provides some aliases too::
 
     >>> import lz4
     >>> lz4.LZ4_compress == lz4.compress == lz4.dumps
