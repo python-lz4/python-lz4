@@ -2,17 +2,18 @@ import uuid
 import timeit
 import lz4
 import snappy
+import os
 from timeit import Timer
 
-DATA = open("/dev/urandom", "rb").read(128 * 1024)  # Read 128kb
+DATA = open("%s/../src/lz4.c" % os.path.dirname(__file__), "rb").read()
 LZ4_DATA = lz4.compress(DATA)
 SNAPPY_DATA = snappy.compress(DATA)
 LOOPS = 200000
 
 print "Data Size:"
 print "  Input: %d" % len(DATA)
-print "  LZ4: %d" % len(LZ4_DATA)
-print "  Snappy: %d" % len(SNAPPY_DATA)
+print "  LZ4: %d (%.2f)" % (len(LZ4_DATA), len(LZ4_DATA) / float(len(DATA)))
+print "  Snappy: %d (%.2f)" % (len(SNAPPY_DATA), len(SNAPPY_DATA) / float(len(DATA)))
 print "  LZ4 / Snappy: %f" % (float(len(LZ4_DATA)) / float(len(SNAPPY_DATA)))
 
 print "Benchmark: %d calls" % LOOPS
