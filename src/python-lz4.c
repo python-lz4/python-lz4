@@ -23,6 +23,7 @@ py_lz4_compress(PyObject *self, PyObject *args)
     dest = (char *)PyString_AsString(result);
     *((int *)dest) = source_size;
     osize = LZ4_compress(source, dest + sizeof(int), source_size);
+    _PyString_Resize(&result, sizeof(int) + osize);
     return result;
 }
 
