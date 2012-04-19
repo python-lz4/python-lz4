@@ -32,7 +32,7 @@ The bindings provides some aliases too::
     >>> import lz4
     >>> lz4.LZ4_compress == lz4.compress == lz4.dumps
     True
-    >>> lz4.LZ4_uncompress == lz4.uncompress == lz4.loads
+    >>> lz4.LZ4_uncompress == lz4.uncompress == z4.decompress == lz4.loads
     True
     >>>
 
