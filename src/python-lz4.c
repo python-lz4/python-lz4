@@ -52,6 +52,7 @@ static PyMethodDef Lz4Methods[] = {
     {"LZ4_uncompress",  py_lz4_uncompress, METH_VARARGS, UNCOMPRESS_DOCSTRING},
     {"compress",  py_lz4_compress, METH_VARARGS, COMPRESS_DOCSTRING},
     {"uncompress",  py_lz4_uncompress, METH_VARARGS, UNCOMPRESS_DOCSTRING},
+    {"decompress",  py_lz4_uncompress, METH_VARARGS, UNCOMPRESS_DOCSTRING},
     {"dumps",  py_lz4_compress, METH_VARARGS, COMPRESS_DOCSTRING},
     {"loads",  py_lz4_uncompress, METH_VARARGS, UNCOMPRESS_DOCSTRING},
     {NULL, NULL, 0, NULL}
