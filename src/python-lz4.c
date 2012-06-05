@@ -2,9 +2,12 @@
 #include "math.h"
 #include "Python.h"
 #include "lz4.h"
+#include "lz4hc.h"
 #include "python-lz4.h"
 
 #define MAX(a, b)               ((a) > (b) ? (a) : (b))
+
+typedef int (*compressor)(const char *source, char *dest, int isize);
 
 static inline void store_le32(char *c, uint32_t x)
 {
@@ -16,14 +19,14 @@ static inline void store_le32(char *c, uint32_t x)
 
 static inline uint32_t load_le32(const char *c)
 {
-    const uint8_t *d = c;
+    const uint8_t *d = (const uint8_t *)c;
     return d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
 }
 
 static const int hdr_size = sizeof(uint32_t);
 
 static PyObject *
-py_lz4_compress(PyObject *self, PyObject *args)
+compress_with(compressor compress, PyObject *self, PyObject *args)
 {
     PyObject *result;
     const char *source;
@@ -41,7 +44,7 @@ py_lz4_compress(PyObject *self, PyObject *args)
     dest = PyString_AS_STRING(result);
     store_le32(dest, source_size);
     if (source_size > 0) {
-	int osize = LZ4_compress(source, dest + hdr_size, source_size);
+	int osize = compress(source, dest + hdr_size, source_size);
 	int actual_size = hdr_size + osize;
 	/* Resizes are expensive; tolerate some slop to avoid. */
 	if (actual_size < (dest_size / 4) * 3)
@@ -50,6 +53,16 @@ py_lz4_compress(PyObject *self, PyObject *args)
 	    Py_SIZE(result) = actual_size;
     }
     return result;
+}
+
+static PyObject *py_lz4_compress(PyObject *self, PyObject *args)
+{
+    return compress_with(LZ4_compress, self, args);
+}
+
+static PyObject *py_lz4_compressHC(PyObject *self, PyObject *args)
+{
+    return compress_with(LZ4_compressHC, self, args);
 }
 
 static PyObject *
@@ -95,6 +108,7 @@ static PyMethodDef Lz4Methods[] = {
     {"LZ4_compress",  py_lz4_compress, METH_VARARGS, COMPRESS_DOCSTRING},
     {"LZ4_uncompress",  py_lz4_uncompress, METH_VARARGS, UNCOMPRESS_DOCSTRING},
     {"compress",  py_lz4_compress, METH_VARARGS, COMPRESS_DOCSTRING},
+    {"compressHC",  py_lz4_compressHC, METH_VARARGS, COMPRESSHC_DOCSTRING},
     {"uncompress",  py_lz4_uncompress, METH_VARARGS, UNCOMPRESS_DOCSTRING},
     {"decompress",  py_lz4_uncompress, METH_VARARGS, UNCOMPRESS_DOCSTRING},
     {"dumps",  py_lz4_compress, METH_VARARGS, COMPRESS_DOCSTRING},
