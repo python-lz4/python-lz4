@@ -19,6 +19,7 @@ setup(
     ext_modules=[
         Extension('lz4', [
             'src/lz4.c',
+            'src/lz4hc.c',
             'src/python-lz4.c'
         ])
     ],
