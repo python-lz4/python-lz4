@@ -21,6 +21,6 @@ setup(
             'src/lz4.c',
             'src/lz4hc.c',
             'src/python-lz4.c'
-        ])
+        ], extra_compile_args=["-O4"])
     ],
 )
