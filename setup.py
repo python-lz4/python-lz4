@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-"""Setup file for veezio backend"""
 
 from setuptools import setup, find_packages, Extension
 
@@ -23,4 +22,6 @@ setup(
             'src/python-lz4.c'
         ], extra_compile_args=["-O4"])
     ],
+    setup_requires=["nose>=1.0"],
+    test_suite = "nose.collector",
 )

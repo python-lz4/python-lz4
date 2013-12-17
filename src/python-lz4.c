@@ -1,6 +1,6 @@
+#include "Python.h"
 #include "stdlib.h"
 #include "math.h"
-#include "Python.h"
 #include "lz4.h"
 #include "lz4hc.h"
 #include "python-lz4.h"
@@ -38,17 +38,17 @@ compress_with(compressor compress, PyObject *self, PyObject *args)
         return NULL;
 
     dest_size = hdr_size + LZ4_compressBound(source_size);
-    result = PyString_FromStringAndSize(NULL, dest_size);
+    result = PyBytes_FromStringAndSize(NULL, dest_size);
     if (result == NULL)
 	return NULL;
-    dest = PyString_AS_STRING(result);
+    dest = PyBytes_AS_STRING(result);
     store_le32(dest, source_size);
     if (source_size > 0) {
 	int osize = compress(source, dest + hdr_size, source_size);
 	int actual_size = hdr_size + osize;
 	/* Resizes are expensive; tolerate some slop to avoid. */
 	if (actual_size < (dest_size / 4) * 3)
-	    _PyString_Resize(&result, actual_size);
+	    _PyBytes_Resize(&result, actual_size);
 	else
 	    Py_SIZE(result) = actual_size;
     }
@@ -86,9 +86,9 @@ py_lz4_uncompress(PyObject *self, PyObject *args)
 		     dest_size);
 	return NULL;
     }
-    result = PyString_FromStringAndSize(NULL, dest_size);
+    result = PyBytes_FromStringAndSize(NULL, dest_size);
     if (result != NULL && dest_size > 0) {
-	char *dest = PyString_AS_STRING(result);
+	char *dest = PyBytes_AS_STRING(result);
 	int osize = LZ4_uncompress(source + hdr_size, dest, dest_size);
 
 	if (osize < 0) {
@@ -116,12 +116,73 @@ static PyMethodDef Lz4Methods[] = {
     {NULL, NULL, 0, NULL}
 };
 
-PyMODINIT_FUNC
-initlz4(void)
-{
-    PyObject *m;
 
-    m = Py_InitModule("lz4", Lz4Methods);
-    if (m == NULL)
-        return;
+
+struct module_state {
+    PyObject *error;
+};
+
+#if PY_MAJOR_VERSION >= 3
+#define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
+#else
+#define GETSTATE(m) (&_state)
+static struct module_state _state;
+#endif
+
+#if PY_MAJOR_VERSION >= 3
+
+static int myextension_traverse(PyObject *m, visitproc visit, void *arg) {
+    Py_VISIT(GETSTATE(m)->error);
+    return 0;
+}
+
+static int myextension_clear(PyObject *m) {
+    Py_CLEAR(GETSTATE(m)->error);
+    return 0;
+}
+
+
+static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "lz4",
+        NULL,
+        sizeof(struct module_state),
+        Lz4Methods,
+        NULL,
+        myextension_traverse,
+        myextension_clear,
+        NULL
+};
+
+#define INITERROR return NULL
+
+PyObject *
+PyInit_lz4(void)
+
+#else
+#define INITERROR return
+
+void
+initlz4(void)
+#endif
+{
+#if PY_MAJOR_VERSION >= 3
+    PyObject *module = PyModule_Create(&moduledef);
+#else
+    PyObject *module = Py_InitModule("lz4", Lz4Methods);
+#endif
+
+    if (module == NULL)
+        INITERROR;
+    struct module_state *st = GETSTATE(module);
+
+    st->error = PyErr_NewException("lz4.Error", NULL, NULL);
+    if (st->error == NULL) {
+        Py_DECREF(module);
+        INITERROR;
+    }
+
+#if PY_MAJOR_VERSION >= 3
+    return module;
+#endif
 }
