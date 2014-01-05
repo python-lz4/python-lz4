@@ -8,6 +8,8 @@ Overview
 ========
 This package provides bindings for the `lz4 compression library <http://code.google.com/p/lz4/>`_ by Yann Collet.
 
+Code specific to this project is covered by the `BSD 3-Clause License <http://opensource.org/licenses/BSD-3-Clause>`_
+
 Install
 =======
 The package is hosted on `PyPI <http://pypi.python.org/pypi/lz4>`_::
