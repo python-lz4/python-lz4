@@ -202,10 +202,11 @@ initlz4(void)
 #else
     PyObject *module = Py_InitModule("lz4", Lz4Methods);
 #endif
+    struct module_state *st = NULL;
 
     if (module == NULL)
         INITERROR;
-    struct module_state *st = GETSTATE(module);
+    st = GETSTATE(module);
 
     st->error = PyErr_NewException("lz4.Error", NULL, NULL);
     if (st->error == NULL) {
