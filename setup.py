@@ -26,6 +26,7 @@ setup(
     test_suite = "nose.collector",
     classifiers=[
         'Development Status :: 5 - Production/Stable',
+        'License :: OSI Approved :: BSD 3-Clause License',
         'Intended Audience :: Developers',
         'Programming Language :: C',
         'Programming Language :: Python',
