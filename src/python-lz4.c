@@ -114,7 +114,7 @@ static PyObject *py_lz4_uncompress(PyObject *self, PyObject *args) {
     result = PyBytes_FromStringAndSize(NULL, dest_size);
     if (result != NULL && dest_size > 0) {
         char *dest = PyBytes_AS_STRING(result);
-        int osize = LZ4_uncompress(source + hdr_size, dest, dest_size);
+        int osize = LZ4_decompress_safe(source + hdr_size, dest, source_size - hdr_size, dest_size);
         if (osize < 0) {
             PyErr_Format(PyExc_ValueError, "corrupt input at byte %d", -osize);
             Py_CLEAR(result);
