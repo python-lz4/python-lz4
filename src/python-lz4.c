@@ -119,10 +119,6 @@ static PyObject *py_lz4_uncompress(PyObject *self, PyObject *args) {
             PyErr_Format(PyExc_ValueError, "corrupt input at byte %d", -osize);
             Py_CLEAR(result);
         }
-        else if (osize < source_size - hdr_size) {
-            PyErr_SetString(PyExc_ValueError, "decompression incomplete");
-            Py_CLEAR(result);
-        }
     }
 
     return result;
