@@ -3,7 +3,7 @@
 
 from setuptools import setup, find_packages, Extension
 
-VERSION = (0, 6, 1)
+VERSION = (0, 7, 0)
 
 setup(
     name='lz4',
