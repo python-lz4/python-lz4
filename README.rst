@@ -27,14 +27,16 @@ The library is pretty simple to use::
     True
     >>>
 
-Methods
-=======
+Methods and Constants
+=====================
 The bindings provides some aliases too::
 
     >>> import lz4
     >>> lz4.LZ4_compress == lz4.compress == lz4.dumps
     True
     >>> lz4.LZ4_uncompress == lz4.uncompress == z4.decompress == lz4.loads
+    True
+    >>> lz4.VERSION == lz4.__version__  # e.g. "0.7.0"
     True
     >>>
 
