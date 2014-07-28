@@ -4,7 +4,7 @@
 from setuptools import setup, find_packages, Extension
 
 VERSION = (0, 7, 0)
-VERSION_STR = ".".join([str(x) for x in VERSION]),
+VERSION_STR = ".".join([str(x) for x in VERSION])
 
 setup(
     name='lz4',
