@@ -31,9 +31,9 @@
 
 #include "Python.h"
 
-static PyObject *py_lz4_decompress_continue(PyObject *self, PyObject *args, PyObject *keywds);
+static PyObject *pass_lz4_decompress_continue(PyObject *self, PyObject *args, PyObject *keywds);
 
-PyMODINIT_FUNC initlz4(void);
+PyMODINIT_FUNC initlz4f(void);
 
 #define UNCOMPRESS_DOCSTRING    "Decompress string, returning the uncompressed data.\nRaises an exception if any error occurs."
 
