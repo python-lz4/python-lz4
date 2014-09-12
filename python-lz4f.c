@@ -157,18 +157,12 @@ static PyObject *pass_lz4f_decompress(PyObject *self, PyObject *args, PyObject *
     dest_size = LZ4S_GetBlockSize_FromBlockId(blkID);
     dCtx = (LZ4F_decompressionContext_t)PyCObject_AsVoidPtr(py_dCtx);
     
-    if (/*result != NULL && */dest_size > 0) {
-        char* dest = (char*)malloc(dest_size);
-        err = LZ4F_decompress(dCtx, dest, &dest_size, source, &source_size, NULL);
-        //CHECK(LZ4F_isError(err), "Failed getting frameInfo. (error %i)", (int)err);
-        fprintf(stdout, "Dest_size: %i  Error Code:%i \n", dest_size, err);
-        result = PyBytes_FromStringAndSize(dest, dest_size);
-        free(dest);
-        /*if (osize < 0) {
-            PyErr_Format(PyExc_ValueError, "corrupt input at byte %d", -osize);
-            Py_CLEAR(result);
-        }*/
-    }
+    char* dest = (char*)malloc(dest_size);
+    err = LZ4F_decompress(dCtx, dest, &dest_size, source, &source_size, NULL);
+    CHECK(LZ4F_isError(err), "Failed getting frameInfo. (error %i)", (int)err);
+    //fprintf(stdout, "Dest_size: %i  Error Code:%i \n", dest_size, err);
+    result = PyBytes_FromStringAndSize(dest, dest_size);
+    free(dest);
 
     return result;
 _output_error:
