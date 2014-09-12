@@ -115,7 +115,6 @@ static PyObject *py_lz4f_getFrameInfo(PyObject *self, PyObject *args) {
     LZ4F_frameInfo_t *frameInfo;
     const char *source;
     size_t source_size;
-    //int blkID;
     size_t err;
 
     (void)self;
@@ -124,16 +123,52 @@ static PyObject *py_lz4f_getFrameInfo(PyObject *self, PyObject *args) {
     }
     
     frameInfo = &frameInfoHold;
-    //err = LZ4F_createDecompressionContext(&dCtx, LZ4F_VERSION);
     dCtx = (LZ4F_decompressionContext_t)PyCObject_AsVoidPtr(py_dCtx);
 
     err = LZ4F_getFrameInfo(dCtx, frameInfo, (unsigned char*)source, &source_size);
     CHECK(LZ4F_isError(err), "Failed getting frameInfo. (error %i)", (int)err);
 
     frameInfoHold = *frameInfo;
-    //printf("%s %i", "The num is: ", frameInfoHold.blockSizeID);
-    //py_dCtx =  PyCObject_FromVoidPtr(dCtx, NULL/*LZ4F_freeDecompressionContext*/);
+    //py_dCtx = PyCObject_FromVoidPtr(dCtx, NULL/*LZ4F_freeDecompressionContext*/);
     result = PyLong_FromSize_t(frameInfoHold.blockSizeID);
+
+    return result;
+_output_error:
+    return Py_None; 
+}
+
+static PyObject *pass_lz4f_decompress(PyObject *self, PyObject *args, PyObject *keywds) {
+    PyObject *result = Py_None;
+    PyObject *py_dCtx;
+    LZ4F_decompressionContext_t dCtx;
+    const char *source;
+    size_t source_size;
+    size_t dest_size;
+    size_t err;
+    unsigned int blkID=7;
+    static char *kwlist[] = {"source", "dCtx", "blkID"};
+
+    (void)self;
+    if (!PyArg_ParseTupleAndKeywords(args, keywds, "s#O|i", kwlist, &source, 
+                                     &source_size, &py_dCtx, &blkID)) {
+        return NULL;
+    }
+
+    dest_size = LZ4S_GetBlockSize_FromBlockId(blkID);
+    dCtx = (LZ4F_decompressionContext_t)PyCObject_AsVoidPtr(py_dCtx);
+    
+    if (/*result != NULL && */dest_size > 0) {
+        char* dest = (char*)malloc(dest_size);
+        err = LZ4F_decompress(dCtx, dest, &dest_size, source, &source_size, NULL);
+        //CHECK(LZ4F_isError(err), "Failed getting frameInfo. (error %i)", (int)err);
+        fprintf(stdout, "Dest_size: %i  Error Code:%i \n", dest_size, err);
+        result = PyBytes_FromStringAndSize(dest, dest_size);
+        free(dest);
+        /*if (osize < 0) {
+            PyErr_Format(PyExc_ValueError, "corrupt input at byte %d", -osize);
+            Py_CLEAR(result);
+        }*/
+    }
 
     return result;
 _output_error:
@@ -181,6 +216,7 @@ static PyObject *pass_lz4_decompress_continue(PyObject *self, PyObject *args, Py
 
 static PyMethodDef Lz4Methods[] = {
     {"decompress_continue",  (PyCFunction)pass_lz4_decompress_continue, METH_VARARGS | METH_KEYWORDS, UNCOMPRESS_DOCSTRING},
+    {"decompressFrame",  (PyCFunction)pass_lz4f_decompress, METH_VARARGS | METH_KEYWORDS, UNCOMPRESS_DOCSTRING},
     {"getFrameInfo", py_lz4f_getFrameInfo, METH_VARARGS, NULL},
     {"createDecompContext", py_lz4_createDecompressionContext, METH_VARARGS, NULL},
     {NULL, NULL, 0, NULL}
