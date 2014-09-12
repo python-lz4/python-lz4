@@ -31,7 +31,9 @@
 
 #include "Python.h"
 
-static PyObject *pass_lz4_decompress_continue(PyObject *self, PyObject *args, PyObject *keywds);
+static PyObject *py_lz4_createDecompressionContext(PyObject *self, PyObject *args);
+static PyObject *py_lz4f_getFrameInfo(PyObject *self, PyObject *args);
+static PyObject *pass_lz4f_decompress(PyObject *self, PyObject *args, PyObject *keywds);
 
 PyMODINIT_FUNC initlz4f(void);
 
