@@ -90,6 +90,56 @@ static PyTypeObject Lz4sd_t_Type = {
 };
 
 /* Decompression methods */ 
+static PyObject *py_lz4_createDecompressionContext(PyObject *self, PyObject *args) {
+    PyObject *result;
+    LZ4F_decompressionContext_t dCtx;
+    size_t err;
+
+    (void)self;
+    (void)args;
+   
+    err = LZ4F_createDecompressionContext(&dCtx, LZ4F_VERSION);
+    CHECK(LZ4F_isError(err), "Allocation failed (error %i)", (int)err);
+    result = PyCObject_FromVoidPtr(dCtx, NULL/*LZ4F_freeDecompressionContext*/);
+
+    return result;
+_output_error:
+    return Py_None; 
+}
+
+static PyObject *py_lz4f_getFrameInfo(PyObject *self, PyObject *args) {
+    PyObject *result;
+    PyObject *py_dCtx;
+    LZ4F_decompressionContext_t dCtx;
+    LZ4F_frameInfo_t frameInfoHold = { 0 };
+    LZ4F_frameInfo_t *frameInfo;
+    const char *source;
+    size_t source_size;
+    //int blkID;
+    size_t err;
+
+    (void)self;
+    if (!PyArg_ParseTuple(args, "s#O", &source, &source_size, &py_dCtx)) {
+        return NULL;
+    }
+    
+    frameInfo = &frameInfoHold;
+    //err = LZ4F_createDecompressionContext(&dCtx, LZ4F_VERSION);
+    dCtx = (LZ4F_decompressionContext_t)PyCObject_AsVoidPtr(py_dCtx);
+
+    err = LZ4F_getFrameInfo(dCtx, frameInfo, (unsigned char*)source, &source_size);
+    CHECK(LZ4F_isError(err), "Failed getting frameInfo. (error %i)", (int)err);
+
+    frameInfoHold = *frameInfo;
+    //printf("%s %i", "The num is: ", frameInfoHold.blockSizeID);
+    //py_dCtx =  PyCObject_FromVoidPtr(dCtx, NULL/*LZ4F_freeDecompressionContext*/);
+    result = PyLong_FromSize_t(frameInfoHold.blockSizeID);
+
+    return result;
+_output_error:
+    return Py_None; 
+}
+
 static PyObject *pass_lz4_decompress_continue(PyObject *self, PyObject *args, PyObject *keywds) {
     PyObject *result;
     PyObject *lz4sd_t;
@@ -131,10 +181,10 @@ static PyObject *pass_lz4_decompress_continue(PyObject *self, PyObject *args, Py
 
 static PyMethodDef Lz4Methods[] = {
     {"decompress_continue",  (PyCFunction)pass_lz4_decompress_continue, METH_VARARGS | METH_KEYWORDS, UNCOMPRESS_DOCSTRING},
+    {"getFrameInfo", py_lz4f_getFrameInfo, METH_VARARGS, NULL},
+    {"createDecompContext", py_lz4_createDecompressionContext, METH_VARARGS, NULL},
     {NULL, NULL, 0, NULL}
 };
-
-
 
 struct module_state {
     PyObject *error;

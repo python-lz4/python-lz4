@@ -724,6 +724,7 @@ LZ4F_errorCode_t LZ4F_getFrameInfo(LZ4F_decompressionContext_t decompressionCont
         if (LZ4F_isError(errorCode)) return errorCode;
         *srcSize = errorCode;
         dctxPtr->dStage = dstage_getCBlockSize;
+        *frameInfoPtr = dctxPtr->frameInfo;
         return OK_NoError;
     }
 
