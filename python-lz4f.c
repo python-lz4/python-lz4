@@ -43,6 +43,41 @@
 
 static int LZ4S_GetBlockSize_FromBlockId (int id) { return (1 << (8 + (2 * id))); }
 
+/* Compression methods */ 
+
+static PyObject *py_lz4_createCompressionContext(PyObject *self, PyObject *args) {
+    PyObject *result;
+    LZ4F_compressionContext_t cCtx;
+    size_t err;
+
+    (void)self;
+    (void)args;
+   
+    err = LZ4F_createCompressionContext(&cCtx, LZ4F_VERSION);
+    CHECK(LZ4F_isError(err), "Allocation failed (error %i)", (int)err);
+    result = PyCObject_FromVoidPtr(cCtx, NULL/*LZ4F_freeDecompressionContext*/);
+
+    return result;
+_output_error:
+    return Py_None; 
+}
+
+static PyObject *py_lz4_freeCompressionContext(PyObject *self, PyObject *args) {
+    PyObject *py_cCtx;
+    LZ4F_compressionContext_t cCtx;
+
+    (void)self;
+    if (!PyArg_ParseTuple(args, "O", &py_cCtx)) {
+        return NULL;
+    }
+    
+    cCtx = (LZ4F_compressionContext_t)PyCObject_AsVoidPtr(py_cCtx);
+    LZ4F_freeCompressionContext(cCtx);
+
+    return Py_None; 
+}
+
+
 /* Decompression methods */ 
 static PyObject *py_lz4_createDecompressionContext(PyObject *self, PyObject *args) {
     PyObject *result;
@@ -58,6 +93,21 @@ static PyObject *py_lz4_createDecompressionContext(PyObject *self, PyObject *arg
 
     return result;
 _output_error:
+    return Py_None; 
+}
+
+static PyObject *py_lz4_freeDecompressionContext(PyObject *self, PyObject *args) {
+    PyObject *py_dCtx;
+    LZ4F_compressionContext_t dCtx;
+
+    (void)self;
+    if (!PyArg_ParseTuple(args, "O", &py_dCtx)) {
+        return NULL;
+    }
+    
+    dCtx = (LZ4F_decompressionContext_t)PyCObject_AsVoidPtr(py_dCtx);
+    LZ4F_freeDecompressionContext(dCtx);
+
     return Py_None; 
 }
 
@@ -83,7 +133,6 @@ static PyObject *py_lz4f_getFrameInfo(PyObject *self, PyObject *args) {
     CHECK(LZ4F_isError(err), "Failed getting frameInfo. (error %i)", (int)err);
 
     frameInfoHold = *frameInfo;
-    //py_dCtx = PyCObject_FromVoidPtr(dCtx, NULL/*LZ4F_freeDecompressionContext*/);
     result = PyLong_FromSize_t(frameInfoHold.blockSizeID);
 
     return result;
@@ -126,7 +175,10 @@ _output_error:
 static PyMethodDef Lz4Methods[] = {
     {"decompressFrame",  (PyCFunction)pass_lz4f_decompress, METH_VARARGS | METH_KEYWORDS, UNCOMPRESS_DOCSTRING},
     {"getFrameInfo", py_lz4f_getFrameInfo, METH_VARARGS, NULL},
+    {"createCompContext", py_lz4_createCompressionContext, METH_VARARGS, NULL},
+    {"freeCompContext", py_lz4_freeCompressionContext, METH_VARARGS, NULL},
     {"createDecompContext", py_lz4_createDecompressionContext, METH_VARARGS, NULL},
+    {"freeDecompContext", py_lz4_freeDecompressionContext, METH_VARARGS, NULL},
     {NULL, NULL, 0, NULL}
 };
 
