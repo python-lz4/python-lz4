@@ -112,11 +112,11 @@ static PyObject *py_lz4_freeDecompressionContext(PyObject *self, PyObject *args)
 }
 
 static PyObject *py_lz4f_getFrameInfo(PyObject *self, PyObject *args) {
-    PyObject *result;
+    PyObject *result = PyDict_New();
     PyObject *py_dCtx;
     LZ4F_decompressionContext_t dCtx;
-    LZ4F_frameInfo_t frameInfoHold = { 0 };
-    LZ4F_frameInfo_t *frameInfo;
+    LZ4F_frameInfo_t frameInfo;
+    //LZ4F_frameInfo_t frameInfoHold = { 0 };
     const char *source;
     size_t source_size;
     size_t err;
@@ -126,14 +126,16 @@ static PyObject *py_lz4f_getFrameInfo(PyObject *self, PyObject *args) {
         return NULL;
     }
     
-    frameInfo = &frameInfoHold;
     dCtx = (LZ4F_decompressionContext_t)PyCObject_AsVoidPtr(py_dCtx);
-
-    err = LZ4F_getFrameInfo(dCtx, frameInfo, (unsigned char*)source, &source_size);
+    
+    //frameInfo = &frameInfoHold;
+    err = LZ4F_getFrameInfo(dCtx, &frameInfo, (unsigned char*)source, &source_size);
     CHECK(LZ4F_isError(err), "Failed getting frameInfo. (error %i)", (int)err);
 
-    frameInfoHold = *frameInfo;
-    result = PyLong_FromSize_t(frameInfoHold.blockSizeID);
+    PyObject *blkSize = PyInt_FromSize_t(frameInfo.blockSizeID);
+    PyObject *blkMode = PyInt_FromSize_t(frameInfo.blockMode);
+    PyDict_SetItemString(result, "blkSize", blkSize);
+    PyDict_SetItemString(result, "blkMode", blkMode);
 
     return result;
 _output_error:
