@@ -143,7 +143,7 @@ _output_error:
 }
 
 static PyObject *pass_lz4f_decompress(PyObject *self, PyObject *args, PyObject *keywds) {
-    PyObject *result = Py_None;
+    PyObject *result = PyDict_New();
     PyObject *py_dCtx;
     LZ4F_decompressionContext_t dCtx;
     const char *source;
@@ -164,9 +164,13 @@ static PyObject *pass_lz4f_decompress(PyObject *self, PyObject *args, PyObject *
     
     char* dest = (char*)malloc(dest_size);
     err = LZ4F_decompress(dCtx, dest, &dest_size, source, &source_size, NULL);
-    CHECK(LZ4F_isError(err), "Failed getting frameInfo. (error %i)", (int)err);
+    //CHECK(LZ4F_isError(err), "Failed getting frameInfo. (error %i)", (int)err);
     //fprintf(stdout, "Dest_size: %i  Error Code:%i \n", dest_size, err);
-    result = PyBytes_FromStringAndSize(dest, dest_size);
+    
+    PyObject *decomp = PyBytes_FromStringAndSize(dest, dest_size);
+    PyObject *next = PyInt_FromSize_t(err);
+    PyDict_SetItemString(result, "decomp", decomp);
+    PyDict_SetItemString(result, "next", next);
     free(dest);
 
     return result;
