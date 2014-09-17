@@ -40,6 +40,7 @@
 #include "python-lz4f.h"
 #include "structmember.h"
 
+#define CHECK(cond, ...) if (cond) { printf("%s", "Error => "); goto _output_error; }
 
 static int LZ4S_GetBlockSize_FromBlockId (int id) { return (1 << (8 + (2 * id))); }
 
@@ -116,7 +117,6 @@ static PyObject *py_lz4f_getFrameInfo(PyObject *self, PyObject *args) {
     PyObject *py_dCtx;
     LZ4F_decompressionContext_t dCtx;
     LZ4F_frameInfo_t frameInfo;
-    //LZ4F_frameInfo_t frameInfoHold = { 0 };
     const char *source;
     size_t source_size;
     size_t err;
@@ -128,7 +128,6 @@ static PyObject *py_lz4f_getFrameInfo(PyObject *self, PyObject *args) {
     
     dCtx = (LZ4F_decompressionContext_t)PyCObject_AsVoidPtr(py_dCtx);
     
-    //frameInfo = &frameInfoHold;
     err = LZ4F_getFrameInfo(dCtx, &frameInfo, (unsigned char*)source, &source_size);
     CHECK(LZ4F_isError(err), "Failed getting frameInfo. (error %i)", (int)err);
 
@@ -164,8 +163,8 @@ static PyObject *pass_lz4f_decompress(PyObject *self, PyObject *args, PyObject *
     
     char* dest = (char*)malloc(dest_size);
     err = LZ4F_decompress(dCtx, dest, &dest_size, source, &source_size, NULL);
-    //CHECK(LZ4F_isError(err), "Failed getting frameInfo. (error %i)", (int)err);
-    //fprintf(stdout, "Dest_size: %i  Error Code:%i \n", dest_size, err);
+    CHECK(LZ4F_isError(err), "Failed getting frameInfo. (error %i)", (int)err);
+    fprintf(stdout, "Dest_size: %zu  Error Code:%zu \n", dest_size, err);
     
     PyObject *decomp = PyBytes_FromStringAndSize(dest, dest_size);
     PyObject *next = PyInt_FromSize_t(err);

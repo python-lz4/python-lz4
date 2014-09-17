@@ -56,6 +56,7 @@
    Memory routines
 **************************************/
 #include <stdlib.h>   /* malloc, calloc, free */
+#include <stdio.h>
 #define ALLOCATOR(s)   calloc(1,s)
 #define FREEMEM        free
 #include <string.h>   /* memset, memcpy, memmove */
@@ -820,7 +821,6 @@ size_t LZ4F_decompress(LZ4F_decompressionContext_t decompressionContext,
     {
         if (srcStart != dctxPtr->srcExpect) return -ERROR_GENERIC;
     }
-
     /* programmed as a state machine */
 
     while (doAnotherStage)
@@ -871,7 +871,7 @@ size_t LZ4F_decompress(LZ4F_decompressionContext_t decompressionContext,
 
         case dstage_getCBlockSize:
             {
-                if ((srcEnd - srcPtr) >= 4)
+                if ((int)(srcEnd - srcPtr) >= 4)
                 {
                     selectedIn = srcPtr;
                     srcPtr += 4;
@@ -887,7 +887,7 @@ size_t LZ4F_decompress(LZ4F_decompressionContext_t decompressionContext,
         case dstage_storeCBlockSize:
             {
                 size_t sizeToCopy = 4 - dctxPtr->tmpInSize;
-                if (sizeToCopy > (size_t)(srcEnd - srcPtr)) sizeToCopy = srcEnd - srcPtr;
+                if (sizeToCopy > (uint32_t)(srcEnd - srcPtr)) sizeToCopy = (int)(srcEnd - srcPtr);
                 memcpy(dctxPtr->tmpIn + dctxPtr->tmpInSize, srcPtr, sizeToCopy);
                 srcPtr += sizeToCopy;
                 dctxPtr->tmpInSize += sizeToCopy;
@@ -1075,7 +1075,7 @@ size_t LZ4F_decompress(LZ4F_decompressionContext_t decompressionContext,
     }
 
 
-    if (srcPtr<srcEnd)   /* function must be called again with following source data */
+    if ((int)(srcEnd-srcPtr) > 0)   /* function must be called again with following source data */
         dctxPtr->srcExpect = srcPtr;
     else
         dctxPtr->srcExpect = NULL;

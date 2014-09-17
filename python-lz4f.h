@@ -37,8 +37,6 @@ static PyObject *pass_lz4f_decompress(PyObject *self, PyObject *args, PyObject *
 
 PyMODINIT_FUNC initlz4f(void);
 
-#define CHECK(cond, ...) if (cond) { printf("%s", "Error => "); goto _output_error; }
-
 #define UNCOMPRESS_DOCSTRING    "Decompress string, returning the uncompressed data.\nRaises an exception if any error occurs."
 
 #if defined(_WIN32) && defined(_MSC_VER)
