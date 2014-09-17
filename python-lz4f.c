@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
+//#define PY_SSIZE_CLEAN
 #include <Python.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -118,17 +118,19 @@ static PyObject *py_lz4f_getFrameInfo(PyObject *self, PyObject *args) {
     LZ4F_decompressionContext_t dCtx;
     LZ4F_frameInfo_t frameInfo;
     const char *source;
-    size_t source_size;
+    int src_size;
+    size_t ssrc_size;
     size_t err;
 
     (void)self;
-    if (!PyArg_ParseTuple(args, "s#O", &source, &source_size, &py_dCtx)) {
+    if (!PyArg_ParseTuple(args, "s#O", &source, &src_size, &py_dCtx)) {
         return NULL;
     }
     
     dCtx = (LZ4F_decompressionContext_t)PyCObject_AsVoidPtr(py_dCtx);
-    
-    err = LZ4F_getFrameInfo(dCtx, &frameInfo, (unsigned char*)source, &source_size);
+    ssrc_size = (size_t)src_size;
+
+    err = LZ4F_getFrameInfo(dCtx, &frameInfo, (unsigned char*)source, &ssrc_size);
     CHECK(LZ4F_isError(err), "Failed getting frameInfo. (error %i)", (int)err);
 
     PyObject *blkSize = PyInt_FromSize_t(frameInfo.blockSizeID);
@@ -145,8 +147,9 @@ static PyObject *pass_lz4f_decompress(PyObject *self, PyObject *args, PyObject *
     PyObject *result = PyDict_New();
     PyObject *py_dCtx;
     LZ4F_decompressionContext_t dCtx;
-    const char *source;
-    size_t source_size;
+    const char* source;
+    int src_size;
+    size_t ssrc_size;
     size_t dest_size;
     size_t err;
     unsigned int blkID=7;
@@ -154,22 +157,24 @@ static PyObject *pass_lz4f_decompress(PyObject *self, PyObject *args, PyObject *
 
     (void)self;
     if (!PyArg_ParseTupleAndKeywords(args, keywds, "s#O|i", kwlist, &source, 
-                                     &source_size, &py_dCtx, &blkID)) {
+                                     &src_size, &py_dCtx, &blkID)) {
         return NULL;
     }
 
     dest_size = LZ4S_GetBlockSize_FromBlockId(blkID);
     dCtx = (LZ4F_decompressionContext_t)PyCObject_AsVoidPtr(py_dCtx);
+    ssrc_size = (size_t)src_size;
     
     char* dest = (char*)malloc(dest_size);
-    err = LZ4F_decompress(dCtx, dest, &dest_size, source, &source_size, NULL);
+    err = LZ4F_decompress(dCtx, dest, &dest_size, source, &ssrc_size, NULL);
     CHECK(LZ4F_isError(err), "Failed getting frameInfo. (error %i)", (int)err);
-    fprintf(stdout, "Dest_size: %zu  Error Code:%zu \n", dest_size, err);
+    //fprintf(stdout, "Dest_size: %zu  Error Code:%zu \n", dest_size, err);
     
     PyObject *decomp = PyBytes_FromStringAndSize(dest, dest_size);
     PyObject *next = PyInt_FromSize_t(err);
     PyDict_SetItemString(result, "decomp", decomp);
     PyDict_SetItemString(result, "next", next);
+    
     free(dest);
 
     return result;
