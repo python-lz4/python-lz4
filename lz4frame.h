@@ -250,7 +250,7 @@ size_t LZ4F_decompress(LZ4F_decompressionContext_t decompressionContext, void* d
  * When a frame is fully decoded, the function result will be 0.
  * If decompression failed, function result is an error code which can be tested using LZ4F_isError().
  */
-
+void LZ4F_disableChecksum(LZ4F_decompressionContext_t decompressionContext);
 
 
 #if defined (__cplusplus)

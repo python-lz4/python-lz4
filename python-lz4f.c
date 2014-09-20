@@ -143,6 +143,21 @@ _output_error:
     return Py_None; 
 }
 
+static PyObject *py_lz4_disableChecksum(PyObject *self, PyObject *args) {
+    PyObject *py_dCtx;
+    LZ4F_compressionContext_t dCtx;
+
+    (void)self;
+    if (!PyArg_ParseTuple(args, "O", &py_dCtx)) {
+        return NULL;
+    }
+    
+    dCtx = (LZ4F_decompressionContext_t)PyCObject_AsVoidPtr(py_dCtx);
+    LZ4F_disableChecksum(dCtx);
+
+    return Py_None; 
+}
+
 static PyObject *pass_lz4f_decompress(PyObject *self, PyObject *args, PyObject *keywds) {
     PyObject *result = PyDict_New();
     PyObject *py_dCtx;
@@ -174,7 +189,9 @@ static PyObject *pass_lz4f_decompress(PyObject *self, PyObject *args, PyObject *
     PyObject *next = PyInt_FromSize_t(err);
     PyDict_SetItemString(result, "decomp", decomp);
     PyDict_SetItemString(result, "next", next);
-    
+   
+    Py_XDECREF(decomp);
+    Py_XDECREF(next);
     free(dest);
 
     return result;
@@ -183,12 +200,13 @@ _output_error:
 }
 
 static PyMethodDef Lz4Methods[] = {
-    {"decompressFrame",  (PyCFunction)pass_lz4f_decompress, METH_VARARGS | METH_KEYWORDS, UNCOMPRESS_DOCSTRING},
-    {"getFrameInfo", py_lz4f_getFrameInfo, METH_VARARGS, NULL},
     {"createCompContext", py_lz4_createCompressionContext, METH_VARARGS, NULL},
     {"freeCompContext", py_lz4_freeCompressionContext, METH_VARARGS, NULL},
     {"createDecompContext", py_lz4_createDecompressionContext, METH_VARARGS, NULL},
     {"freeDecompContext", py_lz4_freeDecompressionContext, METH_VARARGS, NULL},
+    {"getFrameInfo", py_lz4f_getFrameInfo, METH_VARARGS, NULL},
+    {"disableChecksum", py_lz4_disableChecksum, METH_VARARGS, NULL},
+    {"decompressFrame",  (PyCFunction)pass_lz4f_decompress, METH_VARARGS | METH_KEYWORDS, UNCOMPRESS_DOCSTRING},
     {NULL, NULL, 0, NULL}
 };
 

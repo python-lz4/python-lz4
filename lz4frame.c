@@ -56,6 +56,7 @@
    Memory routines
 **************************************/
 #include <stdlib.h>   /* malloc, calloc, free */
+#include <stdio.h>
 #define ALLOCATOR(s)   calloc(1,s)
 #define FREEMEM        free
 #include <string.h>   /* memset, memcpy, memmove */
@@ -1016,7 +1017,11 @@ size_t LZ4F_decompress(LZ4F_decompressionContext_t decompressionContext,
                 {
                     decodedSize = decoder((const char*)selectedIn, (char*)dctxPtr->tmpOut, (int)dctxPtr->tmpInTarget, (int)dctxPtr->maxBlockSize, (const char*)dctxPtr->dict, (int)dctxPtr->dictSize);
                     if (decodedSize < 0) return -ERROR_GENERIC;   /* decompression failed */
-                    if (dctxPtr->frameInfo.contentChecksumFlag) XXH32_update(&(dctxPtr->xxh), dctxPtr->tmpOut, decodedSize);
+                    if (dctxPtr->frameInfo.contentChecksumFlag) 
+                    {
+                        XXH32_update(&(dctxPtr->xxh), dctxPtr->tmpOut, decodedSize);
+                        fprintf(stdout, "Still running the checksum.");
+                    }
                     dctxPtr->tmpOutSize = decodedSize;
                     dctxPtr->tmpOutStart = 0;
                     dctxPtr->dStage = dstage_flushOut;
@@ -1125,3 +1130,12 @@ size_t LZ4F_decompress(LZ4F_decompressionContext_t decompressionContext,
     *dstSizePtr = (dstPtr - dstStart);
     return nextSrcSizeHint;
 }
+
+void LZ4F_disableChecksum(LZ4F_decompressionContext_t decompressionContext)
+{
+    LZ4F_dctx_internal_t* dctxPtr = (LZ4F_dctx_internal_t*)decompressionContext;
+
+    dctxPtr->frameInfo.contentChecksumFlag = 0;
+    //free(&(dctxPtr->xxh));
+}
+
