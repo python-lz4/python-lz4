@@ -99,9 +99,9 @@ static PyObject *py_lz4_compressFrame(PyObject *self, PyObject *args) {
     final_size = LZ4F_compressFrame(dest, dest_size, source, ssrc_size, NULL);
     result = PyBytes_FromStringAndSize(dest, final_size);
 
+    free(dest);
+
     return result;
-_output_error:
-    return Py_None;
 }
 
 
