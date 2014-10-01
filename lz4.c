@@ -51,7 +51,8 @@
   || defined(__powerpc64__) || defined(__powerpc64le__) \
   || defined(__ppc64__) || defined(__ppc64le__) \
   || defined(__PPC64__) || defined(__PPC64LE__) \
-  || defined(__ia64) || defined(__itanium__) || defined(_M_IA64) )   /* Detects 64 bits mode */
+  || defined(__ia64) || defined(__itanium__) || defined(_M_IA64) \
+  || defined(__s390x__) )   /* Detects 64 bits mode */
 #  define LZ4_ARCH64 1
 #else
 #  define LZ4_ARCH64 0
@@ -1153,14 +1154,31 @@ Advanced decoding functions :
     the dictionary must be explicitly provided within parameters
 */
 
+FORCE_INLINE int LZ4_decompress_usingDict_generic(const char* source, char* dest, int compressedSize, int maxOutputSize, int safe, const char* dictStart, int dictSize)
+{
+    if (dictSize==0)
+        return LZ4_decompress_generic(source, dest, compressedSize, maxOutputSize, safe, full, 0, noDict, NULL, 64 KB);
+    if ((dictStart+dictSize == dest) && (dictSize >= (int)(64 KB - 1)))
+        return LZ4_decompress_generic(source, dest, compressedSize, maxOutputSize, safe, full, 0, withPrefix64k, NULL, 64 KB);
+    return LZ4_decompress_generic(source, dest, compressedSize, maxOutputSize, safe, full, 0, usingExtDict, dictStart, dictSize);
+}
+
 int LZ4_decompress_safe_usingDict(const char* source, char* dest, int compressedSize, int maxOutputSize, const char* dictStart, int dictSize)
 {
-    return LZ4_decompress_generic(source, dest, compressedSize, maxOutputSize, endOnInputSize, full, 0, usingExtDict, dictStart, dictSize);
+    //return LZ4_decompress_generic(source, dest, compressedSize, maxOutputSize, endOnInputSize, full, 0, usingExtDict, dictStart, dictSize);
+    return LZ4_decompress_usingDict_generic(source, dest, compressedSize, maxOutputSize, 1, dictStart, dictSize);
 }
 
 int LZ4_decompress_fast_usingDict(const char* source, char* dest, int originalSize, const char* dictStart, int dictSize)
 {
-    return LZ4_decompress_generic(source, dest, 0, originalSize, endOnOutputSize, full, 0, usingExtDict, dictStart, dictSize);
+    //return LZ4_decompress_generic(source, dest, 0, originalSize, endOnOutputSize, full, 0, usingExtDict, dictStart, dictSize);
+    return LZ4_decompress_usingDict_generic(source, dest, 0, originalSize, 0, dictStart, dictSize);
+}
+
+/* debug function */
+int LZ4_decompress_safe_forceExtDict(const char* source, char* dest, int compressedSize, int maxOutputSize, const char* dictStart, int dictSize)
+{
+    return LZ4_decompress_generic(source, dest, compressedSize, maxOutputSize, endOnInputSize, full, 0, usingExtDict, dictStart, dictSize);
 }
 
 
