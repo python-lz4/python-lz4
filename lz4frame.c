@@ -417,9 +417,10 @@ size_t LZ4F_compressBound(size_t srcSize, const LZ4F_preferences_t* preferencesP
     blockSizeID_t bid = (frameInfoPtr==NULL) ? LZ4F_BLOCKSIZEID_DEFAULT : frameInfoPtr->blockSizeID;
     size_t blockSize = LZ4F_getBlockSize(bid);
     unsigned nbBlocks = (unsigned)(srcSize / blockSize) + 1;
-    size_t lastBlockSize = preferencesPtr->autoFlush ? srcSize % blockSize : blockSize;
+    unsigned autoFlush = (preferencesPtr==NULL) ? 0 : preferencesPtr->autoFlush;
+    size_t lastBlockSize = autoFlush ? srcSize % blockSize : blockSize;
     size_t blockInfo = 4;   /* default, without block CRC option */
-    size_t frameEnd = 4 + (frameInfoPtr->contentChecksumFlag*4);
+    size_t frameEnd = (frameInfoPtr==NULL) ? 8 : 4 + (frameInfoPtr->contentChecksumFlag*4);
     size_t result = (blockInfo * nbBlocks) + (blockSize * (nbBlocks-1)) + lastBlockSize + frameEnd;
 
     return result;

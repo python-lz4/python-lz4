@@ -40,7 +40,7 @@
 #include "python-lz4f.h"
 #include "structmember.h"
 
-#define CHECK(cond, ...) if (cond) { printf("%s", "Error => "); goto _output_error; }
+#define CHECK(cond, ...) if (LZ4F_isError(cond)) { printf("%s%s", "Error => ", LZ4F_getErrorName(cond)); goto _output_error; }
 
 static int LZ4S_GetBlockSize_FromBlockId (int id) { return (1 << (8 + (2 * id))); }
 
@@ -55,7 +55,7 @@ static PyObject *py_lz4f_createCompressionContext(PyObject *self, PyObject *args
     (void)args;
 
     err = LZ4F_createCompressionContext(&cCtx, LZ4F_VERSION);
-    CHECK(LZ4F_isError(err), "Allocation failed (error %i)", (int)err);
+    CHECK(err, "Allocation failed (error %i)", (int)err);
     result = PyCObject_FromVoidPtr(cCtx, NULL/*LZ4F_freeDecompressionContext*/);
 
     return result;
@@ -102,6 +102,97 @@ static PyObject *py_lz4f_compressFrame(PyObject *self, PyObject *args) {
     free(dest);
 
     return result;
+}
+
+static PyObject *py_lz4f_compressBegin(PyObject *self, PyObject *args) {
+    char* dest;
+    LZ4F_compressionContext_t cCtx;
+    LZ4F_preferences_t prefs = {0}; 
+    PyObject *result;
+    PyObject *py_cCtx;
+    size_t dest_size;
+    size_t final_size;
+
+    (void)self;
+    if (!PyArg_ParseTuple(args, "O", &py_cCtx)) {
+        return NULL;
+    }
+
+    cCtx = (LZ4F_compressionContext_t)PyCObject_AsVoidPtr(py_cCtx);
+    dest_size = 19;
+    dest = (char*)malloc(dest_size);
+
+    prefs.frameInfo.blockMode = 1;
+    final_size = LZ4F_compressBegin(cCtx, dest, dest_size, &prefs);
+    CHECK(final_size);
+    result = PyBytes_FromStringAndSize(dest, final_size);
+
+    free(dest);
+
+    return result;
+_output_error:
+    return Py_None;
+}
+
+static PyObject *py_lz4f_compressUpdate(PyObject *self, PyObject *args) {
+    const char* source;
+    char* dest;
+    int src_size;
+    LZ4F_compressionContext_t cCtx;
+    PyObject *result;
+    PyObject *py_cCtx;
+    size_t dest_size;
+    size_t final_size;
+    size_t ssrc_size;
+
+    (void)self;
+    if (!PyArg_ParseTuple(args, "s#O", &source, &src_size, &py_cCtx)) {
+        return NULL;
+    }
+
+    cCtx = (LZ4F_compressionContext_t)PyCObject_AsVoidPtr(py_cCtx);
+    ssrc_size = (size_t)src_size;
+    //fprintf(stdout, "Got this far! Src_size: %zi\n", ssrc_size);
+    dest_size = LZ4F_compressBound(ssrc_size, NULL);
+    dest = (char*)malloc(dest_size);
+
+    final_size = LZ4F_compressUpdate(cCtx, dest, dest_size, source, ssrc_size, NULL);
+    CHECK(final_size);
+    result = PyBytes_FromStringAndSize(dest, final_size);
+
+    free(dest);
+
+    return result;
+_output_error:
+    return Py_None;
+}
+
+static PyObject *py_lz4f_compressEnd(PyObject *self, PyObject *args) {
+    char* dest;
+    LZ4F_compressionContext_t cCtx;
+    PyObject *result;
+    PyObject *py_cCtx;
+    size_t dest_size;
+    size_t final_size;
+
+    (void)self;
+    if (!PyArg_ParseTuple(args, "O", &py_cCtx)) {
+        return NULL;
+    }
+
+    cCtx = (LZ4F_compressionContext_t)PyCObject_AsVoidPtr(py_cCtx);
+    dest_size = 4 * (1<<20);
+    dest = (char*)malloc(dest_size);
+
+    final_size = LZ4F_compressEnd(cCtx, dest, dest_size, NULL);
+    CHECK(final_size);
+    result = PyBytes_FromStringAndSize(dest, final_size);
+
+    free(dest);
+
+    return result;
+_output_error:
+    return Py_None;
 }
 
 
@@ -228,6 +319,9 @@ _output_error:
 static PyMethodDef Lz4Methods[] = {
     {"createCompContext", py_lz4f_createCompressionContext, METH_VARARGS, NULL},
     {"compressFrame", py_lz4f_compressFrame, METH_VARARGS, NULL},
+    {"compressBegin", py_lz4f_compressBegin, METH_VARARGS, NULL},
+    {"compressUpdate", py_lz4f_compressUpdate, METH_VARARGS, NULL},
+    {"compressEnd", py_lz4f_compressEnd, METH_VARARGS, NULL},
     {"freeCompContext", py_lz4f_freeCompressionContext, METH_VARARGS, NULL},
     {"createDecompContext", py_lz4f_createDecompressionContext, METH_VARARGS, NULL},
     {"freeDecompContext", py_lz4f_freeDecompressionContext, METH_VARARGS, NULL},
