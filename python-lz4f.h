@@ -31,7 +31,7 @@
 
 #include "Python.h"
 
-static PyObject *py_lz4_createDecompressionContext(PyObject *self, PyObject *args);
+static PyObject *py_lz4f_createDecompressionContext(PyObject *self, PyObject *args);
 static PyObject *py_lz4f_getFrameInfo(PyObject *self, PyObject *args);
 static PyObject *pass_lz4f_decompress(PyObject *self, PyObject *args, PyObject *keywds);
 

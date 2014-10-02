@@ -46,7 +46,7 @@ static int LZ4S_GetBlockSize_FromBlockId (int id) { return (1 << (8 + (2 * id)))
 
 /* Compression methods */
 
-static PyObject *py_lz4_createCompressionContext(PyObject *self, PyObject *args) {
+static PyObject *py_lz4f_createCompressionContext(PyObject *self, PyObject *args) {
     PyObject *result;
     LZ4F_compressionContext_t cCtx;
     size_t err;
@@ -63,7 +63,7 @@ _output_error:
     return Py_None;
 }
 
-static PyObject *py_lz4_freeCompressionContext(PyObject *self, PyObject *args) {
+static PyObject *py_lz4f_freeCompressionContext(PyObject *self, PyObject *args) {
     PyObject *py_cCtx;
     LZ4F_compressionContext_t cCtx;
 
@@ -78,7 +78,7 @@ static PyObject *py_lz4_freeCompressionContext(PyObject *self, PyObject *args) {
     return Py_None;
 }
 
-static PyObject *py_lz4_compressFrame(PyObject *self, PyObject *args) {
+static PyObject *py_lz4f_compressFrame(PyObject *self, PyObject *args) {
     PyObject *result;
     const char* source;
     char* dest;
@@ -106,7 +106,7 @@ static PyObject *py_lz4_compressFrame(PyObject *self, PyObject *args) {
 
 
 /* Decompression methods */
-static PyObject *py_lz4_createDecompressionContext(PyObject *self, PyObject *args) {
+static PyObject *py_lz4f_createDecompressionContext(PyObject *self, PyObject *args) {
     PyObject *result;
     LZ4F_decompressionContext_t dCtx;
     size_t err;
@@ -123,7 +123,7 @@ _output_error:
     return Py_None;
 }
 
-static PyObject *py_lz4_freeDecompressionContext(PyObject *self, PyObject *args) {
+static PyObject *py_lz4f_freeDecompressionContext(PyObject *self, PyObject *args) {
     PyObject *py_dCtx;
     LZ4F_compressionContext_t dCtx;
 
@@ -169,7 +169,7 @@ _output_error:
     return Py_None;
 }
 
-static PyObject *py_lz4_disableChecksum(PyObject *self, PyObject *args) {
+static PyObject *py_lz4f_disableChecksum(PyObject *self, PyObject *args) {
     PyObject *py_dCtx;
     LZ4F_compressionContext_t dCtx;
 
@@ -226,14 +226,14 @@ _output_error:
 }
 
 static PyMethodDef Lz4Methods[] = {
-    {"createCompContext", py_lz4_createCompressionContext, METH_VARARGS, NULL},
-    {"compressFrame", py_lz4_compressFrame, METH_VARARGS, NULL},
-    {"freeCompContext", py_lz4_freeCompressionContext, METH_VARARGS, NULL},
-    {"createDecompContext", py_lz4_createDecompressionContext, METH_VARARGS, NULL},
-    {"freeDecompContext", py_lz4_freeDecompressionContext, METH_VARARGS, NULL},
+    {"createCompContext", py_lz4f_createCompressionContext, METH_VARARGS, NULL},
+    {"compressFrame", py_lz4f_compressFrame, METH_VARARGS, NULL},
+    {"freeCompContext", py_lz4f_freeCompressionContext, METH_VARARGS, NULL},
+    {"createDecompContext", py_lz4f_createDecompressionContext, METH_VARARGS, NULL},
+    {"freeDecompContext", py_lz4f_freeDecompressionContext, METH_VARARGS, NULL},
     {"getFrameInfo", py_lz4f_getFrameInfo, METH_VARARGS, NULL},
     {"decompressFrame",  (PyCFunction)pass_lz4f_decompress, METH_VARARGS | METH_KEYWORDS, UNCOMPRESS_DOCSTRING},
-    {"disableChecksum", py_lz4_disableChecksum, METH_VARARGS, NULL},
+    {"disableChecksum", py_lz4f_disableChecksum, METH_VARARGS, NULL},
     {NULL, NULL, 0, NULL}
 };
 
