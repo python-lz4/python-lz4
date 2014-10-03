@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014, Christopher Jackson
+ * Copyright (c) 2014, Christopher Jackson
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,7 +28,6 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-//#define PY_SSIZE_CLEAN
 #include <Python.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -46,7 +45,7 @@ static int LZ4S_GetBlockSize_FromBlockId (int id) { return (1 << (8 + (2 * id)))
 
 /* Compression methods */
 
-static PyObject *py_lz4f_createCompressionContext(PyObject *self, PyObject *args) {
+static PyObject *py_lz4f_createCompCtx(PyObject *self, PyObject *args) {
     PyObject *result;
     LZ4F_compressionContext_t cCtx;
     size_t err;
@@ -56,14 +55,14 @@ static PyObject *py_lz4f_createCompressionContext(PyObject *self, PyObject *args
 
     err = LZ4F_createCompressionContext(&cCtx, LZ4F_VERSION);
     CHECK(err, "Allocation failed (error %i)", (int)err);
-    result = PyCObject_FromVoidPtr(cCtx, NULL/*LZ4F_freeDecompressionContext*/);
+    result = PyCObject_FromVoidPtr(cCtx, NULL);
 
     return result;
 _output_error:
     return Py_None;
 }
 
-static PyObject *py_lz4f_freeCompressionContext(PyObject *self, PyObject *args) {
+static PyObject *py_lz4f_freeCompCtx(PyObject *self, PyObject *args) {
     PyObject *py_cCtx;
     LZ4F_compressionContext_t cCtx;
 
@@ -107,7 +106,7 @@ static PyObject *py_lz4f_compressFrame(PyObject *self, PyObject *args) {
 static PyObject *py_lz4f_compressBegin(PyObject *self, PyObject *args) {
     char* dest;
     LZ4F_compressionContext_t cCtx;
-    LZ4F_preferences_t prefs = {0}; 
+    LZ4F_preferences_t prefs = {0};
     PyObject *result;
     PyObject *py_cCtx;
     size_t dest_size;
@@ -197,7 +196,7 @@ _output_error:
 
 
 /* Decompression methods */
-static PyObject *py_lz4f_createDecompressionContext(PyObject *self, PyObject *args) {
+static PyObject *py_lz4f_createDecompCtx(PyObject *self, PyObject *args) {
     PyObject *result;
     LZ4F_decompressionContext_t dCtx;
     size_t err;
@@ -207,14 +206,14 @@ static PyObject *py_lz4f_createDecompressionContext(PyObject *self, PyObject *ar
 
     err = LZ4F_createDecompressionContext(&dCtx, LZ4F_VERSION);
     CHECK(LZ4F_isError(err), "Allocation failed (error %i)", (int)err);
-    result = PyCObject_FromVoidPtr(dCtx, NULL/*LZ4F_freeDecompressionContext*/);
+    result = PyCObject_FromVoidPtr(dCtx, NULL);
 
     return result;
 _output_error:
     return Py_None;
 }
 
-static PyObject *py_lz4f_freeDecompressionContext(PyObject *self, PyObject *args) {
+static PyObject *py_lz4f_freeDecompCtx(PyObject *self, PyObject *args) {
     PyObject *py_dCtx;
     LZ4F_compressionContext_t dCtx;
 
@@ -275,7 +274,7 @@ static PyObject *py_lz4f_disableChecksum(PyObject *self, PyObject *args) {
     return Py_None;
 }
 
-static PyObject *pass_lz4f_decompress(PyObject *self, PyObject *args, PyObject *keywds) {
+static PyObject *py_lz4f_decompress(PyObject *self, PyObject *args, PyObject *keywds) {
     const char* source;
     LZ4F_decompressionContext_t dCtx;
     int src_size;
@@ -317,17 +316,17 @@ _output_error:
 }
 
 static PyMethodDef Lz4Methods[] = {
-    {"createCompContext", py_lz4f_createCompressionContext, METH_VARARGS, NULL},
-    {"compressFrame", py_lz4f_compressFrame, METH_VARARGS, NULL},
-    {"compressBegin", py_lz4f_compressBegin, METH_VARARGS, NULL},
-    {"compressUpdate", py_lz4f_compressUpdate, METH_VARARGS, NULL},
-    {"compressEnd", py_lz4f_compressEnd, METH_VARARGS, NULL},
-    {"freeCompContext", py_lz4f_freeCompressionContext, METH_VARARGS, NULL},
-    {"createDecompContext", py_lz4f_createDecompressionContext, METH_VARARGS, NULL},
-    {"freeDecompContext", py_lz4f_freeDecompressionContext, METH_VARARGS, NULL},
-    {"getFrameInfo", py_lz4f_getFrameInfo, METH_VARARGS, NULL},
-    {"decompressFrame",  (PyCFunction)pass_lz4f_decompress, METH_VARARGS | METH_KEYWORDS, UNCOMPRESS_DOCSTRING},
-    {"disableChecksum", py_lz4f_disableChecksum, METH_VARARGS, NULL},
+    {"createCompContext",   py_lz4f_createCompCtx,   METH_VARARGS, CCCTX_DOCSTRING},
+    {"compressFrame",       py_lz4f_compressFrame,   METH_VARARGS, COMPF_DOCSTRING},
+    {"compressBegin",       py_lz4f_compressBegin,   METH_VARARGS, COMPB_DOCSTRING},
+    {"compressUpdate",      py_lz4f_compressUpdate,  METH_VARARGS, COMPU_DOCSTRING},
+    {"compressEnd",         py_lz4f_compressEnd,     METH_VARARGS, COMPE_DOCSTRING},
+    {"freeCompContext",     py_lz4f_freeCompCtx,     METH_VARARGS, FCCTX_DOCSTRING},
+    {"createDecompContext", py_lz4f_createDecompCtx, METH_VARARGS, CDCTX_DOCSTRING},
+    {"freeDecompContext",   py_lz4f_freeDecompCtx,   METH_VARARGS, FDCTX_DOCSTRING},
+    {"getFrameInfo",        py_lz4f_getFrameInfo,    METH_VARARGS, GETFI_DOCSTRING},
+    {"decompressFrame",  (PyCFunction)py_lz4f_decompress, METH_VARARGS | METH_KEYWORDS, DCOMP_DOCSTRING},
+    {"disableChecksum",     py_lz4f_disableChecksum, METH_VARARGS, DCHKS_DOCSTRING},
     {NULL, NULL, 0, NULL}
 };
 
