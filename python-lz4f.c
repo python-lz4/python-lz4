@@ -123,6 +123,7 @@ static PyObject *py_lz4f_compressBegin(PyObject *self, PyObject *args) {
     dest = (char*)malloc(dest_size);
 
     prefs.frameInfo.blockMode = 1;
+    fprintf(stdout, "BlockMode: %i\n", prefs.frameInfo.blockMode);
     final_size = LZ4F_compressBegin(cCtx, dest, dest_size, &prefs);
     CHECK(final_size);
     result = PyBytes_FromStringAndSize(dest, final_size);
@@ -152,7 +153,6 @@ static PyObject *py_lz4f_compressUpdate(PyObject *self, PyObject *args) {
 
     cCtx = (LZ4F_compressionContext_t)PyCObject_AsVoidPtr(py_cCtx);
     ssrc_size = (size_t)src_size;
-    //fprintf(stdout, "Got this far! Src_size: %zi\n", ssrc_size);
     dest_size = LZ4F_compressBound(ssrc_size, NULL);
     dest = (char*)malloc(dest_size);
 
