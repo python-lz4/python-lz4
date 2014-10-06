@@ -110,7 +110,7 @@ static PyObject *py_lz4f_compressFrame(PyObject *self, PyObject *args) {
 static PyObject *py_lz4f_compressBegin(PyObject *self, PyObject *args) {
     char* dest;
     LZ4F_compressionContext_t cCtx;
-    LZ4F_preferences_t prefs = {0};
+    LZ4F_preferences_t prefs = {{0}, 0, 0, {0}};
     PyObject *result;
     PyObject *py_cCtx;
     size_t dest_size;
@@ -259,6 +259,7 @@ static PyObject *py_lz4f_getFrameInfo(PyObject *self, PyObject *args) {
     blkMode = PyInt_FromSize_t(frameInfo.blockMode);
     PyDict_SetItemString(result, "blkSize", blkSize);
     PyDict_SetItemString(result, "blkMode", blkMode);
+
 
     return result;
 _output_error:
