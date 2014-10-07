@@ -40,7 +40,7 @@
 #include "structmember.h"
 
 #if PY_MAJOR_VERSION >= 3
-   #define PyInt_FromSize_t(x) PyLong_FromSize_t(x) 
+   #define PyInt_FromSize_t(x) PyLong_FromSize_t(x)
 #endif
 
 #define CHECK(cond, ...) if (LZ4F_isError(cond)) { printf("%s%s", "Error => ", LZ4F_getErrorName(cond)); goto _output_error; }
@@ -240,6 +240,7 @@ static PyObject *py_lz4f_getFrameInfo(PyObject *self, PyObject *args) {
     LZ4F_frameInfo_t frameInfo;
     PyObject *blkSize;
     PyObject *blkMode;
+    PyObject *contChkFlag;
     PyObject *py_dCtx;
     PyObject *result = PyDict_New();
     size_t ssrc_size;
@@ -258,8 +259,10 @@ static PyObject *py_lz4f_getFrameInfo(PyObject *self, PyObject *args) {
 
     blkSize = PyInt_FromSize_t(frameInfo.blockSizeID);
     blkMode = PyInt_FromSize_t(frameInfo.blockMode);
+    contChkFlag = PyInt_FromSize_t(frameInfo.contentChecksumFlag);
     PyDict_SetItemString(result, "blkSize", blkSize);
     PyDict_SetItemString(result, "blkMode", blkMode);
+    PyDict_SetItemString(result, "chkFlag", contChkFlag);
 
 
     return result;
