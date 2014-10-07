@@ -126,6 +126,7 @@ static PyObject *py_lz4f_compressBegin(PyObject *self, PyObject *args) {
     dest = (char*)malloc(dest_size);
 
     prefs.frameInfo.blockMode = 1;
+    prefs.frameInfo.blockSizeID = 7;
     //fprintf(stdout, "BlockMode: %i\n", prefs.frameInfo.blockMode);
     final_size = LZ4F_compressBegin(cCtx, dest, dest_size, &prefs);
     CHECK(final_size);
@@ -156,7 +157,7 @@ static PyObject *py_lz4f_compressUpdate(PyObject *self, PyObject *args) {
 
     cCtx = (LZ4F_compressionContext_t)PyCapsule_GetPointer(py_cCtx, NULL);
     ssrc_size = (size_t)src_size;
-    dest_size = LZ4F_compressBound(ssrc_size, NULL);
+    dest_size = LZ4F_compressBound(ssrc_size, cCtx);
     dest = (char*)malloc(dest_size);
 
     final_size = LZ4F_compressUpdate(cCtx, dest, dest_size, source, ssrc_size, NULL);
@@ -184,7 +185,7 @@ static PyObject *py_lz4f_compressEnd(PyObject *self, PyObject *args) {
     }
 
     cCtx = (LZ4F_compressionContext_t)PyCapsule_GetPointer(py_cCtx, NULL);
-    dest_size = 4 * (1<<20);
+    dest_size = LZ4F_compressBound(0, cCtx);
     dest = (char*)malloc(dest_size);
 
     final_size = LZ4F_compressEnd(cCtx, dest, dest_size, NULL);
