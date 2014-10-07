@@ -107,28 +107,63 @@ static PyObject *py_lz4f_compressFrame(PyObject *self, PyObject *args) {
     return result;
 }
 
+
+static PyObject *py_lz4f_makePrefs(PyObject *self, PyObject *args, PyObject *keywds) {
+    LZ4F_frameInfo_t frameInfo;
+    LZ4F_preferences_t prefs;
+    PyObject *result = PyDict_New();
+    static char *kwlist[] = {"blockSizeID", "blockMode", "chkFlag"
+                             "autoFlush"};
+    unsigned int blkID=7;
+    unsigned int blkMode=1;
+    unsigned int chkSumFlag=0;
+    unsigned int compLevel=0;
+    unsigned int autoFlush=0;
+
+    (void)self;
+    if (!PyArg_ParseTupleAndKeywords(args, keywds, "|iiii", kwlist, &blkID,
+                                     &blkMode, &chkSumFlag, &autoFlush)) {
+        return NULL;
+    }
+
+    frameInfo = (LZ4F_frameInfo_t){blkID, blkMode, chkSumFlag, {0}};
+    prefs = (LZ4F_preferences_t){
+             frameInfo,
+             compLevel,
+             autoFlush,
+             {0}       };
+    result = PyCapsule_New(&prefs, NULL, NULL);
+
+    return result;
+//_output_error:
+//    return Py_None;
+}
+
 static PyObject *py_lz4f_compressBegin(PyObject *self, PyObject *args) {
     char* dest;
     LZ4F_compressionContext_t cCtx;
-    LZ4F_preferences_t prefs = {{0}, 0, 0, {0}};
+    LZ4F_preferences_t prefs = {{7, 1, 0, {0}}, 0, 0, {0}};
+    LZ4F_preferences_t* prefsPtr = &prefs;
     PyObject *result;
     PyObject *py_cCtx;
+    PyObject *py_prefsPtr = Py_None;
     size_t dest_size;
     size_t final_size;
 
     (void)self;
-    if (!PyArg_ParseTuple(args, "O", &py_cCtx)) {
+    if (!PyArg_ParseTuple(args, "O|O", &py_cCtx, &py_prefsPtr)) {
         return NULL;
     }
 
     cCtx = (LZ4F_compressionContext_t)PyCapsule_GetPointer(py_cCtx, NULL);
     dest_size = 19;
     dest = (char*)malloc(dest_size);
+    if (py_prefsPtr != Py_None) {
+        prefsPtr = (LZ4F_preferences_t*)PyCapsule_GetPointer(py_prefsPtr, NULL);
+    }
 
-    prefs.frameInfo.blockMode = 1;
-    prefs.frameInfo.blockSizeID = 7;
     //fprintf(stdout, "BlockMode: %i\n", prefs.frameInfo.blockMode);
-    final_size = LZ4F_compressBegin(cCtx, dest, dest_size, &prefs);
+    final_size = LZ4F_compressBegin(cCtx, dest, dest_size, prefsPtr);
     CHECK(final_size);
     result = PyBytes_FromStringAndSize(dest, final_size);
 
@@ -332,6 +367,7 @@ _output_error:
 static PyMethodDef Lz4fMethods[] = {
     {"createCompContext",   py_lz4f_createCompCtx,   METH_VARARGS, CCCTX_DOCSTRING},
     {"compressFrame",       py_lz4f_compressFrame,   METH_VARARGS, COMPF_DOCSTRING},
+    {"makePrefs",  (PyCFunction)py_lz4f_makePrefs,   METH_VARARGS | METH_KEYWORDS, NULL},
     {"compressBegin",       py_lz4f_compressBegin,   METH_VARARGS, COMPB_DOCSTRING},
     {"compressUpdate",      py_lz4f_compressUpdate,  METH_VARARGS, COMPU_DOCSTRING},
     {"compressEnd",         py_lz4f_compressEnd,     METH_VARARGS, COMPE_DOCSTRING},
