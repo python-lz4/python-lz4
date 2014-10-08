@@ -330,7 +330,7 @@ static PyObject *py_lz4f_decompress(PyObject *self, PyObject *args, PyObject *ke
     size_t ssrc_size;
     size_t dest_size;
     size_t err;
-    static char *kwlist[] = {"source", "dCtx", "blkID"};
+    static char *kwlist[] = {"source", "dCtx", "blkSizeID"};
     unsigned int blkID=7;
 
     (void)self;
@@ -365,7 +365,7 @@ _output_error:
 static PyMethodDef Lz4fMethods[] = {
     {"createCompContext",   py_lz4f_createCompCtx,   METH_VARARGS, CCCTX_DOCSTRING},
     {"compressFrame",       py_lz4f_compressFrame,   METH_VARARGS, COMPF_DOCSTRING},
-    {"makePrefs",  (PyCFunction)py_lz4f_makePrefs,   METH_VARARGS | METH_KEYWORDS, NULL},
+    {"makePrefs",  (PyCFunction)py_lz4f_makePrefs,   METH_VARARGS | METH_KEYWORDS, MKPFS_DOCSTRING},
     {"compressBegin",       py_lz4f_compressBegin,   METH_VARARGS, COMPB_DOCSTRING},
     {"compressUpdate",      py_lz4f_compressUpdate,  METH_VARARGS, COMPU_DOCSTRING},
     {"compressEnd",         py_lz4f_compressEnd,     METH_VARARGS, COMPE_DOCSTRING},
