@@ -145,7 +145,7 @@ static PyObject *py_lz4f_compressBegin(PyObject *self, PyObject *args) {
     LZ4F_preferences_t* prefsPtr = &prefs;
     PyObject *result;
     PyObject *py_cCtx;
-    PyObject *py_prefsPtr = NULL;
+    PyObject *py_prefsPtr = Py_None;
     size_t dest_size;
     size_t final_size;
 
@@ -157,7 +157,7 @@ static PyObject *py_lz4f_compressBegin(PyObject *self, PyObject *args) {
     cCtx = (LZ4F_compressionContext_t)PyCapsule_GetPointer(py_cCtx, NULL);
     dest_size = 19;
     dest = (char*)malloc(dest_size);
-    if (py_prefsPtr != NULL) {
+    if (py_prefsPtr != Py_None) {
         prefsPtr = (LZ4F_preferences_t*)PyCapsule_GetPointer(py_prefsPtr, NULL);
     }
 
