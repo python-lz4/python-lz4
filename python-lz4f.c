@@ -45,6 +45,12 @@
 
 #define CHECK(cond, ...) if (LZ4F_isError(cond)) { printf("%s%s", "Error => ", LZ4F_getErrorName(cond)); goto _output_error; }
 
+
+#ifndef Py_CAPSULE_H
+#define PyCapsule_New(cobj, name, destr) PyCObject_FromVoidPtr((cobj), NULL)
+#define PyCapsule_GetPointer(cobj, name) PyCObject_AsVoidPtr((cobj))
+#endif
+
 static int LZ4S_GetBlockSize_FromBlockId (int id) { return (1 << (8 + (2 * id))); }
 
 /* Compression methods */
