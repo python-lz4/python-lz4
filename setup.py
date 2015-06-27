@@ -28,7 +28,7 @@ setup(
             "-W",
             "-Wundef",
             "-DVERSION=\"%s\"" % VERSION_STR,
-            "-DLZ4_VERSION=\"r119\"",
+            "-DLZ4_VERSION=\"r130\"",
         ])
     ],
     setup_requires=["nose>=1.0"],
