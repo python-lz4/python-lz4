@@ -36,7 +36,7 @@ The bindings provides some aliases too::
     True
     >>> lz4.LZ4_uncompress == lz4.uncompress == z4.decompress == lz4.loads
     True
-    >>> lz4.VERSION == lz4.__version__  # e.g. "0.7.0"
+    >>> lz4.VERSION == lz4.__version__  # e.g. "0.8.0"
     True
     >>>
 
