@@ -55,6 +55,40 @@ static inline uint32_t load_le32(const char *c) {
 
 static const int hdr_size = sizeof(uint32_t);
 
+
+static PyObject *py_lz4_compress_fast(PyObject *self, PyObject *args) {
+    PyObject *result;
+    const char *source;
+    int source_size;
+    char *dest;
+    int dest_size;
+    int acceleration;
+
+    if (!PyArg_ParseTuple(args, "s#I", &source, &source_size, &acceleration))
+        return NULL;
+
+    dest_size = hdr_size + LZ4_compressBound(source_size);
+    result = PyBytes_FromStringAndSize(NULL, dest_size);
+    if (result == NULL) {
+        return NULL;
+    }
+    dest = PyBytes_AS_STRING(result);
+    store_le32(dest, source_size);
+    if (source_size > 0) {
+    	//int LZ4_compress_fast(const char* source, char* dest, int inputSize, int maxOutputSize, int acceleration)
+        int osize = LZ4_compress_fast(source, dest + hdr_size, source_size, LZ4_compressBound(source_size), acceleration);
+        int actual_size = hdr_size + osize;
+        /* Resizes are expensive; tolerate some slop to avoid. */
+        if (actual_size < (dest_size / 4) * 3) {
+            _PyBytes_Resize(&result, actual_size);
+        } else {
+            Py_SIZE(result) = actual_size;
+        }
+    }
+    return result;
+}
+
+
 static PyObject *compress_with(compressor compress, PyObject *self, PyObject *args) {
     PyObject *result;
     const char *source;
@@ -126,9 +160,11 @@ static PyObject *py_lz4_uncompress(PyObject *self, PyObject *args) {
 }
 
 static PyMethodDef Lz4Methods[] = {
+	{"LZ4_compress_fast",  py_lz4_compress_fast, METH_VARARGS, COMPRESSFAST_DOCSTRING},
     {"LZ4_compress",  py_lz4_compress, METH_VARARGS, COMPRESS_DOCSTRING},
     {"LZ4_uncompress",  py_lz4_uncompress, METH_VARARGS, UNCOMPRESS_DOCSTRING},
     {"compress",  py_lz4_compress, METH_VARARGS, COMPRESS_DOCSTRING},
+    {"compress_fast",  py_lz4_compress_fast, METH_VARARGS, COMPRESS_DOCSTRING},
     {"compressHC",  py_lz4_compressHC, METH_VARARGS, COMPRESSHC_DOCSTRING},
     {"uncompress",  py_lz4_uncompress, METH_VARARGS, UNCOMPRESS_DOCSTRING},
     {"decompress",  py_lz4_uncompress, METH_VARARGS, UNCOMPRESS_DOCSTRING},
