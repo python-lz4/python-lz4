@@ -240,7 +240,9 @@ void initlz4(void)
 
     PyModule_AddStringConstant(module, "VERSION", VERSION);
     PyModule_AddStringConstant(module, "__version__", VERSION);
+#ifdef LZ4_VERSION /* Only defined if we're building against bundled lz4 */
     PyModule_AddStringConstant(module, "LZ4_VERSION", LZ4_VERSION);
+#endif
 
 #if PY_MAJOR_VERSION >= 3
     return module;
