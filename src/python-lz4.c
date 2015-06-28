@@ -159,6 +159,10 @@ static PyObject *py_lz4_uncompress(PyObject *self, PyObject *args) {
     return result;
 }
 
+static PyObject *py_lz4_versionnumber(PyObject *self, PyObject *args) {
+  return Py_BuildValue("i", LZ4_versionNumber());
+}
+
 static PyMethodDef Lz4Methods[] = {
 	{"LZ4_compress_fast",  py_lz4_compress_fast, METH_VARARGS, COMPRESSFAST_DOCSTRING},
     {"LZ4_compress",  py_lz4_compress, METH_VARARGS, COMPRESS_DOCSTRING},
@@ -170,6 +174,7 @@ static PyMethodDef Lz4Methods[] = {
     {"decompress",  py_lz4_uncompress, METH_VARARGS, UNCOMPRESS_DOCSTRING},
     {"dumps",  py_lz4_compress, METH_VARARGS, COMPRESS_DOCSTRING},
     {"loads",  py_lz4_uncompress, METH_VARARGS, UNCOMPRESS_DOCSTRING},
+    {"lz4version",  py_lz4_versionnumber, METH_VARARGS, "Returns the version number of the lz4 C library"},
     {NULL, NULL, 0, NULL}
 };
 
