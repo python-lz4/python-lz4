@@ -64,7 +64,7 @@ setup(
     packages=find_packages('src'),
     package_dir={'': 'src'},
     ext_modules=[lz4mod,],
-    setup_requires=["nose>=1.0"],
+    tests_require=["nose>=1.0"],
     test_suite = "nose.collector",
     classifiers=[
         'Development Status :: 5 - Production/Stable',
