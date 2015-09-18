@@ -32,10 +32,10 @@
 #include "py3c.h" // This must be included before any standard headers
 #include "py3c/capsulethunk.h"
 
+#include "module_types.h"
 #include <math.h>
 #include <stdlib.h>
 
-#include "app_types.h"
 #include "lz4/lz4.h"
 #include "lz4/lz4frame.h"
 #include "lz4/lz4hc.h"

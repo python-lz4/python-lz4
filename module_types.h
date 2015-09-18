@@ -29,8 +29,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  */
-#ifndef APP_TYPES_H_
-#define APP_TYPES_H_
+#ifndef MODULE_TYPES_H_
+#define MODULE_TYPES_H_
 
 #if defined(_WIN32) && defined(_MSC_VER)
 # define inline __inline
@@ -48,4 +48,4 @@
 #include <stdint.h>
 #endif
 
-#endif /* APP_TYPES_H_ */
+#endif /* MODULE_TYPES_H_ */
