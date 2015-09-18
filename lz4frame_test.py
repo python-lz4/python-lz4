@@ -18,7 +18,7 @@ class TestLZ4Frame(unittest.TestCase):
         self.assertNotEqual(context, None)
 
         input_data = "2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
-        chunk_size = (len(input_data)/2)+1
+        chunk_size = int((len(input_data)/2)+1)
         compressed = lz4frame.compress_begin(context)
         compressed += lz4frame.compress_update(context, input_data[:chunk_size])
         compressed += lz4frame.compress_update(context, input_data[chunk_size:])

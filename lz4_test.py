@@ -23,7 +23,7 @@ class TestLZ4(unittest.TestCase):
         compressed = lz4.compress_default(input_data)
         with self.assertRaises(ValueError):
             # provide an invalid uncompressed size
-            lz4.decompress_safe(compressed, input_data_size/2)
+            lz4.decompress_safe(compressed, int(input_data_size/2))
 
     def test_compress_bound(self):
         # The value of 17 could change with future versions of lz4.
@@ -46,7 +46,7 @@ class TestLZ4(unittest.TestCase):
 
     def test_stream_compress(self):
         input_data = "2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
-        block_size = (len(input_data)/2)+1
+        block_size = int((len(input_data)/2)+1)
 
         stream = lz4.create_stream(block_size)
         self.assertNotEqual(stream, None)
