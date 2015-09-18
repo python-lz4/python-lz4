@@ -236,7 +236,7 @@ static PyObject *compress_hc_continue(PyObject *self, PyObject *args, PyObject *
 
     stream->input_buffer_index = (stream->input_buffer_index + 1) % 2;
 
-    return Py_BuildValue("s#", stream->compressed_buffer, compressed_size);
+    return PyBytes_FromStringAndSize(stream->compressed_buffer, compressed_size);
 }
 
 
