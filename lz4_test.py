@@ -4,21 +4,21 @@ import unittest
 
 class TestLZ4(unittest.TestCase):
     def test_compress_default(self):
-        input_data = "2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
         input_data_size = len(input_data)
         compressed = lz4.compress_default(input_data)
         decompressed = lz4.decompress_safe(compressed, input_data_size)
         self.assertEqual(input_data, decompressed)
 
     def test_compress_fast(self):
-        input_data = "2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
         input_data_size = len(input_data)
         compressed = lz4.compress_fast(input_data, 6)
         decompressed = lz4.decompress_safe(compressed, input_data_size)
         self.assertEqual(input_data, decompressed)
 
     def test_decompress_invalid(self):
-        input_data = "2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
         input_data_size = len(input_data)
         compressed = lz4.compress_default(input_data)
         with self.assertRaises(ValueError):
@@ -45,7 +45,7 @@ class TestLZ4(unittest.TestCase):
         lz4.free_decode_stream(stream)
 
     def test_stream_compress(self):
-        input_data = "2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
         block_size = int((len(input_data)/2)+1)
 
         stream = lz4.create_stream(block_size)

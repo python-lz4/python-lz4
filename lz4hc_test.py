@@ -4,7 +4,7 @@ import unittest
 
 class TestLZ4(unittest.TestCase):
     def test_compress_default(self):
-        input_data = "2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
         input_data_size = len(input_data)
         compressed = lz4hc.compress_hc(input_data, lz4hc.COMPRESSIONLEVEL_MAX)
         decompressed = lz4.decompress_safe(compressed, input_data_size)
@@ -16,7 +16,7 @@ class TestLZ4(unittest.TestCase):
         lz4hc.free_hc_stream(stream)
 
     def test_stream_compress(self):
-        input_data = "2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
         block_size = int((len(input_data)/2)+1)
 
         stream = lz4hc.create_hc_stream(block_size, lz4hc.COMPRESSIONLEVEL_MAX)

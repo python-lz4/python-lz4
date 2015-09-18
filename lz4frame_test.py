@@ -8,7 +8,7 @@ class TestLZ4Frame(unittest.TestCase):
         lz4frame.free_compression_context(context)
 
     def test_compress_frame(self):
-        input_data = "2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
         compressed = lz4frame.compress_frame(input_data)
         decompressed = lz4frame.decompress(compressed)
         self.assertEqual(input_data, decompressed)
@@ -17,7 +17,7 @@ class TestLZ4Frame(unittest.TestCase):
         context = lz4frame.create_compression_context()
         self.assertNotEqual(context, None)
 
-        input_data = "2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
         chunk_size = int((len(input_data)/2)+1)
         compressed = lz4frame.compress_begin(context)
         compressed += lz4frame.compress_update(context, input_data[:chunk_size])
@@ -30,7 +30,7 @@ class TestLZ4Frame(unittest.TestCase):
 
 
     def test_get_frame_info(self):
-        input_data = "2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
         compressed = lz4frame.compress_frame(
             input_data,
             len(input_data),
