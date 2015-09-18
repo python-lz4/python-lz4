@@ -30,6 +30,7 @@
  *
  */
 #include "py3c.h" // This must be included before any standard headers
+#include "py3c/capsulethunk.h"
 
 #include "app_types.h"
 #include <math.h>

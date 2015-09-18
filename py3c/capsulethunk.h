@@ -1,22 +1,8 @@
-/* This file is copied from Python documentation:
- * From https://hg.python.org/cpython/file/3.4/Doc/includes/capsulethunk.h
+/* Copyright (c) 2011, Larry Hastings
+ * Copyright (c) 2015, py3c contributors
+ * Licensed under the MIT license; see py3c.h
  *
- * See here for license and redistribution information:
- * https://docs.python.org/3/license.html
- *
- * ----------------------------------------------------------------------
- * Copyright (c) 2000-2015 Python Software Foundation.
- * All rights reserved.
- *
- * Copyright (c) 2000 BeOpen.com.
- * All rights reserved.
- *
- * Copyright (c) 1995-2000 Corporation for National Research Initiatives.
- * All rights reserved.
- *
- * Copyright (c) 1991-1995 Stichting Mathematisch Centrum.
- * All rights reserved.
- *
+ * (Note: Relicensed from PSF: http://bugs.python.org/issue24937#msg250191 )
  */
 
 #ifndef __CAPSULETHUNK_H
@@ -26,16 +12,16 @@
      || ((PY_VERSION_HEX >= 0x03000000) \
       && (PY_VERSION_HEX <  0x03010000)) )
 
-#define __PyCapsule_GetField(capsule, field, default_value) \
+#define __PyCapsule_GetField(capsule, field, error_value) \
     ( PyCapsule_CheckExact(capsule) \
         ? (((PyCObject *)capsule)->field) \
-        : (default_value) \
+        : (PyErr_SetString(PyExc_TypeError, "CObject required"), error_value) \
     ) \
 
 #define __PyCapsule_SetField(capsule, field, value) \
     ( PyCapsule_CheckExact(capsule) \
-        ? (((PyCObject *)capsule)->field = value), 1 \
-        : 0 \
+        ? (((PyCObject *)capsule)->field = value), 0 \
+        : (PyErr_SetString(PyExc_TypeError, "CObject required"), 1) \
     ) \
 
 
@@ -58,7 +44,7 @@
 
 
 #define PyCapsule_GetDestructor(capsule) \
-    __PyCapsule_GetField(capsule, destructor)
+    __PyCapsule_GetField(capsule, destructor, NULL)
 
 #define PyCapsule_SetDestructor(capsule, dtor) \
     __PyCapsule_SetField(capsule, destructor, dtor)
@@ -82,10 +68,10 @@ PyCapsule_SetName(PyObject *capsule, const char *unused)
 
 
 #define PyCapsule_GetContext(capsule) \
-    __PyCapsule_GetField(capsule, descr)
+    __PyCapsule_GetField(capsule, desc, NULL)
 
 #define PyCapsule_SetContext(capsule, context) \
-    __PyCapsule_SetField(capsule, descr, context)
+    __PyCapsule_SetField(capsule, desc, context)
 
 
 static void *

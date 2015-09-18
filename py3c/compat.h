@@ -44,18 +44,13 @@
 #define PyInt_AsLong PyLong_AsLong
 #define PyInt_AS_LONG PyLong_AS_LONG
 #define PyInt_AsUnsignedLongLongMask PyLong_AsUnsignedLongLongMask
-#define PyInt_AsSSize_t PyLong_AsSSize_t
+#define PyInt_AsSsize_t PyLong_AsSsize_t
 
 /* Module init */
 
 #define MODULE_INIT_FUNC(name) \
     PyMODINIT_FUNC PyInit_ ## name(void); \
     PyMODINIT_FUNC PyInit_ ## name(void)
-
-/* Types */
-
-#define Py_TPFLAGS_HAVE_WEAKREFS 0
-#define Py_TPFLAGS_HAVE_ITER 0
 
 #else
 
@@ -80,18 +75,16 @@
 
 static inline PyObject *PyStr_Concat(PyObject *left, PyObject *right) {
     PyObject *str = left;
-    Py_INCREF(left);
+    Py_INCREF(left);  // reference to old left will be stolen
     PyString_Concat(&str, right);
     if (str) {
-        Py_DECREF(left);
         return str;
     } else {
-        // reference to old string was stolen
         return NULL;
     }
 }
 
-#define PyStr_AsUTF8String(str) PyString_AsEncodedObject(str, "UTF-8", "strict")
+#define PyStr_AsUTF8String(str) (Py_INCREF(str), (str))
 #define PyStr_AsUTF8 PyString_AsString
 #define PyStr_AsUTF8AndSize(pystr, sizeptr) \
     ((*sizeptr=PyString_Size(pystr)), PyString_AsString(pystr))
