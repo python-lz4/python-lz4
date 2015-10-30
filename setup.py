@@ -5,6 +5,17 @@ from setuptools import setup, find_packages, Extension
 
 VERSION = (0, 7, 0)
 VERSION_STR = ".".join([str(x) for x in VERSION])
+LZ4_VERSION = "r119"
+
+
+from distutils import ccompiler
+if ccompiler.get_default_compiler() == "msvc":
+	extra_compile_args = ["/Ot", "/Wall"]
+	define_macros = [("VERSION","\\\"%s\\\"" % VERSION_STR), ("LZ4_VERSION","\\\"%s\\\"" % LZ4_VERSION)]
+else:
+	extra_compile_args = ["-std=c99","-O3","-Wall","-W","-Wundef"]
+	define_macros = [("VERSION","\"%s\"" % VERSION_STR), ("LZ4_VERSION","\"%s\"" % LZ4_VERSION)]
+
 
 setup(
     name='lz4',
@@ -21,15 +32,9 @@ setup(
             'src/lz4.c',
             'src/lz4hc.c',
             'src/python-lz4.c'
-        ], extra_compile_args=[
-            "-std=c99",
-            "-O3",
-            "-Wall",
-            "-W",
-            "-Wundef",
-            "-DVERSION=\"%s\"" % VERSION_STR,
-            "-DLZ4_VERSION=\"r119\"",
-        ])
+            ], extra_compile_args=extra_compile_args,
+            define_macros=define_macros,
+        )
     ],
     setup_requires=["nose>=1.0"],
     test_suite = "nose.collector",
