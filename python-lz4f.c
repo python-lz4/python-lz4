@@ -163,10 +163,11 @@ static PyObject *py_lz4f_compressUpdate(PyObject *self, PyObject *args) {
 
     cCtx = (LZ4F_compressionContext_t)PyCapsule_GetPointer(py_cCtx, NULL);
     ssrc_size = (size_t)src_size;
-    dest_size = LZ4F_compressBound(ssrc_size, NULL);
+    dest_size = LZ4F_compressBound(ssrc_size, (LZ4F_preferences_t*)cCtx);
     dest = (char*)malloc(dest_size);
 
     final_size = LZ4F_compressUpdate(cCtx, dest, dest_size, source, ssrc_size, NULL);
+    //fprintf(stdout, "Past check Dest_size: %zu  Error Code: \n", dest_size);
     CHECK(final_size);
     result = PyBytes_FromStringAndSize(dest, final_size);
 
