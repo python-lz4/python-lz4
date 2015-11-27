@@ -163,7 +163,7 @@ static PyObject *py_lz4f_compressUpdate(PyObject *self, PyObject *args) {
 
     cCtx = (LZ4F_compressionContext_t)PyCapsule_GetPointer(py_cCtx, NULL);
     ssrc_size = (size_t)src_size;
-    dest_size = LZ4F_compressBound(ssrc_size, cCtx);
+    dest_size = LZ4F_compressBound(ssrc_size, NULL);
     dest = (char*)malloc(dest_size);
 
     final_size = LZ4F_compressUpdate(cCtx, dest, dest_size, source, ssrc_size, NULL);
@@ -191,7 +191,7 @@ static PyObject *py_lz4f_compressEnd(PyObject *self, PyObject *args) {
     }
 
     cCtx = (LZ4F_compressionContext_t)PyCapsule_GetPointer(py_cCtx, NULL);
-    dest_size = LZ4F_compressBound(0, cCtx);
+    dest_size = LZ4F_compressBound(0, NULL);
     dest = (char*)malloc(dest_size);
 
     final_size = LZ4F_compressEnd(cCtx, dest, dest_size, NULL);
@@ -226,7 +226,7 @@ _output_error:
 
 static PyObject *py_lz4f_freeDecompCtx(PyObject *self, PyObject *args) {
     PyObject *py_dCtx;
-    LZ4F_compressionContext_t dCtx;
+    LZ4F_decompressionContext_t dCtx;
 
     (void)self;
     if (!PyArg_ParseTuple(args, "O", &py_dCtx)) {
@@ -275,7 +275,7 @@ _output_error:
 
 static PyObject *py_lz4f_disableChecksum(PyObject *self, PyObject *args) {
     PyObject *py_dCtx;
-    LZ4F_compressionContext_t dCtx;
+    LZ4F_decompressionContext_t dCtx;
 
     (void)self;
     if (!PyArg_ParseTuple(args, "O", &py_dCtx)) {
