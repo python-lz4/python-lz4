@@ -208,7 +208,7 @@ void LZ4_resetStream (LZ4_stream_t* streamPtr);
  * They are more future proof, in case of a change of LZ4_stream_t size.
  */
 LZ4_stream_t* LZ4_createStream(void);
-int           LZ4_freeStream (LZ4_stream_t* streamPtr);
+int           LZ4_freeStream (LZ4_stream_t* LZ4_streamPtr);
 
 /*
  * LZ4_loadDict
@@ -217,7 +217,7 @@ int           LZ4_freeStream (LZ4_stream_t* streamPtr);
  * Loading a size of 0 is allowed.
  * Return : dictionary size, in bytes (necessarily <= 64 KB)
  */
-int LZ4_loadDict (LZ4_stream_t* streamPtr, const char* dictionary, int dictSize);
+int LZ4_loadDict (LZ4_stream_t* LZ4_streamPtr, const char* dictionary, int dictSize);
 
 /*
  * LZ4_compress_fast_continue
@@ -227,7 +227,14 @@ int LZ4_loadDict (LZ4_stream_t* streamPtr, const char* dictionary, int dictSize)
  * If maxDstSize >= LZ4_compressBound(srcSize), compression is guaranteed to succeed, and runs faster.
  * If not, and if compressed data cannot fit into 'dst' buffer size, compression stops, and function returns a zero.
  */
-int LZ4_compress_fast_continue (LZ4_stream_t* streamPtr, const char* src, char* dst, int srcSize, int maxDstSize, int acceleration);
+int LZ4_compress_continue (LZ4_stream_t* LZ4_streamPtr, const char* source, char* dest, int inputSize);
+
+/*
+ * LZ4_compress_limitedOutput_continue
+ * Same as before, but also specify a maximum target compressed size (maxOutputSize)
+ * If objective cannot be met, compression exits, and returns a zero.
+ */
+int LZ4_compress_limitedOutput_continue (LZ4_stream_t* LZ4_streamPtr, const char* source, char* dest, int inputSize, int maxOutputSize);
 
 /*
  * LZ4_saveDict
@@ -237,16 +244,15 @@ int LZ4_compress_fast_continue (LZ4_stream_t* streamPtr, const char* src, char* 
  *        dictionary is immediately usable, you can therefore call LZ4_compress_fast_continue()
  * Return : saved dictionary size in bytes (necessarily <= dictSize), or 0 if error
  */
-int LZ4_saveDict (LZ4_stream_t* streamPtr, char* safeBuffer, int dictSize);
+int LZ4_saveDict (LZ4_stream_t* LZ4_streamPtr, char* safeBuffer, int dictSize);
 
 
 /************************************************
 *  Streaming Decompression Functions
 ************************************************/
 
-#define LZ4_STREAMDECODESIZE_U64  4
-#define LZ4_STREAMDECODESIZE     (LZ4_STREAMDECODESIZE_U64 * sizeof(unsigned long long))
-typedef struct { unsigned long long table[LZ4_STREAMDECODESIZE_U64]; } LZ4_streamDecode_t;
+#define LZ4_STREAMDECODESIZE_U32  8
+#define LZ4_STREAMDECODESIZE     (LZ4_STREAMDECODESIZE_U32 * sizeof(unsigned int))
 /*
  * LZ4_streamDecode_t
  * information structure to track an LZ4 stream.
@@ -261,9 +267,19 @@ LZ4_streamDecode_t* LZ4_createStreamDecode(void);
 int                 LZ4_freeStreamDecode (LZ4_streamDecode_t* LZ4_stream);
 
 /*
+ * If you prefer dynamic allocation methods,
+ * LZ4_createStreamDecode will allocate and initialize an LZ4_streamDecode_t structure
+ * LZ4_freeStreamDecode releases its memory.
+ */
+LZ4_streamDecode_t* LZ4_createStreamDecode(void);
+int                 LZ4_freeStreamDecode (LZ4_streamDecode_t* LZ4_stream);
+
+/*
  * LZ4_setStreamDecode
  * Use this function to instruct where to find the dictionary.
- * Setting a size of 0 is allowed (same effect as reset).
+ * This function can be used to specify a static dictionary,
+ * or to instruct where to find some previously decoded data saved into a different memory space.
+ * Setting a size of 0 is allowed (same effect as no dictionary, same effect as reset).
  * Return : 1 if OK, 0 if error
  */
 int LZ4_setStreamDecode (LZ4_streamDecode_t* LZ4_streamDecode, const char* dictionary, int dictSize);
@@ -272,18 +288,8 @@ int LZ4_setStreamDecode (LZ4_streamDecode_t* LZ4_streamDecode, const char* dicti
 *_continue() :
     These decoding functions allow decompression of multiple blocks in "streaming" mode.
     Previously decoded blocks *must* remain available at the memory position where they were decoded (up to 64 KB)
-    In the case of a ring buffers, decoding buffer must be either :
-    - Exactly same size as encoding buffer, with same update rule (block boundaries at same positions)
-      In which case, the decoding & encoding ring buffer can have any size, including very small ones ( < 64 KB).
-    - Larger than encoding buffer, by a minimum of maxBlockSize more bytes.
-      maxBlockSize is implementation dependent. It's the maximum size you intend to compress into a single block.
-      In which case, encoding and decoding buffers do not need to be synchronized,
-      and encoding ring buffer can have any size, including small ones ( < 64 KB).
-    - _At least_ 64 KB + 8 bytes + maxBlockSize.
-      In which case, encoding and decoding buffers do not need to be synchronized,
-      and encoding ring buffer can have any size, including larger than decoding buffer.
-    Whenever these conditions are not possible, save the last 64KB of decoded data into a safe buffer,
-    and indicate where it is saved using LZ4_setStreamDecode()
+    If this condition is not possible, save the relevant part of decoded data into a safe buffer,
+    and indicate where is its new address using LZ4_setStreamDecode()
 */
 int LZ4_decompress_safe_continue (LZ4_streamDecode_t* LZ4_streamDecode, const char* source, char* dest, int compressedSize, int maxDecompressedSize);
 int LZ4_decompress_fast_continue (LZ4_streamDecode_t* LZ4_streamDecode, const char* source, char* dest, int originalSize);

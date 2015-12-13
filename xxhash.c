@@ -28,7 +28,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 You can contact the author at :
-- xxHash source repository : https://github.com/Cyan4973/xxHash
+- xxHash source repository : http://code.google.com/p/xxhash/
+- public discussion board : https://groups.google.com/forum/#!forum/lz4c
 */
 
 
@@ -85,14 +86,23 @@ You can contact the author at :
 *  Includes & Memory related functions
 ***************************************/
 #include "xxhash.h"
-/* Modify the local functions below should you wish to use some other memory routines */
-/* for malloc(), free() */
+// Modify the local functions below should you wish to use some other memory routines
+// for malloc(), free()
 #include <stdlib.h>
-static void* XXH_malloc(size_t s) { return malloc(s); }
-static void  XXH_free  (void* p)  { free(p); }
-/* for memcpy() */
+FORCE_INLINE void* XXH_malloc(size_t s)
+{
+    return malloc(s);
+}
+FORCE_INLINE void  XXH_free  (void* p)
+{
+    free(p);
+}
+// for memcpy()
 #include <string.h>
-static void* XXH_memcpy(void* dest, const void* src, size_t size) { return memcpy(dest,src,size); }
+FORCE_INLINE void* XXH_memcpy(void* dest, const void* src, size_t size)
+{
+    return memcpy(dest,src,size);
+}
 
 
 /**************************************
@@ -100,25 +110,41 @@ static void* XXH_memcpy(void* dest, const void* src, size_t size) { return memcp
 ***************************************/
 #if defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L   /* C99 */
 # include <stdint.h>
-  typedef uint8_t  BYTE;
-  typedef uint16_t U16;
-  typedef uint32_t U32;
-  typedef  int32_t S32;
-  typedef uint64_t U64;
+typedef uint8_t  BYTE;
+typedef uint16_t U16;
+typedef uint32_t U32;
+typedef  int32_t S32;
+typedef uint64_t U64;
 #else
-  typedef unsigned char      BYTE;
-  typedef unsigned short     U16;
-  typedef unsigned int       U32;
-  typedef   signed int       S32;
-  typedef unsigned long long U64;
+typedef unsigned char      BYTE;
+typedef unsigned short     U16;
+typedef unsigned int       U32;
+typedef   signed int       S32;
+typedef unsigned long long U64;
 #endif
 
-static U32 XXH_read32(const void* memPtr)
+#if defined(__GNUC__)  && !defined(XXH_USE_UNALIGNED_ACCESS)
+#  define _PACKED __attribute__ ((packed))
+#else
+#  define _PACKED
+#endif
+
+#if !defined(XXH_USE_UNALIGNED_ACCESS) && !defined(__GNUC__)
+#  ifdef __IBMC__
+#    pragma pack(1)
+#  else
+#    pragma pack(push, 1)
+#  endif
+#endif
+
+typedef struct _U32_S
 {
-    U32 val32;
-    memcpy(&val32, memPtr, 4);
-    return val32;
-}
+    U32 v;
+} _PACKED U32_S;
+typedef struct _U64_S
+{
+    U64 v;
+} _PACKED U64_S;
 
 static U64 XXH_read64(const void* memPtr)
 {
@@ -150,14 +176,14 @@ static U64 XXH_read64(const void* memPtr)
 #  define XXH_swap32 __builtin_bswap32
 #  define XXH_swap64 __builtin_bswap64
 #else
-static U32 XXH_swap32 (U32 x)
+static inline U32 XXH_swap32 (U32 x)
 {
     return  ((x << 24) & 0xff000000 ) |
             ((x <<  8) & 0x00ff0000 ) |
             ((x >>  8) & 0x0000ff00 ) |
             ((x >> 24) & 0x000000ff );
 }
-static U64 XXH_swap64 (U64 x)
+static inline U64 XXH_swap64 (U64 x)
 {
     return  ((x << 56) & 0xff00000000000000ULL) |
             ((x << 40) & 0x00ff000000000000ULL) |
@@ -175,9 +201,9 @@ static U64 XXH_swap64 (U64 x)
 *  Architecture Macros
 ***************************************/
 typedef enum { XXH_bigEndian=0, XXH_littleEndian=1 } XXH_endianess;
-#ifndef XXH_CPU_LITTLE_ENDIAN   /* XXH_CPU_LITTLE_ENDIAN can be defined externally, for example using a compiler switch */
+#ifndef XXH_CPU_LITTLE_ENDIAN   // It is possible to define XXH_CPU_LITTLE_ENDIAN externally, for example using a compiler switch
 static const int one = 1;
-#   define XXH_CPU_LITTLE_ENDIAN   (*(const char*)(&one))
+#   define XXH_CPU_LITTLE_ENDIAN   (*(char*)(&one))
 #endif
 
 
@@ -194,7 +220,7 @@ FORCE_INLINE U32 XXH_readLE32_align(const void* ptr, XXH_endianess endian, XXH_a
         return endian==XXH_littleEndian ? *(const U32*)ptr : XXH_swap32(*(const U32*)ptr);
 }
 
-FORCE_INLINE U32 XXH_readLE32(const void* ptr, XXH_endianess endian)
+FORCE_INLINE U32 XXH_readLE32(const U32* ptr, XXH_endianess endian)
 {
     return XXH_readLE32_align(ptr, endian, XXH_unaligned);
 }
@@ -212,32 +238,19 @@ FORCE_INLINE U64 XXH_readLE64(const void* ptr, XXH_endianess endian)
     return XXH_readLE64_align(ptr, endian, XXH_unaligned);
 }
 
+FORCE_INLINE U64 XXH_readLE64(const U64* ptr, XXH_endianess endian)
+{
+    return XXH_readLE64_align(ptr, endian, XXH_unaligned);
+}
 
 /***************************************
 *  Macros
 ***************************************/
 #define XXH_STATIC_ASSERT(c)   { enum { XXH_static_assert = 1/(!!(c)) }; }    /* use only *after* variable declarations */
 
-
-/***************************************
-*  Constants
-***************************************/
-#define PRIME32_1   2654435761U
-#define PRIME32_2   2246822519U
-#define PRIME32_3   3266489917U
-#define PRIME32_4    668265263U
-#define PRIME32_5    374761393U
-
-#define PRIME64_1 11400714785074694791ULL
-#define PRIME64_2 14029467366897019727ULL
-#define PRIME64_3  1609587929392839161ULL
-#define PRIME64_4  9650029242287828579ULL
-#define PRIME64_5  2870177450012600261ULL
-
-
-/*****************************
-*  Simple Hash Functions
-*****************************/
+//****************************
+// Simple Hash Functions
+//****************************
 FORCE_INLINE U32 XXH32_endian_align(const void* input, size_t len, U32 seed, XXH_endianess endian, XXH_alignment align)
 {
     const BYTE* p = (const BYTE*)input;
@@ -315,10 +328,10 @@ FORCE_INLINE U32 XXH32_endian_align(const void* input, size_t len, U32 seed, XXH
 }
 
 
-unsigned XXH32 (const void* input, size_t len, unsigned seed)
+unsigned int XXH32 (const void* input, size_t len, unsigned seed)
 {
 #if 0
-    /* Simple version, good for code maintenance, but unfortunately slow for small inputs */
+    // Simple version, good for code maintenance, but unfortunately slow for small inputs
     XXH32_state_t state;
     XXH32_reset(&state, seed);
     XXH32_update(&state, input, len);
@@ -458,7 +471,7 @@ FORCE_INLINE U64 XXH64_endian_align(const void* input, size_t len, U64 seed, XXH
 unsigned long long XXH64 (const void* input, size_t len, unsigned long long seed)
 {
 #if 0
-    /* Simple version, good for code maintenance, but unfortunately slow for small inputs */
+    // Simple version, good for code maintenance, but unfortunately slow for small inputs
     XXH64_state_t state;
     XXH64_reset(&state, seed);
     XXH64_update(&state, input, len);
@@ -484,7 +497,7 @@ unsigned long long XXH64 (const void* input, size_t len, unsigned long long seed
 }
 
 /****************************************************
-*  Advanced Hash Functions
+ *  Advanced Hash Functions
 ****************************************************/
 
 /*** Allocation ***/
@@ -496,8 +509,8 @@ typedef struct
     U32 v2;
     U32 v3;
     U32 v4;
-    U32 mem32[4];   /* defined as U32 for alignment */
     U32 memsize;
+    char memory[16];
 } XXH_istate32_t;
 
 typedef struct
@@ -508,32 +521,32 @@ typedef struct
     U64 v2;
     U64 v3;
     U64 v4;
-    U64 mem64[4];   /* defined as U64 for alignment */
     U32 memsize;
+    char memory[32];
 } XXH_istate64_t;
 
 
 XXH32_state_t* XXH32_createState(void)
 {
-    XXH_STATIC_ASSERT(sizeof(XXH32_state_t) >= sizeof(XXH_istate32_t));   /* A compilation error here means XXH32_state_t is not large enough */
-    return (XXH32_state_t*)XXH_malloc(sizeof(XXH32_state_t));
+    XXH_STATIC_ASSERT(sizeof(XXH32_state_t) >= sizeof(XXH_istate32_t));   // A compilation error here means XXH32_state_t is not large enough
+    return (XXH32_state_t*)malloc(sizeof(XXH32_state_t));
 }
 XXH_errorcode XXH32_freeState(XXH32_state_t* statePtr)
 {
-    XXH_free(statePtr);
+    free(statePtr);
     return XXH_OK;
-}
+};
 
 XXH64_state_t* XXH64_createState(void)
 {
-    XXH_STATIC_ASSERT(sizeof(XXH64_state_t) >= sizeof(XXH_istate64_t));   /* A compilation error here means XXH64_state_t is not large enough */
-    return (XXH64_state_t*)XXH_malloc(sizeof(XXH64_state_t));
+    XXH_STATIC_ASSERT(sizeof(XXH64_state_t) >= sizeof(XXH_istate64_t));   // A compilation error here means XXH64_state_t is not large enough
+    return (XXH64_state_t*)malloc(sizeof(XXH64_state_t));
 }
 XXH_errorcode XXH64_freeState(XXH64_state_t* statePtr)
 {
-    XXH_free(statePtr);
+    free(statePtr);
     return XXH_OK;
-}
+};
 
 
 /*** Hash feed ***/
@@ -579,7 +592,7 @@ FORCE_INLINE XXH_errorcode XXH32_update_endian (XXH32_state_t* state_in, const v
 
     if (state->memsize + len < 16)   /* fill in tmp buffer */
     {
-        XXH_memcpy((BYTE*)(state->mem32) + state->memsize, input, len);
+        XXH_memcpy(state->memory + state->memsize, input, len);
         state->memsize += (U32)len;
         return XXH_OK;
     }
@@ -588,7 +601,7 @@ FORCE_INLINE XXH_errorcode XXH32_update_endian (XXH32_state_t* state_in, const v
     {
         XXH_memcpy((BYTE*)(state->mem32) + state->memsize, input, 16-state->memsize);
         {
-            const U32* p32 = state->mem32;
+            const U32* p32 = (const U32*)state->memory;
             state->v1 += XXH_readLE32(p32, endian) * PRIME32_2;
             state->v1 = XXH_rotl32(state->v1, 13);
             state->v1 *= PRIME32_1;
@@ -620,19 +633,19 @@ FORCE_INLINE XXH_errorcode XXH32_update_endian (XXH32_state_t* state_in, const v
 
         do
         {
-            v1 += XXH_readLE32(p, endian) * PRIME32_2;
+            v1 += XXH_readLE32((const U32*)p, endian) * PRIME32_2;
             v1 = XXH_rotl32(v1, 13);
             v1 *= PRIME32_1;
             p+=4;
-            v2 += XXH_readLE32(p, endian) * PRIME32_2;
+            v2 += XXH_readLE32((const U32*)p, endian) * PRIME32_2;
             v2 = XXH_rotl32(v2, 13);
             v2 *= PRIME32_1;
             p+=4;
-            v3 += XXH_readLE32(p, endian) * PRIME32_2;
+            v3 += XXH_readLE32((const U32*)p, endian) * PRIME32_2;
             v3 = XXH_rotl32(v3, 13);
             v3 *= PRIME32_1;
             p+=4;
-            v4 += XXH_readLE32(p, endian) * PRIME32_2;
+            v4 += XXH_readLE32((const U32*)p, endian) * PRIME32_2;
             v4 = XXH_rotl32(v4, 13);
             v4 *= PRIME32_1;
             p+=4;
@@ -668,9 +681,9 @@ XXH_errorcode XXH32_update (XXH32_state_t* state_in, const void* input, size_t l
 
 FORCE_INLINE U32 XXH32_digest_endian (const XXH32_state_t* state_in, XXH_endianess endian)
 {
-    const XXH_istate32_t* state = (const XXH_istate32_t*) state_in;
-    const BYTE * p = (const BYTE*)state->mem32;
-    const BYTE* bEnd = (const BYTE*)(state->mem32) + state->memsize;
+    XXH_istate32_t* state = (XXH_istate32_t*) state_in;
+    const BYTE * p = (const BYTE*)state->memory;
+    BYTE* bEnd = (BYTE*)state->memory + state->memsize;
     U32 h32;
 
     if (state->total_len >= 16)
@@ -733,7 +746,7 @@ FORCE_INLINE XXH_errorcode XXH64_update_endian (XXH64_state_t* state_in, const v
 
     if (state->memsize + len < 32)   /* fill in tmp buffer */
     {
-        XXH_memcpy(((BYTE*)state->mem64) + state->memsize, input, len);
+        XXH_memcpy(state->memory + state->memsize, input, len);
         state->memsize += (U32)len;
         return XXH_OK;
     }
@@ -742,7 +755,7 @@ FORCE_INLINE XXH_errorcode XXH64_update_endian (XXH64_state_t* state_in, const v
     {
         XXH_memcpy(((BYTE*)state->mem64) + state->memsize, input, 32-state->memsize);
         {
-            const U64* p64 = state->mem64;
+            const U64* p64 = (const U64*)state->memory;
             state->v1 += XXH_readLE64(p64, endian) * PRIME64_2;
             state->v1 = XXH_rotl64(state->v1, 31);
             state->v1 *= PRIME64_1;
@@ -774,19 +787,19 @@ FORCE_INLINE XXH_errorcode XXH64_update_endian (XXH64_state_t* state_in, const v
 
         do
         {
-            v1 += XXH_readLE64(p, endian) * PRIME64_2;
+            v1 += XXH_readLE64((const U64*)p, endian) * PRIME64_2;
             v1 = XXH_rotl64(v1, 31);
             v1 *= PRIME64_1;
             p+=8;
-            v2 += XXH_readLE64(p, endian) * PRIME64_2;
+            v2 += XXH_readLE64((const U64*)p, endian) * PRIME64_2;
             v2 = XXH_rotl64(v2, 31);
             v2 *= PRIME64_1;
             p+=8;
-            v3 += XXH_readLE64(p, endian) * PRIME64_2;
+            v3 += XXH_readLE64((const U64*)p, endian) * PRIME64_2;
             v3 = XXH_rotl64(v3, 31);
             v3 *= PRIME64_1;
             p+=8;
-            v4 += XXH_readLE64(p, endian) * PRIME64_2;
+            v4 += XXH_readLE64((const U64*)p, endian) * PRIME64_2;
             v4 = XXH_rotl64(v4, 31);
             v4 *= PRIME64_1;
             p+=8;
@@ -822,9 +835,9 @@ XXH_errorcode XXH64_update (XXH64_state_t* state_in, const void* input, size_t l
 
 FORCE_INLINE U64 XXH64_digest_endian (const XXH64_state_t* state_in, XXH_endianess endian)
 {
-    const XXH_istate64_t * state = (const XXH_istate64_t *) state_in;
-    const BYTE * p = (const BYTE*)state->mem64;
-    const BYTE* bEnd = (const BYTE*)state->mem64 + state->memsize;
+    XXH_istate64_t * state = (XXH_istate64_t *) state_in;
+    const BYTE * p = (const BYTE*)state->memory;
+    BYTE* bEnd = (BYTE*)state->memory + state->memsize;
     U64 h64;
 
     if (state->total_len >= 32)
@@ -869,7 +882,7 @@ FORCE_INLINE U64 XXH64_digest_endian (const XXH64_state_t* state_in, XXH_endiane
 
     while (p+8<=bEnd)
     {
-        U64 k1 = XXH_readLE64(p, endian);
+        U64 k1 = XXH_readLE64((const U64*)p, endian);
         k1 *= PRIME64_2;
         k1 = XXH_rotl64(k1,31);
         k1 *= PRIME64_1;
@@ -880,7 +893,7 @@ FORCE_INLINE U64 XXH64_digest_endian (const XXH64_state_t* state_in, XXH_endiane
 
     if (p+4<=bEnd)
     {
-        h64 ^= (U64)(XXH_readLE32(p, endian)) * PRIME64_1;
+        h64 ^= (U64)(XXH_readLE32((const U32*)p, endian)) * PRIME64_1;
         h64 = XXH_rotl64(h64, 23) * PRIME64_2 + PRIME64_3;
         p+=4;
     }

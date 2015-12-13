@@ -1,53 +1,108 @@
 /*
-    LZ4 HC - High Compression Mode of LZ4
-    Copyright (C) 2011-2015, Yann Collet.
+LZ4 HC - High Compression Mode of LZ4
+Copyright (C) 2011-2014, Yann Collet.
+BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
 
-    BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
 
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are
-    met:
+* Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above
+copyright notice, this list of conditions and the following disclaimer
+in the documentation and/or other materials provided with the
+distribution.
 
-    * Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above
-    copyright notice, this list of conditions and the following disclaimer
-    in the documentation and/or other materials provided with the
-    distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-    A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-    OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-    SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-    LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-    DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-    You can contact the author at :
-       - LZ4 source repository : https://github.com/Cyan4973/lz4
-       - LZ4 public forum : https://groups.google.com/forum/#!forum/lz4c
+You can contact the author at :
+- LZ4 homepage : http://fastcompression.blogspot.com/p/lz4.html
+- LZ4 source repository : http://code.google.com/p/lz4/
 */
 
 
 
 /**************************************
-*  Tuning Parameter
+Tuning Parameter
 **************************************/
 static const int LZ4HC_compressionLevel_default = 9;
 
 
 /**************************************
-*  Includes
+Memory routines
 **************************************/
-#include "lz4hc.h"
+#include <stdlib.h>   /* calloc, free */
+#define ALLOCATOR(s)  calloc(1,s)
+#define FREEMEM       free
+#include <string.h>   /* memset, memcpy */
+#define MEM_INIT      memset
 
 
 /**************************************
-*  Local Compiler Options
+CPU Feature Detection
+**************************************/
+/* 32 or 64 bits ? */
+#if (defined(__x86_64__) || defined(_M_X64) || defined(_WIN64) \
+    || defined(__64BIT__)  || defined(__mips64) \
+    || defined(__powerpc64__) || defined(__powerpc64le__) \
+    || defined(__ppc64__) || defined(__ppc64le__) \
+    || defined(__PPC64__) || defined(__PPC64LE__) \
+    || defined(__ia64) || defined(__itanium__) || defined(_M_IA64) \
+    || defined(__s390x__) )   /* Detects 64 bits mode */
+#  define LZ4_ARCH64 1
+#else
+#  define LZ4_ARCH64 0
+#endif
+
+/*
+* Little Endian or Big Endian ?
+* Overwrite the #define below if you know your architecture endianess
+*/
+#include <stdlib.h>   /* Apparently required to detect endianess */
+#if defined (__GLIBC__)
+#  include <endian.h>
+#  if (__BYTE_ORDER == __BIG_ENDIAN)
+#     define LZ4_BIG_ENDIAN 1
+#  endif
+#elif (defined(__BIG_ENDIAN__) || defined(__BIG_ENDIAN) || defined(_BIG_ENDIAN)) && !(defined(__LITTLE_ENDIAN__) || defined(__LITTLE_ENDIAN) || defined(_LITTLE_ENDIAN))
+#  define LZ4_BIG_ENDIAN 1
+#elif defined(__sparc) || defined(__sparc__) \
+    || defined(__powerpc__) || defined(__ppc__) || defined(__PPC__) \
+    || defined(__hpux)  || defined(__hppa) \
+    || defined(_MIPSEB) || defined(__s390__)
+#  define LZ4_BIG_ENDIAN 1
+#else
+/* Little Endian assumed. PDP Endian and other very rare endian format are unsupported. */
+#endif
+
+/*
+* Unaligned memory access is automatically enabled for "common" CPU, such as x86.
+* For others CPU, the compiler will be more cautious, and insert extra code to ensure aligned access is respected
+* If you know your target CPU supports unaligned memory access, you want to force this option manually to improve performance
+*/
+#if defined(__ARM_FEATURE_UNALIGNED)
+#  define LZ4_FORCE_UNALIGNED_ACCESS 1
+#endif
+
+/* Define this parameter if your target system or compiler does not support hardware bit count */
+#if defined(_MSC_VER) && defined(_WIN32_WCE)            /* Visual Studio for Windows CE does not support Hardware bit count */
+#  define LZ4_FORCE_SW_BITCOUNT
+#endif
+
+
+/**************************************
+Compiler Options
 **************************************/
 #if defined(__GNUC__)
 #  pragma GCC diagnostic ignored "-Wunused-function"
@@ -59,15 +114,62 @@ static const int LZ4HC_compressionLevel_default = 9;
 
 
 /**************************************
-*  Common LZ4 definition
+Includes
 **************************************/
 #define LZ4_COMMONDEFS_ONLY
 #include "lz4.c"
 
 
 /**************************************
-*  Local Constants
+Basic Types
 **************************************/
+#if defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)   /* C99 */
+# include <stdint.h>
+typedef uint8_t  BYTE;
+typedef uint16_t U16;
+typedef uint32_t U32;
+typedef  int32_t S32;
+typedef uint64_t U64;
+#else
+typedef unsigned char       BYTE;
+typedef unsigned short      U16;
+typedef unsigned int        U32;
+typedef   signed int        S32;
+typedef unsigned long long  U64;
+#endif
+
+#if defined(__GNUC__)  && !defined(LZ4_FORCE_UNALIGNED_ACCESS)
+#  define _PACKED __attribute__ ((packed))
+#else
+#  define _PACKED
+#endif
+
+#if !defined(LZ4_FORCE_UNALIGNED_ACCESS) && !defined(__GNUC__)
+#  ifdef __IBMC__
+#    pragma pack(1)
+#  else
+#    pragma pack(push, 1)
+#  endif
+#endif
+
+typedef struct _U16_S { U16 v; } _PACKED U16_S;
+typedef struct _U32_S { U32 v; } _PACKED U32_S;
+typedef struct _U64_S { U64 v; } _PACKED U64_S;
+
+#if !defined(LZ4_FORCE_UNALIGNED_ACCESS) && !defined(__GNUC__)
+#  pragma pack(pop)
+#endif
+
+#define A64(x) (((U64_S *)(x))->v)
+#define A32(x) (((U32_S *)(x))->v)
+#define A16(x) (((U16_S *)(x))->v)
+
+
+/**************************************
+Constants
+**************************************/
+#define MINMATCH 4
+
 #define DICTIONARY_LOGSIZE 16
 #define MAXD (1<<DICTIONARY_LOGSIZE)
 #define MAXD_MASK (MAXD - 1)
@@ -78,49 +180,83 @@ static const int LZ4HC_compressionLevel_default = 9;
 
 #define OPTIMAL_ML (int)((ML_MASK-1)+MINMATCH)
 
-static const int g_maxCompressionLevel = 16;
+#define KB *(1<<10)
+#define MB *(1<<20)
+#define GB *(1U<<30)
 
 
 /**************************************
-*  Local Types
+Architecture-specific macros
+**************************************/
+#if LZ4_ARCH64   /* 64-bit */
+#  define STEPSIZE 8
+#  define LZ4_COPYSTEP(s,d)     A64(d) = A64(s); d+=8; s+=8;
+#  define LZ4_COPYPACKET(s,d)   LZ4_COPYSTEP(s,d)
+#  define AARCH                 A64
+#else            /* 32-bit */
+#  define STEPSIZE 4
+#  define LZ4_COPYSTEP(s,d)     A32(d) = A32(s); d+=4; s+=4;
+#  define LZ4_COPYPACKET(s,d)   LZ4_COPYSTEP(s,d); LZ4_COPYSTEP(s,d);
+#  define AARCH                 A32
+#endif
+
+#if defined(LZ4_BIG_ENDIAN)
+#  define LZ4_READ_LITTLEENDIAN_16(d,s,p) { U16 v = A16(p); v = lz4_bswap16(v); d = (s) - v; }
+#  define LZ4_WRITE_LITTLEENDIAN_16(p,i)  { U16 v = (U16)(i); v = lz4_bswap16(v); A16(p) = v; p+=2; }
+#else      /* Little Endian */
+#  define LZ4_READ_LITTLEENDIAN_16(d,s,p) { d = (s) - A16(p); }
+#  define LZ4_WRITE_LITTLEENDIAN_16(p,v)  { A16(p) = v; p+=2; }
+#endif
+
+
+/**************************************
+ Local Types
 **************************************/
 typedef struct
 {
     U32   hashTable[HASHTABLESIZE];
     U16   chainTable[MAXD];
-    const BYTE* end;        /* next block here to continue on current prefix */
-    const BYTE* base;       /* All index relative to this position */
-    const BYTE* dictBase;   /* alternate base for extDict */
-    BYTE* inputBuffer;      /* deprecated */
-    U32   dictLimit;        /* below that point, need extDict */
-    U32   lowLimit;         /* below that point, no more dict */
-    U32   nextToUpdate;     /* index from which to continue dictionary update */
+    const BYTE* inputBuffer;
+    const BYTE* base;
+    const BYTE* end;
+    const BYTE* dictBase;
+    U32   dictLimit;
+    U32   nextToUpdate;
     U32   compressionLevel;
+    U32   lowLimit;
 } LZ4HC_Data_Structure;
 
 
 /**************************************
-*  Local Macros
+ Macros
 **************************************/
+#define LZ4_STATIC_ASSERT(c)   { enum { LZ4_static_assert = 1/(!!(c)) }; }   /* Visual : use only *after* variable declarations */
+#define LZ4_WILDCOPY(s,d,e)    do { LZ4_COPYPACKET(s,d) } while (d<e);
+#define LZ4_BLINDCOPY(s,d,l)   { BYTE* e=d+l; LZ4_WILDCOPY(s,d,e); d=e; }
 #define HASH_FUNCTION(i)       (((i) * 2654435761U) >> ((MINMATCH*8)-HASH_LOG))
-//#define DELTANEXTU16(p)        chainTable[(p) & MAXD_MASK]   /* flexible, MAXD dependent */
-#define DELTANEXTU16(p)        chainTable[(U16)(p)]   /* faster */
+#define DELTANEXT(p)           chainTable[(size_t)(p) & MAXD_MASK]
+#define GETNEXT(p)             ((p) - (size_t)DELTANEXT(p))
 
-static U32 LZ4HC_hashPtr(const void* ptr) { return HASH_FUNCTION(LZ4_read32(ptr)); }
-
-
+static U32 LZ4HC_hashPtr(const void* ptr) { return HASH_FUNCTION(A32(ptr)); }
 
 /**************************************
-*  HC Compression
+Private functions
 **************************************/
-static void LZ4HC_init (LZ4HC_Data_Structure* hc4, const BYTE* start)
+#if LZ4_ARCH64
+
+
+#endif
+
+
+FORCE_INLINE void LZ4HC_init (LZ4HC_Data_Structure* hc4, const BYTE* base)
 {
     MEM_INIT((void*)hc4->hashTable, 0, sizeof(hc4->hashTable));
     MEM_INIT(hc4->chainTable, 0xFF, sizeof(hc4->chainTable));
     hc4->nextToUpdate = 64 KB;
-    hc4->base = start - 64 KB;
-    hc4->end = start;
-    hc4->dictBase = start - 64 KB;
+    hc4->base = base - 64 KB;
+    hc4->inputBuffer = base;
+    hc4->end = base;
+    hc4->dictBase = base - 64 KB;
     hc4->dictLimit = 64 KB;
     hc4->lowLimit = 64 KB;
 }
@@ -140,7 +276,7 @@ FORCE_INLINE void LZ4HC_Insert (LZ4HC_Data_Structure* hc4, const BYTE* ip)
         U32 h = LZ4HC_hashPtr(base+idx);
         size_t delta = idx - HashTable[h];
         if (delta>MAX_DISTANCE) delta = MAX_DISTANCE;
-        DELTANEXTU16(idx) = (U16)delta;
+        chainTable[idx & 0xFFFF] = (U16)delta;
         HashTable[h] = idx;
         idx++;
     }
@@ -149,7 +285,40 @@ FORCE_INLINE void LZ4HC_Insert (LZ4HC_Data_Structure* hc4, const BYTE* ip)
 }
 
 
-FORCE_INLINE int LZ4HC_InsertAndFindBestMatch (LZ4HC_Data_Structure* hc4,   /* Index table will be updated */
+static void LZ4HC_setExternalDict(LZ4HC_Data_Structure* ctxPtr, const BYTE* newBlock)
+{
+    if (ctxPtr->end >= ctxPtr->base + 4)
+        LZ4HC_Insert (ctxPtr, ctxPtr->end-3);   // finish referencing dictionary content
+    // Note : need to handle risk of index overflow
+    // Use only one memory segment for dict, so any previous External Dict is lost at this stage
+    ctxPtr->lowLimit  = ctxPtr->dictLimit;
+    ctxPtr->dictLimit = (U32)(ctxPtr->end - ctxPtr->base);
+    ctxPtr->dictBase  = ctxPtr->base;
+    ctxPtr->base = newBlock - ctxPtr->dictLimit;
+    ctxPtr->end  = newBlock;
+    ctxPtr->nextToUpdate = ctxPtr->dictLimit;   // reference table must skip to from beginning of block
+}
+
+
+static size_t LZ4HC_CommonLength (const BYTE* p1, const BYTE* p2, const BYTE* const p1Limit)
+{
+    const BYTE* const p1Start = p1;
+
+    while (p1 <= p1Limit - STEPSIZE)
+    {
+        size_t diff = AARCH(p2) ^ AARCH(p1);
+        if (!diff) { p1+=STEPSIZE; p2+=STEPSIZE; continue; }
+        p1 += LZ4_NbCommonBytes(diff);
+        return (p1 - p1Start);
+    }
+    if (LZ4_ARCH64) if ((p1<(p1Limit-3)) && (A32(p2) == A32(p1))) { p1+=4; p2+=4; }
+    if ((p1<(p1Limit-1)) && (A16(p2) == A16(p1))) { p1+=2; p2+=2; }
+    if ((p1<p1Limit) && (*p2 == *p1)) p1++;
+    return (p1 - p1Start);
+}
+
+
+FORCE_INLINE int LZ4HC_InsertAndFindBestMatch (LZ4HC_Data_Structure* hc4,   // Index table will be updated
                                                const BYTE* ip, const BYTE* const iLimit,
                                                const BYTE** matchpos,
                                                const int maxNbAttempts)
@@ -176,27 +345,27 @@ FORCE_INLINE int LZ4HC_InsertAndFindBestMatch (LZ4HC_Data_Structure* hc4,   /* I
         {
             match = base + matchIndex;
             if (*(match+ml) == *(ip+ml)
-                && (LZ4_read32(match) == LZ4_read32(ip)))
+                && (A32(match) == A32(ip)))
             {
-                size_t mlt = LZ4_count(ip+MINMATCH, match+MINMATCH, iLimit) + MINMATCH;
+                size_t mlt = LZ4HC_CommonLength(ip+MINMATCH, match+MINMATCH, iLimit) + MINMATCH;
                 if (mlt > ml) { ml = mlt; *matchpos = match; }
             }
         }
         else
         {
             match = dictBase + matchIndex;
-            if (LZ4_read32(match) == LZ4_read32(ip))
+            if (A32(match) == A32(ip))
             {
                 size_t mlt;
                 const BYTE* vLimit = ip + (dictLimit - matchIndex);
                 if (vLimit > iLimit) vLimit = iLimit;
-                mlt = LZ4_count(ip+MINMATCH, match+MINMATCH, vLimit) + MINMATCH;
+                mlt = LZ4HC_CommonLength(ip+MINMATCH, match+MINMATCH, vLimit) + MINMATCH;
                 if ((ip+mlt == vLimit) && (vLimit < iLimit))
-                    mlt += LZ4_count(ip+mlt, base+dictLimit, iLimit);
-                if (mlt > ml) { ml = mlt; *matchpos = base + matchIndex; }   /* virtual matchpos */
+                    mlt += LZ4HC_CommonLength(ip+mlt, base+dictLimit, iLimit);
+                if (mlt > ml) { ml = mlt; *matchpos = base + matchIndex; }   // virtual matchpos
             }
         }
-        matchIndex -= DELTANEXTU16(matchIndex);
+        matchIndex -= chainTable[matchIndex & 0xFFFF];
     }
 
     return (int)ml;
@@ -205,9 +374,9 @@ FORCE_INLINE int LZ4HC_InsertAndFindBestMatch (LZ4HC_Data_Structure* hc4,   /* I
 
 FORCE_INLINE int LZ4HC_InsertAndGetWiderMatch (
     LZ4HC_Data_Structure* hc4,
-    const BYTE* const ip,
-    const BYTE* const iLowLimit,
-    const BYTE* const iHighLimit,
+    const BYTE* ip,
+    const BYTE* iLowLimit,
+    const BYTE* iHighLimit,
     int longest,
     const BYTE** matchpos,
     const BYTE** startpos,
@@ -217,9 +386,9 @@ FORCE_INLINE int LZ4HC_InsertAndGetWiderMatch (
     U32* const HashTable = hc4->hashTable;
     const BYTE* const base = hc4->base;
     const U32 dictLimit = hc4->dictLimit;
-    const BYTE* const lowPrefixPtr = base + dictLimit;
     const U32 lowLimit = (hc4->lowLimit + 64 KB > (U32)(ip-base)) ? hc4->lowLimit : (U32)(ip - base) - (64 KB - 1);
     const BYTE* const dictBase = hc4->dictBase;
+    const BYTE* match;
     U32   matchIndex;
     int nbAttempts = maxNbAttempts;
     int delta = (int)(ip-iLowLimit);
@@ -234,46 +403,42 @@ FORCE_INLINE int LZ4HC_InsertAndGetWiderMatch (
         nbAttempts--;
         if (matchIndex >= dictLimit)
         {
-            const BYTE* matchPtr = base + matchIndex;
-            if (*(iLowLimit + longest) == *(matchPtr - delta + longest))
-                if (LZ4_read32(matchPtr) == LZ4_read32(ip))
+            match = base + matchIndex;
+            if (*(iLowLimit + longest) == *(match - delta + longest))
+                if (A32(match) == A32(ip))
                 {
-                    int mlt = MINMATCH + LZ4_count(ip+MINMATCH, matchPtr+MINMATCH, iHighLimit);
-                    int back = 0;
+                    const BYTE* startt = ip;
+                    const BYTE* tmpMatch = match;
+                    const BYTE* const matchEnd = ip + MINMATCH + LZ4HC_CommonLength(ip+MINMATCH, match+MINMATCH, iHighLimit);
 
-                    while ((ip+back>iLowLimit)
-                           && (matchPtr+back > lowPrefixPtr)
-                           && (ip[back-1] == matchPtr[back-1]))
-                            back--;
+                    while ((startt>iLowLimit) && (tmpMatch > iLowLimit) && (startt[-1] == tmpMatch[-1])) {startt--; tmpMatch--;}
 
-                    mlt -= back;
-
-                    if (mlt > longest)
+                    if ((matchEnd-startt) > longest)
                     {
-                        longest = (int)mlt;
-                        *matchpos = matchPtr+back;
-                        *startpos = ip+back;
+                        longest = (int)(matchEnd-startt);
+                        *matchpos = tmpMatch;
+                        *startpos = startt;
                     }
                 }
         }
         else
         {
-            const BYTE* matchPtr = dictBase + matchIndex;
-            if (LZ4_read32(matchPtr) == LZ4_read32(ip))
+            match = dictBase + matchIndex;
+            if (A32(match) == A32(ip))
             {
                 size_t mlt;
                 int back=0;
                 const BYTE* vLimit = ip + (dictLimit - matchIndex);
                 if (vLimit > iHighLimit) vLimit = iHighLimit;
-                mlt = LZ4_count(ip+MINMATCH, matchPtr+MINMATCH, vLimit) + MINMATCH;
+                mlt = LZ4HC_CommonLength(ip+MINMATCH, match+MINMATCH, vLimit) + MINMATCH;
                 if ((ip+mlt == vLimit) && (vLimit < iHighLimit))
-                    mlt += LZ4_count(ip+mlt, base+dictLimit, iHighLimit);
-                while ((ip+back > iLowLimit) && (matchIndex+back > lowLimit) && (ip[back-1] == matchPtr[back-1])) back--;
+                    mlt += LZ4HC_CommonLength(ip+mlt, base+dictLimit, iHighLimit);
+                while ((ip+back > iLowLimit) && (matchIndex+back > lowLimit) && (ip[back-1] == match[back-1])) back--;
                 mlt -= back;
                 if ((int)mlt > longest) { longest = (int)mlt; *matchpos = base + matchIndex + back; *startpos = ip+back; }
             }
         }
-        matchIndex -= DELTANEXTU16(matchIndex);
+        matchIndex -= chainTable[matchIndex & 0xFFFF];
     }
 
     return longest;
@@ -282,10 +447,7 @@ FORCE_INLINE int LZ4HC_InsertAndGetWiderMatch (
 
 typedef enum { noLimit = 0, limitedOutput = 1 } limitedOutput_directive;
 
-#define LZ4HC_DEBUG 0
-#if LZ4HC_DEBUG
-static unsigned debug = 0;
-#endif
+//static unsigned debug = 0;
 
 FORCE_INLINE int LZ4HC_encodeSequence (
     const BYTE** ip,
@@ -299,9 +461,7 @@ FORCE_INLINE int LZ4HC_encodeSequence (
     int length;
     BYTE* token;
 
-#if LZ4HC_DEBUG
-    if (debug) printf("literal : %u  --  match : %u  --  offset : %u\n", (U32)(*ip - *anchor), (U32)matchLength, (U32)(*ip-match));
-#endif
+    //if (debug) printf("literal : %u  --  match : %u  --  offset : %u\n", (U32)(*ip - *anchor), (U32)matchLength, (U32)(*ip-match));   // debug
 
     /* Encode Literal length */
     length = (int)(*ip - *anchor);
@@ -315,7 +475,7 @@ FORCE_INLINE int LZ4HC_encodeSequence (
     *op += length;
 
     /* Encode Offset */
-    LZ4_writeLE16(*op, (U16)(*ip-match)); *op += 2;
+    LZ4_WRITE_LITTLEENDIAN_16(*op,(U16)(*ip-match));
 
     /* Encode MatchLength */
     length = (int)(matchLength-MINMATCH);
@@ -363,9 +523,9 @@ static int LZ4HC_compress_generic (
 
 
     /* init */
-    if (compressionLevel > g_maxCompressionLevel) compressionLevel = g_maxCompressionLevel;
-    if (compressionLevel < 1) compressionLevel = LZ4HC_compressionLevel_default;
-    maxNbAttempts = 1 << (compressionLevel-1);
+    if (compressionLevel > MAX_COMPRESSION_LEVEL) compressionLevel = MAX_COMPRESSION_LEVEL;
+    if (compressionLevel == 0) compressionLevel = LZ4HC_DEFAULT_COMPRESSIONLEVEL;
+    maxNbAttempts = 1 << compressionLevel;
     ctx->end += inputSize;
 
     ip++;
@@ -535,40 +695,19 @@ _Search3:
 }
 
 
-int LZ4_sizeofStateHC(void) { return sizeof(LZ4HC_Data_Structure); }
-
-int LZ4_compress_HC_extStateHC (void* state, const char* src, char* dst, int srcSize, int maxDstSize, int compressionLevel)
+int LZ4_compressHC2(const char* source, char* dest, int inputSize, int compressionLevel)
 {
-    if (((size_t)(state)&(sizeof(void*)-1)) != 0) return 0;   /* Error : state is not aligned for pointers (32 or 64 bits) */
-    LZ4HC_init ((LZ4HC_Data_Structure*)state, (const BYTE*)src);
-    if (maxDstSize < LZ4_compressBound(srcSize))
-        return LZ4HC_compress_generic (state, src, dst, srcSize, maxDstSize, compressionLevel, limitedOutput);
-    else
-        return LZ4HC_compress_generic (state, src, dst, srcSize, maxDstSize, compressionLevel, noLimit);
-}
-
-int LZ4_compress_HC(const char* src, char* dst, int srcSize, int maxDstSize, int compressionLevel)
-{
-    LZ4HC_Data_Structure state;
-    return LZ4_compress_HC_extStateHC(&state, src, dst, srcSize, maxDstSize, compressionLevel);
+    LZ4HC_Data_Structure ctx;
+    LZ4HC_init(&ctx, (const BYTE*)source);
+    return LZ4HC_compress_generic (&ctx, source, dest, inputSize, 0, compressionLevel, noLimit);
 }
 
 
-
-/**************************************
-*  Streaming Functions
-**************************************/
-/* allocation */
-LZ4_streamHC_t* LZ4_createStreamHC(void) { return (LZ4_streamHC_t*)malloc(sizeof(LZ4_streamHC_t)); }
-int             LZ4_freeStreamHC (LZ4_streamHC_t* LZ4_streamHCPtr) { free(LZ4_streamHCPtr); return 0; }
-
-
-/* initialization */
-void LZ4_resetStreamHC (LZ4_streamHC_t* LZ4_streamHCPtr, int compressionLevel)
+int LZ4_compressHC2_limitedOutput(const char* source, char* dest, int inputSize, int maxOutputSize, int compressionLevel)
 {
-    LZ4_STATIC_ASSERT(sizeof(LZ4HC_Data_Structure) <= sizeof(LZ4_streamHC_t));   /* if compilation fails here, LZ4_STREAMHCSIZE must be increased */
-    ((LZ4HC_Data_Structure*)LZ4_streamHCPtr)->base = NULL;
-    ((LZ4HC_Data_Structure*)LZ4_streamHCPtr)->compressionLevel = (unsigned)compressionLevel;
+    LZ4HC_Data_Structure ctx;
+    LZ4HC_init(&ctx, (const BYTE*)source);
+    return LZ4HC_compress_generic (&ctx, source, dest, inputSize, maxOutputSize, compressionLevel, limitedOutput);
 }
 
 int LZ4_loadDictHC (LZ4_streamHC_t* LZ4_streamHCPtr, const char* dictionary, int dictSize)
@@ -586,7 +725,10 @@ int LZ4_loadDictHC (LZ4_streamHC_t* LZ4_streamHCPtr, const char* dictionary, int
 }
 
 
-/* compression */
+/*****************************
+ Using external allocation
+*****************************/
+int LZ4_sizeofStateHC(void) { return sizeof(LZ4HC_Data_Structure); }
 
 static void LZ4HC_setExternalDict(LZ4HC_Data_Structure* ctxPtr, const BYTE* newBlock)
 {
@@ -605,45 +747,9 @@ static int LZ4_compressHC_continue_generic (LZ4HC_Data_Structure* ctxPtr,
                                             const char* source, char* dest,
                                             int inputSize, int maxOutputSize, limitedOutput_directive limit)
 {
-    /* auto-init if forgotten */
-    if (ctxPtr->base == NULL)
-        LZ4HC_init (ctxPtr, (const BYTE*) source);
-
-    /* Check overflow */
-    if ((size_t)(ctxPtr->end - ctxPtr->base) > 2 GB)
-    {
-        size_t dictSize = (size_t)(ctxPtr->end - ctxPtr->base) - ctxPtr->dictLimit;
-        if (dictSize > 64 KB) dictSize = 64 KB;
-
-        LZ4_loadDictHC((LZ4_streamHC_t*)ctxPtr, (const char*)(ctxPtr->end) - dictSize, (int)dictSize);
-    }
-
-    /* Check if blocks follow each other */
-    if ((const BYTE*)source != ctxPtr->end)
-        LZ4HC_setExternalDict(ctxPtr, (const BYTE*)source);
-
-    /* Check overlapping input/dictionary space */
-    {
-        const BYTE* sourceEnd = (const BYTE*) source + inputSize;
-        const BYTE* dictBegin = ctxPtr->dictBase + ctxPtr->lowLimit;
-        const BYTE* dictEnd   = ctxPtr->dictBase + ctxPtr->dictLimit;
-        if ((sourceEnd > dictBegin) && ((const BYTE*)source < dictEnd))
-        {
-            if (sourceEnd > dictEnd) sourceEnd = dictEnd;
-            ctxPtr->lowLimit = (U32)(sourceEnd - ctxPtr->dictBase);
-            if (ctxPtr->dictLimit - ctxPtr->lowLimit < 4) ctxPtr->lowLimit = ctxPtr->dictLimit;
-        }
-    }
-
-    return LZ4HC_compress_generic (ctxPtr, source, dest, inputSize, maxOutputSize, ctxPtr->compressionLevel, limit);
-}
-
-int LZ4_compress_HC_continue (LZ4_streamHC_t* LZ4_streamHCPtr, const char* source, char* dest, int inputSize, int maxOutputSize)
-{
-    if (maxOutputSize < LZ4_compressBound(inputSize))
-        return LZ4_compressHC_continue_generic ((LZ4HC_Data_Structure*)LZ4_streamHCPtr, source, dest, inputSize, maxOutputSize, limitedOutput);
-    else
-        return LZ4_compressHC_continue_generic ((LZ4HC_Data_Structure*)LZ4_streamHCPtr, source, dest, inputSize, maxOutputSize, noLimit);
+    if (((size_t)(state)&(sizeof(void*)-1)) != 0) return 0;   /* Error : state is not aligned for pointers (32 or 64 bits) */
+    LZ4HC_init ((LZ4HC_Data_Structure*)state, (const BYTE*)source);
+    return LZ4HC_compress_generic (state, source, dest, inputSize, 0, compressionLevel, noLimit);
 }
 
 
@@ -651,21 +757,9 @@ int LZ4_compress_HC_continue (LZ4_streamHC_t* LZ4_streamHCPtr, const char* sourc
 
 int LZ4_saveDictHC (LZ4_streamHC_t* LZ4_streamHCPtr, char* safeBuffer, int dictSize)
 {
-    LZ4HC_Data_Structure* streamPtr = (LZ4HC_Data_Structure*)LZ4_streamHCPtr;
-    int prefixSize = (int)(streamPtr->end - (streamPtr->base + streamPtr->dictLimit));
-    if (dictSize > 64 KB) dictSize = 64 KB;
-    if (dictSize < 4) dictSize = 0;
-    if (dictSize > prefixSize) dictSize = prefixSize;
-    memmove(safeBuffer, streamPtr->end - dictSize, dictSize);
-    {
-        U32 endIndex = (U32)(streamPtr->end - streamPtr->base);
-        streamPtr->end = (const BYTE*)safeBuffer + dictSize;
-        streamPtr->base = streamPtr->end - endIndex;
-        streamPtr->dictLimit = endIndex - dictSize;
-        streamPtr->lowLimit = endIndex - dictSize;
-        if (streamPtr->nextToUpdate < streamPtr->dictLimit) streamPtr->nextToUpdate = streamPtr->dictLimit;
-    }
-    return dictSize;
+    if (((size_t)(state)&(sizeof(void*)-1)) != 0) return 0;   /* Error : state is not aligned for pointers (32 or 64 bits) */
+    LZ4HC_init ((LZ4HC_Data_Structure*)state, (const BYTE*)source);
+    return LZ4HC_compress_generic (state, source, dest, inputSize, maxOutputSize, compressionLevel, limitedOutput);
 }
 
 
@@ -698,12 +792,111 @@ int LZ4_resetStreamStateHC(void* state, char* inputBuffer)
     return 0;
 }
 
-void* LZ4_createHC (char* inputBuffer)
+/**************************************
+ Experimental Streaming Functions
+**************************************/
+/* allocation */
+LZ4_streamHC_t* LZ4_createStreamHC(void) { return (LZ4_streamHC_t*)malloc(sizeof(LZ4_streamHC_t)); }
+int LZ4_freeStreamHC (LZ4_streamHC_t* LZ4_streamHCPtr) { free(LZ4_streamHCPtr); return 0; };
+
+
+/* initialization */
+void LZ4_resetStreamHC (LZ4_streamHC_t* LZ4_streamHCPtr, int compressionLevel)
 {
-    void* hc4 = ALLOCATOR(1, sizeof(LZ4HC_Data_Structure));
-    if (hc4 == NULL) return NULL;   /* not enough memory */
+    LZ4_STATIC_ASSERT(sizeof(LZ4HC_Data_Structure) <= LZ4_STREAMHCSIZE);   /* if compilation fails here, LZ4_STREAMHCSIZE must be increased */
+    ((LZ4HC_Data_Structure*)LZ4_streamHCPtr)->base = NULL;
+    ((LZ4HC_Data_Structure*)LZ4_streamHCPtr)->compressionLevel = (unsigned)compressionLevel;
+}
+
+int LZ4_loadDictHC (LZ4_streamHC_t* LZ4_streamHCPtr, const char* dictionary, int dictSize)
+{
+    LZ4HC_init ((LZ4HC_Data_Structure*) LZ4_streamHCPtr, (const BYTE*) dictionary);
+    if (dictSize >= 4) LZ4HC_Insert ((LZ4HC_Data_Structure*) LZ4_streamHCPtr, (const BYTE*)dictionary +(dictSize-3));
+    ((LZ4HC_Data_Structure*) LZ4_streamHCPtr)->end = (const BYTE*)dictionary + dictSize;
+    return 1;
+}
+
+
+/* compression */
+
+static int LZ4_compressHC_continue_generic (LZ4HC_Data_Structure* dsPtr,
+                                            const char* source, char* dest,
+                                            int inputSize, int maxOutputSize, limitedOutput_directive limit)
+{
+    /* auto-init if forgotten */
+    if (dsPtr->base == NULL)
+        LZ4HC_init (dsPtr, (const BYTE*) source);
+
+    /* Check overflow */
+    if ((size_t)(dsPtr->end - dsPtr->base) > 2 GB)
+    {
+        size_t dictSize = (size_t)(dsPtr->end - dsPtr->base) - dsPtr->dictLimit;
+        if (dictSize > 64 KB) dictSize = 64 KB;
+
+        LZ4_loadDictHC((LZ4_streamHC_t*)dsPtr, (const char*)(dsPtr->end) - dictSize, (int)dictSize);
+    }
+
+    /* Check if blocks follow each other */
+    if ((const BYTE*)source != dsPtr->end) LZ4HC_setExternalDict(dsPtr, (const BYTE*)source);
+
+    /* Check overlapping input/dictionary space */
+    {
+        const BYTE* sourceEnd = (const BYTE*) source + inputSize;
+        const BYTE* dictBegin = dsPtr->dictBase + dsPtr->lowLimit;
+        const BYTE* dictEnd   = dsPtr->dictBase + dsPtr->dictLimit;
+        if ((sourceEnd > dictBegin) && ((BYTE*)source < dictEnd))
+        {
+            if (sourceEnd > dictEnd) sourceEnd = dictEnd;
+            dsPtr->lowLimit = (U32)(sourceEnd - dsPtr->dictBase);
+            if (dsPtr->dictLimit - dsPtr->lowLimit < 4) dsPtr->lowLimit = dsPtr->dictLimit;
+        }
+    }
+
+    return LZ4HC_compress_generic (dsPtr, source, dest, inputSize, maxOutputSize, dsPtr->compressionLevel, limit);
+}
+
+int LZ4_compressHC_continue (LZ4_streamHC_t* LZ4_streamHCPtr, const char* source, char* dest, int inputSize)
+{
+    return LZ4_compressHC_continue_generic ((LZ4HC_Data_Structure*)LZ4_streamHCPtr, source, dest, inputSize, 0, noLimit);
+}
+
+int LZ4_compressHC_limitedOutput_continue (LZ4_streamHC_t* LZ4_streamHCPtr, const char* source, char* dest, int inputSize, int maxOutputSize)
+{
+    return LZ4_compressHC_continue_generic ((LZ4HC_Data_Structure*)LZ4_streamHCPtr, source, dest, inputSize, maxOutputSize, limitedOutput);
+}
+
+
+/* dictionary saving */
+
+int LZ4_saveDictHC (LZ4_streamHC_t* LZ4_streamHCPtr, char* safeBuffer, int dictSize)
+{
+    LZ4HC_Data_Structure* sp = (LZ4HC_Data_Structure*)LZ4_streamHCPtr;
+    if (dictSize > 64 KB) dictSize = 64 KB;
+    if (dictSize < 0) dictSize = 0;
+    if (dictSize > (sp->end - (sp->base + sp->lowLimit))) dictSize = (int)(sp->end - (sp->base + sp->lowLimit));
+    memcpy(safeBuffer, sp->end - dictSize, dictSize);
+    LZ4_loadDictHC(LZ4_streamHCPtr, safeBuffer, dictSize);
+    return dictSize;
+}
+
+
+
+/***********************************
+Deprecated Streaming functions
+***********************************/
+int LZ4_sizeofStreamStateHC(void) { return LZ4_STREAMHCSIZE; }
+
+int LZ4_resetStreamStateHC(void* state, const char* inputBuffer)
+{
+    if ((((size_t)state) & (sizeof(void*)-1)) != 0) return 1;   /* Error : pointer is not aligned for pointer (32 or 64 bits) */
+    LZ4HC_init((LZ4HC_Data_Structure*)state, (const BYTE*)inputBuffer);
+    return 0;
+}
+
+void* LZ4_createHC (const char* inputBuffer)
+{
+    void* hc4 = ALLOCATOR(sizeof(LZ4HC_Data_Structure));
     LZ4HC_init ((LZ4HC_Data_Structure*)hc4, (const BYTE*)inputBuffer);
-    ((LZ4HC_Data_Structure*)hc4)->inputBuffer = (BYTE*)inputBuffer;
     return hc4;
 }
 
@@ -713,14 +906,20 @@ int LZ4_freeHC (void* LZ4HC_Data)
     return (0);
 }
 
+/*
+int LZ4_compressHC_continue (void* LZ4HC_Data, const char* source, char* dest, int inputSize)
+{
+return LZ4HC_compress_generic (LZ4HC_Data, source, dest, inputSize, 0, 0, noLimit);
+}
+int LZ4_compressHC_limitedOutput_continue (void* LZ4HC_Data, const char* source, char* dest, int inputSize, int maxOutputSize)
+{
+return LZ4HC_compress_generic (LZ4HC_Data, source, dest, inputSize, maxOutputSize, 0, limitedOutput);
+}
+*/
+
 int LZ4_compressHC2_continue (void* LZ4HC_Data, const char* source, char* dest, int inputSize, int compressionLevel)
 {
     return LZ4HC_compress_generic (LZ4HC_Data, source, dest, inputSize, 0, compressionLevel, noLimit);
-}
-
-int LZ4_compressHC2_limitedOutput_continue (void* LZ4HC_Data, const char* source, char* dest, int inputSize, int maxOutputSize, int compressionLevel)
-{
-    return LZ4HC_compress_generic (LZ4HC_Data, source, dest, inputSize, maxOutputSize, compressionLevel, limitedOutput);
 }
 
 char* LZ4_slideInputBufferHC(void* LZ4HC_Data)
@@ -728,4 +927,25 @@ char* LZ4_slideInputBufferHC(void* LZ4HC_Data)
     LZ4HC_Data_Structure* hc4 = (LZ4HC_Data_Structure*)LZ4HC_Data;
     int dictSize = LZ4_saveDictHC((LZ4_streamHC_t*)LZ4HC_Data, (char*)(hc4->inputBuffer), 64 KB);
     return (char*)(hc4->inputBuffer + dictSize);
+}
+
+char* LZ4_slideInputBufferHC(void* LZ4HC_Data)
+{
+    LZ4HC_Data_Structure* hc4 = (LZ4HC_Data_Structure*)LZ4HC_Data;
+    size_t distance = (hc4->end - 64 KB) - hc4->inputBuffer;
+
+    if (hc4->end <= hc4->inputBuffer + 64 KB) return (char*)(hc4->end);   /* no update : less than 64KB within buffer */
+
+    distance = (distance >> 16) << 16;   /* Must be a multiple of 64 KB */
+    LZ4HC_Insert(hc4, hc4->end - MINMATCH);
+    memcpy((void*)(hc4->end - 64 KB - distance), (const void*)(hc4->end - 64 KB), 64 KB);
+    hc4->base -= distance;
+    if ((U32)(hc4->inputBuffer - hc4->base) > 1 GB + 64 KB)   /* Avoid overflow */
+    {
+        int i;
+        hc4->base += 1 GB;
+        for (i=0; i<HASHTABLESIZE; i++) hc4->hashTable[i] -= 1 GB;
+    }
+    hc4->end -= distance;
+    return (char*)(hc4->end);
 }

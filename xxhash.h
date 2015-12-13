@@ -72,7 +72,13 @@ extern "C" {
 
 
 /*****************************
-*  Definitions
+   Includes
+*****************************/
+#include <stddef.h>   /* size_t */
+
+
+/*****************************
+   Type
 *****************************/
 #include <stddef.h>   /* size_t */
 typedef enum { XXH_OK=0, XXH_ERROR } XXH_errorcode;
