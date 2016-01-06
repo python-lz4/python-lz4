@@ -73,7 +73,10 @@ static PyObject *compress_with(compressor compress, PyObject *self, PyObject *ar
     dest = PyBytes_AS_STRING(result);
     store_le32(dest, source_size);
     if (source_size > 0) {
-        int osize = compress(source, dest + hdr_size, source_size);
+        int osize = -1;
+        Py_BEGIN_ALLOW_THREADS
+        osize = compress(source, dest + hdr_size, source_size);
+        Py_END_ALLOW_THREADS
         int actual_size = hdr_size + osize;
         /* Resizes are expensive; tolerate some slop to avoid. */
         if (actual_size < (dest_size / 4) * 3) {
@@ -115,7 +118,10 @@ static PyObject *py_lz4_uncompress(PyObject *self, PyObject *args) {
     result = PyBytes_FromStringAndSize(NULL, dest_size);
     if (result != NULL && dest_size > 0) {
         char *dest = PyBytes_AS_STRING(result);
-        int osize = LZ4_decompress_safe(source + hdr_size, dest, source_size - hdr_size, dest_size);
+        int osize = -1;
+        Py_BEGIN_ALLOW_THREADS
+        osize = LZ4_decompress_safe(source + hdr_size, dest, source_size - hdr_size, dest_size);
+        Py_END_ALLOW_THREADS
         if (osize < 0) {
             PyErr_Format(PyExc_ValueError, "corrupt input at byte %d", -osize);
             Py_CLEAR(result);
