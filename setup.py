@@ -4,9 +4,11 @@
 from setuptools import setup, find_packages, Extension
 import subprocess
 import os
+from distutils import ccompiler
 
 VERSION = (0, 8, 0)
 VERSION_STR = ".".join([str(x) for x in VERSION])
+LZ4_VERSION = "r130"
 
 # Check to see if we have a lz4 library installed on the system and
 # use it if so. If not, we'll use the bundled library. If lz4 is
@@ -21,35 +23,40 @@ if liblz4_found:
     # the compiler. Specifically we don't define LZ4_VERSION since the
     # system lz4 library could be updated (that's the point of a
     # shared library).
+    if ccompiler.get_default_compiler() == "msvc":
+        extra_compile_args = ["/Ot", "/Wall"]
+        define_macros = [("VERSION","\\\"%s\\\"" % VERSION_STR),]
+    else:
+        extra_compile_args = ["-std=c99",]
+        define_macros = [("VERSION","\"%s\"" % VERSION_STR),]
+
     lz4mod = Extension('lz4',
                        [
                            'src/python-lz4.c'
                        ],
-                       extra_compile_args=[
-                           "-std=c99",
-                           "-DVERSION=\"%s\"" % VERSION_STR,
-                       ],
+                       extra_compile_args=extra_compile_args,
+                       define_macros=define_macros,
                        libraries=['lz4'],
     )
 else:
     # Use the bundled lz4 libs, and set the compiler flags as they
     # historically have been set. We do set LZ4_VERSION here, since it
     # won't change after compilation.
+    if ccompiler.get_default_compiler() == "msvc":
+        extra_compile_args = ["/Ot", "/Wall"]
+        define_macros = [("VERSION","\\\"%s\\\"" % VERSION_STR), ("LZ4_VERSION","\\\"%s\\\"" % LZ4_VERSION)]
+    else:
+        extra_compile_args = ["-std=c99","-O3","-Wall","-W","-Wundef"]
+        define_macros = [("VERSION","\"%s\"" % VERSION_STR), ("LZ4_VERSION","\"%s\"" % LZ4_VERSION)]
+
     lz4mod = Extension('lz4',
                        [
                            'src/lz4.c',
                            'src/lz4hc.c',
                            'src/python-lz4.c'
                        ],
-                       extra_compile_args=[
-                           "-std=c99",
-                           "-O3",
-                           "-Wall",
-                           "-W",
-                           "-Wundef",
-                           "-DVERSION=\"%s\"" % VERSION_STR,
-                           "-DLZ4_VERSION=\"r130\"",
-                       ]
+                       extra_compile_args=extra_compile_args,
+                       define_macros=define_macros,
     )
 
 
