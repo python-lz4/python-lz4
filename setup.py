@@ -8,7 +8,7 @@ from distutils import ccompiler
 
 VERSION = (0, 8, 0)
 VERSION_STR = ".".join([str(x) for x in VERSION])
-LZ4_VERSION = "r130"
+LZ4_VERSION = "r131"
 
 # Check to see if we have a lz4 library installed on the system and
 # use it if so. If not, we'll use the bundled library. If lz4 is
