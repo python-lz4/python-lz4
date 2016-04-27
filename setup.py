@@ -67,7 +67,7 @@ setup(
     long_description=open('README.rst', 'r').read(),
     author='Steeve Morin',
     author_email='steeve.morin@gmail.com',
-    url='https://github.com/steeve/python-lz4',
+    url='https://github.com/python-lz4/python-lz4',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     ext_modules=[lz4mod,],
