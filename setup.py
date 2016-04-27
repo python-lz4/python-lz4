@@ -6,7 +6,7 @@ import subprocess
 import os
 from distutils import ccompiler
 
-VERSION = (0, 8, 0)
+VERSION = (0, 8, 1)
 VERSION_STR = ".".join([str(x) for x in VERSION])
 LZ4_VERSION = "r131"
 
