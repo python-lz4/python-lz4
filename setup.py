@@ -14,9 +14,13 @@ LZ4_VERSION = "r131"
 # use it if so. If not, we'll use the bundled library. If lz4 is
 # installed it will have a pkg-config file, so we'll use pkg-config to
 # check for existence of the library.
-pkg_config_exe = os.environ.get('PKG_CONFIG', None) or 'pkg-config'
-cmd = '{0} --exists liblz4'.format(pkg_config_exe).split()
-liblz4_found = subprocess.call(cmd) == 0
+try:
+    pkg_config_exe = os.environ.get('PKG_CONFIG', None) or 'pkg-config'
+    cmd = '{0} --exists liblz4'.format(pkg_config_exe).split()
+    liblz4_found = subprocess.call(cmd) == 0
+except OSError: 
+    # pkg-config not present
+    liblz4_found = False
 
 if liblz4_found:
     # Use system lz4, and don't set optimization and warning flags for
