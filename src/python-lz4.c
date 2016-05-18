@@ -215,13 +215,13 @@ static struct PyModuleDef moduledef = {
 #define INITERROR return NULL
 PyObject *PyInit_lz4(void)
 
-#else
+#else /* Python 2 */
 #define GETSTATE(m) (&_state)
 static struct module_state _state;
 #define INITERROR return
 void initlz4(void)
 
-#endif
+#endif /* PY_MAJOR_VERSION >= 3 */
 {
 #if PY_MAJOR_VERSION >= 3
     PyObject *module = PyModule_Create(&moduledef);
