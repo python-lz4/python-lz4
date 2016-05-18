@@ -189,13 +189,6 @@ struct module_state {
 
 #if PY_MAJOR_VERSION >= 3
 #define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
-#else
-#define GETSTATE(m) (&_state)
-static struct module_state _state;
-#endif
-
-#if PY_MAJOR_VERSION >= 3
-
 static int myextension_traverse(PyObject *m, visitproc visit, void *arg) {
     Py_VISIT(GETSTATE(m)->error);
     return 0;
@@ -223,6 +216,8 @@ static struct PyModuleDef moduledef = {
 PyObject *PyInit_lz4(void)
 
 #else
+#define GETSTATE(m) (&_state)
+static struct module_state _state;
 #define INITERROR return
 void initlz4(void)
 
