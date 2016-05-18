@@ -36,8 +36,6 @@
 #include "lz4hc.h"
 #include "python-lz4.h"
 
-#define MAX(a, b)               ((a) > (b) ? (a) : (b))
-
 typedef int (*compressor)(const char *source, char *dest, int isize);
 
 static inline void store_le32(char *c, uint32_t x) {
