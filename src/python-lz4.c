@@ -240,7 +240,6 @@ PyObject *PyInit_lz4(void)
 }
 
 #else /* Python 2 */
-#define GETSTATE(m) (&_state)
 static struct module_state _state;
 void initlz4(void)
 {
