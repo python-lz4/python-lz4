@@ -212,33 +212,22 @@ static struct PyModuleDef moduledef = {
         NULL
 };
 
-#define INITERROR return NULL
 PyObject *PyInit_lz4(void)
-
-#else /* Python 2 */
-#define GETSTATE(m) (&_state)
-static struct module_state _state;
-#define INITERROR return
-void initlz4(void)
-
-#endif /* PY_MAJOR_VERSION >= 3 */
 {
-#if PY_MAJOR_VERSION >= 3
     PyObject *module = PyModule_Create(&moduledef);
-#else
-    PyObject *module = Py_InitModule("lz4", Lz4Methods);
-#endif
+
     struct module_state *st = NULL;
 
     if (module == NULL) {
-        INITERROR;
+        return NULL;
     }
+
     st = GETSTATE(module);
 
     st->error = PyErr_NewException("lz4.Error", NULL, NULL);
     if (st->error == NULL) {
         Py_DECREF(module);
-        INITERROR;
+        return NULL;
     }
 
     PyModule_AddStringConstant(module, "VERSION", VERSION);
@@ -247,7 +236,32 @@ void initlz4(void)
     PyModule_AddStringConstant(module, "LZ4_VERSION", LZ4_VERSION);
 #endif
 
-#if PY_MAJOR_VERSION >= 3
     return module;
+}
+
+#else /* Python 2 */
+#define GETSTATE(m) (&_state)
+static struct module_state _state;
+void initlz4(void)
+{
+    PyObject *module = Py_InitModule("lz4", Lz4Methods);
+    struct module_state *st = NULL;
+
+    if (module == NULL) {
+        return;
+    }
+    st = &_state;;
+
+    st->error = PyErr_NewException("lz4.Error", NULL, NULL);
+    if (st->error == NULL) {
+        Py_DECREF(module);
+        return;
+    }
+
+    PyModule_AddStringConstant(module, "VERSION", VERSION);
+    PyModule_AddStringConstant(module, "__version__", VERSION);
+#ifdef LZ4_VERSION /* Only defined if we're building against bundled lz4 */
+    PyModule_AddStringConstant(module, "LZ4_VERSION", LZ4_VERSION);
 #endif
 }
+#endif /* PY_MAJOR_VERSION >= 3 */
