@@ -188,45 +188,23 @@ struct module_state {
 };
 
 #if PY_MAJOR_VERSION >= 3
-#define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
-static int myextension_traverse(PyObject *m, visitproc visit, void *arg) {
-    Py_VISIT(GETSTATE(m)->error);
-    return 0;
-}
-
-static int myextension_clear(PyObject *m) {
-    Py_CLEAR(GETSTATE(m)->error);
-    return 0;
-}
-
-
 static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT,
         "lz4",
         NULL,
-        sizeof(struct module_state),
+        -1,
         Lz4Methods,
         NULL,
-        myextension_traverse,
-        myextension_clear,
-        NULL
+	NULL,
+	NULL,
+	NULL,
 };
 
 PyObject *PyInit_lz4(void)
 {
     PyObject *module = PyModule_Create(&moduledef);
 
-    struct module_state *st = NULL;
-
     if (module == NULL) {
-        return NULL;
-    }
-
-    st = GETSTATE(module);
-
-    st->error = PyErr_NewException("lz4.Error", NULL, NULL);
-    if (st->error == NULL) {
-        Py_DECREF(module);
         return NULL;
     }
 
