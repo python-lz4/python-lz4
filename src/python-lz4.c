@@ -181,12 +181,6 @@ static PyMethodDef Lz4Methods[] = {
     {NULL, NULL, 0, NULL}
 };
 
-
-
-struct module_state {
-    PyObject *error;
-};
-
 #if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT,
