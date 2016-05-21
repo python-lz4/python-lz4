@@ -218,20 +218,11 @@ PyObject *PyInit_lz4(void)
 }
 
 #else /* Python 2 */
-static struct module_state _state;
 void initlz4(void)
 {
     PyObject *module = Py_InitModule("lz4", Lz4Methods);
-    struct module_state *st = NULL;
 
     if (module == NULL) {
-        return;
-    }
-    st = &_state;;
-
-    st->error = PyErr_NewException("lz4.Error", NULL, NULL);
-    if (st->error == NULL) {
-        Py_DECREF(module);
         return;
     }
 
