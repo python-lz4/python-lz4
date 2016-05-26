@@ -212,7 +212,7 @@ PyObject *PyInit_lz4(void)
 }
 
 #else /* Python 2 */
-void initlz4(void)
+PyMODINIT_FUNC initlz4(void)
 {
     PyObject *module = Py_InitModule("lz4", Lz4Methods);
 
