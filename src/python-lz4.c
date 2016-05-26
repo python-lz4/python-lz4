@@ -34,7 +34,29 @@
 #include <math.h>
 #include "lz4.h"
 #include "lz4hc.h"
-#include "python-lz4.h"
+
+#if defined(_WIN32) && defined(_MSC_VER)
+# define inline __inline
+# if _MSC_VER >= 1600
+#  include <stdint.h>
+# else /* _MSC_VER >= 1600 */
+   typedef signed char       int8_t;
+   typedef signed short      int16_t;
+   typedef signed int        int32_t;
+   typedef unsigned char     uint8_t;
+   typedef unsigned short    uint16_t;
+   typedef unsigned int      uint32_t;
+# endif /* _MSC_VER >= 1600 */
+#endif
+
+#if defined(__SUNPRO_C) || defined(__hpux) || defined(_AIX)
+#define inline
+#endif
+
+#ifdef __linux
+#define inline __inline
+#endif
+
 
 typedef int (*compressor)(const char *source, char *dest, int isize);
 
@@ -166,6 +188,11 @@ static PyObject *py_lz4_versionnumber(PyObject *self, PyObject *args) {
   return Py_BuildValue("i", LZ4_versionNumber());
 }
 
+#define COMPRESS_DOCSTRING      "Compress string, returning the compressed data.\nRaises an exception if any error occurs."
+#define COMPRESSFAST_DOCSTRING  "Compress string with the given acceleration, returning the compressed data.\nRaises an exception if any error occurs."
+#define COMPRESSHC_DOCSTRING    COMPRESS_DOCSTRING "\n\nCompared to compress, this gives a better compression ratio, but is much slower."
+#define UNCOMPRESS_DOCSTRING    "Decompress string, returning the uncompressed data.\nRaises an exception if any error occurs."
+
 static PyMethodDef Lz4Methods[] = {
 	{"LZ4_compress_fast",  py_lz4_compress_fast, METH_VARARGS, COMPRESSFAST_DOCSTRING},
     {"LZ4_compress",  py_lz4_compress, METH_VARARGS, COMPRESS_DOCSTRING},
@@ -180,6 +207,10 @@ static PyMethodDef Lz4Methods[] = {
     {"lz4version",  py_lz4_versionnumber, METH_VARARGS, "Returns the version number of the lz4 C library"},
     {NULL, NULL, 0, NULL}
 };
+#undef COMPRESS_DOCSTRING
+#undef COMPRESSFAST_DOCSTRING
+#undef COMPRESSHC_DOCSTRING
+#undef UNCOMPRESS_DOCSTRING
 
 #if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef moduledef = {
