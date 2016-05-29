@@ -34,7 +34,7 @@ if liblz4_found:
         extra_compile_args = ["-std=c99",]
         define_macros = [("VERSION","\"%s\"" % VERSION_STR),]
 
-    lz4mod = Extension('lz4',
+    lz4mod = Extension('block',
                        [
                            'lz4/python-lz4.c'
                        ],
@@ -53,7 +53,7 @@ else:
         extra_compile_args = ["-std=c99","-O3","-Wall","-W","-Wundef"]
         define_macros = [("VERSION","\"%s\"" % VERSION_STR), ("LZ4_VERSION","\"%s\"" % LZ4_VERSION)]
 
-    lz4mod = Extension('lz4',
+    lz4mod = Extension('block',
                        [
                            'lz4libs/lz4.c',
                            'lz4libs/lz4hc.c',
@@ -74,7 +74,8 @@ setup(
     author_email='steeve.morin@gmail.com',
     url='https://github.com/python-lz4/python-lz4',
     packages=find_packages('lz4'),
-    package_dir={'': 'lz4'},
+    #package_dir={'': 'lz4'},
+    ext_package='lz4',
     ext_modules=[lz4mod,],
     tests_require=["nose>=1.0"],
     test_suite = "nose.collector",

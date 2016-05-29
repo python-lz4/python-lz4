@@ -210,7 +210,7 @@ static PyMethodDef Lz4Methods[] = {
 #if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT,
-        "lz4",
+        "block",
         NULL,
         -1,
         Lz4Methods,
@@ -220,7 +220,7 @@ static struct PyModuleDef moduledef = {
 	NULL,
 };
 
-PyObject *PyInit_lz4(void)
+PyObject *PyInit_block(void)
 {
     PyObject *module = PyModule_Create(&moduledef);
 
@@ -238,9 +238,9 @@ PyObject *PyInit_lz4(void)
 }
 
 #else /* Python 2 */
-PyMODINIT_FUNC initlz4(void)
+PyMODINIT_FUNC initblock(void)
 {
-    PyObject *module = Py_InitModule("lz4", Lz4Methods);
+    PyObject *module = Py_InitModule("block", Lz4Methods);
 
     if (module == NULL) {
         return;
