@@ -36,7 +36,7 @@ if liblz4_found:
 
     lz4mod = Extension('block',
                        [
-                           'lz4/python-lz4.c'
+                           'lz4/block.c'
                        ],
                        extra_compile_args=extra_compile_args,
                        define_macros=define_macros,
@@ -57,7 +57,7 @@ else:
                        [
                            'lz4libs/lz4.c',
                            'lz4libs/lz4hc.c',
-                           'lz4/python-lz4.c'
+                           'lz4/block.c'
                        ],
                        extra_compile_args=extra_compile_args,
                        define_macros=define_macros,
