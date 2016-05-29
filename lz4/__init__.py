@@ -1,4 +1,4 @@
-from .block import loads, dumps
+#from .block import loads, dumps
 
 # Package version info, generated on install
 from .version import version as __version__

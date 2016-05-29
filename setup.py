@@ -35,9 +35,9 @@ if liblz4_found:
     else:
         extra_compile_args = ["-std=c99",]
 
-    lz4mod = Extension('block',
+    lz4mod = Extension('lz4.block._block',
                        [
-                           'lz4/block.c'
+                           'lz4/block/_block.c'
                        ],
                        extra_compile_args=extra_compile_args,
                        libraries=['lz4'],
@@ -51,11 +51,11 @@ else:
     else:
         extra_compile_args = ["-std=c99","-O3","-Wall","-W","-Wundef"]
 
-    lz4mod = Extension('block',
+    lz4mod = Extension('lz4.block._block',
                        [
                            'lz4libs/lz4.c',
                            'lz4libs/lz4hc.c',
-                           'lz4/block.c'
+                           'lz4/block/_block.c'
                        ],
                        extra_compile_args=extra_compile_args,
                        include_dirs=['lz4libs',],
@@ -77,9 +77,7 @@ setup(
     author='Steeve Morin',
     author_email='steeve.morin@gmail.com',
     url='https://github.com/python-lz4/python-lz4',
-    packages=find_packages('lz4'),
-    #package_dir={'': 'lz4'},
-    ext_package='lz4',
+    packages=find_packages(),
     ext_modules=[lz4mod,],
     tests_require=["nose>=1.0"],
     test_suite = "nose.collector",
