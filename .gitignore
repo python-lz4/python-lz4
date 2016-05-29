@@ -34,3 +34,13 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+
+# Auto-generated files
+lz4/version.py
+lz4/lz4version.py
+
+# Egg build directory
+.eggs
+
+# Emacs backups
+*~
