@@ -228,10 +228,6 @@ PyObject *PyInit_block(void)
         return NULL;
     }
 
-#ifdef LZ4_VERSION /* Only defined if we're building against bundled lz4 */
-    PyModule_AddStringConstant(module, "LZ4_VERSION", LZ4_VERSION);
-#endif
-
     return module;
 }
 
@@ -243,9 +239,5 @@ PyMODINIT_FUNC initblock(void)
     if (module == NULL) {
         return;
     }
-
-#ifdef LZ4_VERSION /* Only defined if we're building against bundled lz4 */
-    PyModule_AddStringConstant(module, "LZ4_VERSION", LZ4_VERSION);
-#endif
 }
 #endif /* PY_MAJOR_VERSION >= 3 */
