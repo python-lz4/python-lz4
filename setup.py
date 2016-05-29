@@ -6,8 +6,11 @@ import subprocess
 import os
 from distutils import ccompiler
 
-VERSION = (0, 8, 2)
-VERSION_STR = ".".join([str(x) for x in VERSION])
+def version_scheme(version):
+    from setuptools_scm.version import guess_next_dev_version
+    version = guess_next_dev_version(version)
+    return version.lstrip("v")
+
 LZ4_VERSION = "r131"
 
 # Check to see if we have a lz4 library installed on the system and
@@ -29,10 +32,8 @@ if liblz4_found:
     # shared library).
     if ccompiler.get_default_compiler() == "msvc":
         extra_compile_args = ["/Ot", "/Wall"]
-        define_macros = [("VERSION","\\\"%s\\\"" % VERSION_STR),]
     else:
         extra_compile_args = ["-std=c99",]
-        define_macros = [("VERSION","\"%s\"" % VERSION_STR),]
 
     lz4mod = Extension('block',
                        [
@@ -48,10 +49,10 @@ else:
     # won't change after compilation.
     if ccompiler.get_default_compiler() == "msvc":
         extra_compile_args = ["/Ot", "/Wall"]
-        define_macros = [("VERSION","\\\"%s\\\"" % VERSION_STR), ("LZ4_VERSION","\\\"%s\\\"" % LZ4_VERSION)]
+        define_macros = [("LZ4_VERSION","\\\"%s\\\"" % LZ4_VERSION),]
     else:
         extra_compile_args = ["-std=c99","-O3","-Wall","-W","-Wundef"]
-        define_macros = [("VERSION","\"%s\"" % VERSION_STR), ("LZ4_VERSION","\"%s\"" % LZ4_VERSION)]
+        define_macros = [("LZ4_VERSION","\"%s\"" % LZ4_VERSION),]
 
     lz4mod = Extension('block',
                        [
@@ -67,7 +68,11 @@ else:
 
 setup(
     name='lz4',
-    version=VERSION_STR,
+    use_scm_version={
+        'write_to': "lz4/version.py",
+        'version_scheme': version_scheme,
+    },
+    setup_requires=['setuptools_scm'],
     description="LZ4 Bindings for Python",
     long_description=open('README.rst', 'r').read(),
     author='Steeve Morin',
