@@ -55,12 +55,13 @@ else:
 
     lz4mod = Extension('lz4',
                        [
-                           'src/lz4.c',
-                           'src/lz4hc.c',
+                           'lz4libs/lz4.c',
+                           'lz4libs/lz4hc.c',
                            'src/python-lz4.c'
                        ],
                        extra_compile_args=extra_compile_args,
                        define_macros=define_macros,
+                       include_dirs=['lz4libs',],
     )
 
 
