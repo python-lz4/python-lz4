@@ -85,7 +85,7 @@ static const int hdr_size = sizeof (uint32_t);
 
 typedef enum
 {
-  STANDARD,
+  DEFAULT,
   FAST,
   HIGH_COMPRESSION
 } compression_type;
@@ -96,7 +96,7 @@ py_lz4_compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwds)
   PyObject *result;
   static char *argnames[] = { "source", "mode", "acceleration" };
   const char *source;
-  const char *mode = "standard";
+  const char *mode = "default";
   int source_size, acceleration = 1;
   char *dest;
   int dest_size;
@@ -109,9 +109,9 @@ py_lz4_compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwds)
       return NULL;
     }
 
-  if (!strncmp (mode, "standard", sizeof ("standard")))
+  if (!strncmp (mode, "default", sizeof ("default")))
     {
-      compression = STANDARD;
+      compression = DEFAULT;
     }
   else if (!strncmp (mode, "fast", sizeof ("fast")))
     {
@@ -148,7 +148,7 @@ py_lz4_compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwds)
 
       switch (compression)
 	{
-	case STANDARD:
+	case DEFAULT:
 	  osize = LZ4_compress (source, dest + hdr_size, source_size);
 	  break;
 	case FAST:
