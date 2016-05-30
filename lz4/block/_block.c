@@ -35,6 +35,14 @@
 #include "lz4.h"
 #include "lz4hc.h"
 
+#ifndef Py_UNUSED
+#ifdef __GNUC__
+#define Py_UNUSED(name) _unused_ ## name __attribute__((unused))
+#else
+#define Py_UNUSED(name) _unused_ ## name
+#endif
+#endif
+
 #if defined(_WIN32) && defined(_MSC_VER)
 #define inline __inline
 #if _MSC_VER >= 1600
@@ -83,7 +91,7 @@ typedef enum
 } compression_type;
 
 static PyObject *
-py_lz4_compress (PyObject * self, PyObject * args, PyObject * kwds)
+py_lz4_compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwds)
 {
   PyObject *result;
   static char *argnames[] = { "source", "mode", "acceleration" };
@@ -172,7 +180,7 @@ py_lz4_compress (PyObject * self, PyObject * args, PyObject * kwds)
 }
 
 static PyObject *
-py_lz4_decompress (PyObject * self, PyObject * args)
+py_lz4_decompress (PyObject * Py_UNUSED (self), PyObject * args)
 {
   PyObject *result;
   const char *source;
@@ -225,7 +233,7 @@ py_lz4_decompress (PyObject * self, PyObject * args)
 }
 
 static PyObject *
-py_lz4_versionnumber (PyObject * self, PyObject * args)
+py_lz4_versionnumber (PyObject * Py_UNUSED (self), PyObject * Py_UNUSED (args))
 {
   return Py_BuildValue ("i", LZ4_versionNumber ());
 }
