@@ -69,6 +69,10 @@ load_le32 (const char *c)
   return d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
 }
 
+#ifdef inline
+#undef inline
+#endif
+
 static const int hdr_size = sizeof (uint32_t);
 
 typedef enum
