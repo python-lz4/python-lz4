@@ -11,9 +11,21 @@ class TestLZ4Block(unittest.TestCase):
     def test_random(self):
       DATA = os.urandom(128 * 1024)  # Read 128kb
       self.assertEqual(DATA, lz4.block.decompress(lz4.compress(DATA)))
+
+    def test_random_hc(self):
+      DATA = os.urandom(128 * 1024)  # Read 128kb
       self.assertEqual(DATA, lz4.block.decompress(lz4.compress(DATA, mode='high_compression')))
+
+    def test_random_fast1(self):
+      DATA = os.urandom(128 * 1024)  # Read 128kb
       self.assertEqual(DATA, lz4.block.decompress(lz4.compress(DATA, mode='fast')))
+
+    def test_random_fast2(self):
+      DATA = os.urandom(128 * 1024)  # Read 128kb
       self.assertEqual(DATA, lz4.block.decompress(lz4.compress(DATA, mode='fast', acceleration=5)))
+
+    def test_random_fast3(self):
+      DATA = os.urandom(128 * 1024)  # Read 128kb
       self.assertEqual(DATA, lz4.block.decompress(lz4.compress(DATA, mode='fast', acceleration=9)))
 
     def test_threads(self):
@@ -26,6 +38,45 @@ class TestLZ4Block(unittest.TestCase):
         assert data == out
         pool.close()
 
+    def test_threads_hc(self):
+        data = [os.urandom(128 * 1024) for i in range(100)]
+        def roundtriphc(x):
+            return lz4.decompress(lz4.compress(x, mode='high_compression'))
+
+        pool = ThreadPool(8)
+        out = pool.map(roundtriphc, data)
+        assert data == out
+        pool.close()
+
+    def test_threads_fast1(self):
+        data = [os.urandom(128 * 1024) for i in range(100)]
+        def roundtripfast(x):
+            return lz4.decompress(lz4.compress(x, mode='fast', acceleration=1))
+
+        pool = ThreadPool(8)
+        out = pool.map(roundtripfast, data)
+        assert data == out
+        pool.close()
+
+    def test_threads_fast2(self):
+        data = [os.urandom(128 * 1024) for i in range(100)]
+        def roundtripfast(x):
+            return lz4.decompress(lz4.compress(x, mode='fast', acceleration=4))
+
+        pool = ThreadPool(8)
+        out = pool.map(roundtripfast, data)
+        assert data == out
+        pool.close()
+
+    def test_threads_fast3(self):
+        data = [os.urandom(128 * 1024) for i in range(100)]
+        def roundtripfast(x):
+            return lz4.decompress(lz4.compress(x, mode='fast', acceleration=8))
+
+        pool = ThreadPool(8)
+        out = pool.map(roundtripfast, data)
+        assert data == out
+        pool.close()
 
 if __name__ == '__main__':
     unittest.main()
