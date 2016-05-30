@@ -283,11 +283,6 @@ PyInit__block (void)
 PyMODINIT_FUNC
 init_block (void)
 {
-  PyObject *module = Py_InitModule ("_block", Lz4Methods);
-
-  if (module == NULL)
-    {
-      return;
-    }
+  (void) Py_InitModule ("_block", Lz4Methods);
 }
 #endif /* PY_MAJOR_VERSION >= 3 */
