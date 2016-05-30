@@ -94,32 +94,32 @@ static PyObject *
 py_lz4_compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwds)
 {
   PyObject *result;
-  static char *argnames[] = { "source", "mode", "acceleration" };
+  static char *argnames[] = { "source", "mode", "acceleration", "compression", NULL };
   const char *source;
   const char *mode = "default";
-  int source_size, acceleration = 1;
+  int source_size, acceleration = 1, compression = 0;
   char *dest;
   int dest_size;
-  compression_type compression;
+  compression_type comp;
 
-  if (!PyArg_ParseTupleAndKeywords (args, kwds, "s#|sI", argnames,
+  if (!PyArg_ParseTupleAndKeywords (args, kwds, "s#|sII", argnames,
 				    &source, &source_size,
-				    &mode, &acceleration))
+				    &mode, &acceleration, &compression))
     {
       return NULL;
     }
 
   if (!strncmp (mode, "default", sizeof ("default")))
     {
-      compression = DEFAULT;
+      comp = DEFAULT;
     }
   else if (!strncmp (mode, "fast", sizeof ("fast")))
     {
-      compression = FAST;
+      comp = FAST;
     }
   else if (!strncmp (mode, "high_compression", sizeof ("high_compression")))
     {
-      compression = HIGH_COMPRESSION;
+      comp = HIGH_COMPRESSION;
     }
   else
     {
@@ -146,7 +146,7 @@ py_lz4_compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwds)
 
       Py_BEGIN_ALLOW_THREADS
 
-      switch (compression)
+      switch (comp)
 	{
 	case DEFAULT:
 	  osize = LZ4_compress_default (source, dest + hdr_size, source_size,
@@ -158,7 +158,9 @@ py_lz4_compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwds)
 				     acceleration);
 	  break;
 	case HIGH_COMPRESSION:
-	  osize = LZ4_compressHC (source, dest + hdr_size, source_size);
+	  osize = LZ4_compress_HC (source, dest + hdr_size, source_size,
+				   LZ4_compressBound (source_size),
+				   compression);
 	  break;
 	}
 
