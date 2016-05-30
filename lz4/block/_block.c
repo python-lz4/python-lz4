@@ -53,8 +53,6 @@ typedef unsigned int uint32_t;
 #define inline
 #endif
 
-typedef int (*compressor) (const char *source, char *dest, int isize);
-
 static inline void
 store_le32 (char *c, uint32_t x)
 {
