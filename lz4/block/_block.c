@@ -149,7 +149,8 @@ py_lz4_compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwds)
       switch (compression)
 	{
 	case DEFAULT:
-	  osize = LZ4_compress (source, dest + hdr_size, source_size);
+	  osize = LZ4_compress_default (source, dest + hdr_size, source_size,
+					LZ4_compressBound (source_size));
 	  break;
 	case FAST:
 	  osize = LZ4_compress_fast (source, dest + hdr_size, source_size,
