@@ -96,7 +96,7 @@ py_lz4_compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwds)
   PyObject *result;
   static char *argnames[] = { "source", "mode", "acceleration" };
   const char *source;
-  char mode[] = "standard";
+  const char *mode = "standard";
   int source_size, acceleration = 1;
   char *dest;
   int dest_size;
