@@ -69,82 +69,100 @@ static inline uint32_t load_le32(const char *c) {
 
 static const int hdr_size = sizeof(uint32_t);
 
+typedef enum {
+  STANDARD,
+  FAST,
+  HIGH_COMPRESSION
+} compression_type;
 
-static PyObject *py_lz4_compress_fast(PyObject *self, PyObject *args) {
-    PyObject *result;
-    const char *source;
-    int source_size;
-    char *dest;
-    int dest_size;
-    int acceleration;
+static PyObject *py_lz4_compress(PyObject *self, PyObject *args, PyObject *kwds)
+{
+  PyObject *result;
+  static char* argnames[] = {"source", "mode", "acceleration"};
+  const char *source;
+  char mode[] = "standard";
+  int source_size, acceleration = 1;
+  char *dest;
+  int dest_size;
+  compression_type compression;
 
-    if (!PyArg_ParseTuple(args, "s#I", &source, &source_size, &acceleration))
-        return NULL;
-
-    dest_size = hdr_size + LZ4_compressBound(source_size);
-    result = PyBytes_FromStringAndSize(NULL, dest_size);
-    if (result == NULL) {
-        return NULL;
+  if (!PyArg_ParseTupleAndKeywords(args, kwds,"s#|sI", argnames,
+				   &source, &source_size,
+				   &mode, &acceleration))
+    {
+      return NULL;
     }
-    dest = PyBytes_AS_STRING(result);
-    store_le32(dest, source_size);
-    if (source_size > 0) {
-    	//int LZ4_compress_fast(const char* source, char* dest, int inputSize, int maxOutputSize, int acceleration)
-        int osize = LZ4_compress_fast(source, dest + hdr_size, source_size, LZ4_compressBound(source_size), acceleration);
-        int actual_size = hdr_size + osize;
-        /* Resizes are expensive; tolerate some slop to avoid. */
-        if (actual_size < (dest_size / 4) * 3) {
-            _PyBytes_Resize(&result, actual_size);
-        } else {
-            Py_SIZE(result) = actual_size;
-        }
+
+  if (!strncmp(mode, "standard", sizeof("standard")))  
+    {
+      compression = STANDARD;
     }
-    return result;
+  else if (!strncmp(mode, "fast", sizeof("fast")))
+    {
+      compression = FAST;
+    }
+  else if (!strncmp(mode, "high_compression", sizeof("high_compression")))
+    {
+      compression = HIGH_COMPRESSION;
+    }
+  else
+    {
+      PyErr_Format(PyExc_ValueError,
+		   "Invalid mode argument: %s. Must be one of: standard, fast, high_compression",
+		   mode); 
+      return NULL;
+    }
+
+  dest_size = hdr_size + LZ4_compressBound(source_size);
+  
+  result = PyBytes_FromStringAndSize(NULL, dest_size);
+  if (result == NULL)
+    {
+      return NULL;
+    }
+
+  dest = PyBytes_AS_STRING(result);
+  store_le32(dest, source_size);
+
+  if (source_size > 0)
+    {
+      int osize, actual_size;
+      
+      Py_BEGIN_ALLOW_THREADS
+
+      switch(compression)
+	{
+	case STANDARD:
+	  osize = LZ4_compress(source, dest + hdr_size, source_size);
+	  break;
+	case FAST:
+	  osize = LZ4_compress_fast(source, dest + hdr_size, source_size,
+				    LZ4_compressBound(source_size), acceleration);
+	  break;
+	case HIGH_COMPRESSION:
+	  osize = LZ4_compressHC(source, dest + hdr_size, source_size);
+	  break;
+	}
+      
+      actual_size = hdr_size + osize;
+
+      Py_END_ALLOW_THREADS
+	
+      /* Resizes are expensive; tolerate some slop to avoid. */
+      if (actual_size < (dest_size / 4) * 3)
+	{
+	  _PyBytes_Resize(&result, actual_size);
+	}
+      else
+	{
+	  Py_SIZE(result) = actual_size;
+	}
+    }
+
+  return result;
 }
 
-
-static PyObject *compress_with(compressor compress, PyObject *self, PyObject *args) {
-    PyObject *result;
-    const char *source;
-    int source_size;
-    char *dest;
-    int dest_size;
-
-    if (!PyArg_ParseTuple(args, "s#", &source, &source_size))
-        return NULL;
-
-    dest_size = hdr_size + LZ4_compressBound(source_size);
-    result = PyBytes_FromStringAndSize(NULL, dest_size);
-    if (result == NULL) {
-        return NULL;
-    }
-    dest = PyBytes_AS_STRING(result);
-    store_le32(dest, source_size);
-    if (source_size > 0) {
-        int osize = -1;
-        Py_BEGIN_ALLOW_THREADS
-        osize = compress(source, dest + hdr_size, source_size);
-        Py_END_ALLOW_THREADS
-        int actual_size = hdr_size + osize;
-        /* Resizes are expensive; tolerate some slop to avoid. */
-        if (actual_size < (dest_size / 4) * 3) {
-            _PyBytes_Resize(&result, actual_size);
-        } else {
-            Py_SIZE(result) = actual_size;
-        }
-    }
-    return result;
-}
-
-static PyObject *py_lz4_compress(PyObject *self, PyObject *args) {
-    return compress_with(LZ4_compress, self, args);
-}
-
-static PyObject *py_lz4_compressHC(PyObject *self, PyObject *args) {
-    return compress_with(LZ4_compressHC, self, args);
-}
-
-static PyObject *py_lz4_uncompress(PyObject *self, PyObject *args) {
+static PyObject *py_lz4_decompress(PyObject *self, PyObject *args) {
     PyObject *result;
     const char *source;
     int source_size;
@@ -183,29 +201,17 @@ static PyObject *py_lz4_versionnumber(PyObject *self, PyObject *args) {
   return Py_BuildValue("i", LZ4_versionNumber());
 }
 
-#define COMPRESS_DOCSTRING      "Compress string, returning the compressed data.\nRaises an exception if any error occurs."
-#define COMPRESSFAST_DOCSTRING  "Compress string with the given acceleration, returning the compressed data.\nRaises an exception if any error occurs."
-#define COMPRESSHC_DOCSTRING    COMPRESS_DOCSTRING "\n\nCompared to compress, this gives a better compression ratio, but is much slower."
-#define UNCOMPRESS_DOCSTRING    "Decompress string, returning the uncompressed data.\nRaises an exception if any error occurs."
+#define COMPRESS_DOCSTRING "Compress string, returning the compressed data.\nRaises an exception if any error occurs."
+#define DECOMPRESS_DOCSTRING "Decompress string, returning the uncompressed data.\nRaises an exception if any error occurs."
 
 static PyMethodDef Lz4Methods[] = {
-	{"LZ4_compress_fast",  py_lz4_compress_fast, METH_VARARGS, COMPRESSFAST_DOCSTRING},
-    {"LZ4_compress",  py_lz4_compress, METH_VARARGS, COMPRESS_DOCSTRING},
-    {"LZ4_uncompress",  py_lz4_uncompress, METH_VARARGS, UNCOMPRESS_DOCSTRING},
-    {"compress",  py_lz4_compress, METH_VARARGS, COMPRESS_DOCSTRING},
-    {"compress_fast",  py_lz4_compress_fast, METH_VARARGS, COMPRESS_DOCSTRING},
-    {"compressHC",  py_lz4_compressHC, METH_VARARGS, COMPRESSHC_DOCSTRING},
-    {"uncompress",  py_lz4_uncompress, METH_VARARGS, UNCOMPRESS_DOCSTRING},
-    {"decompress",  py_lz4_uncompress, METH_VARARGS, UNCOMPRESS_DOCSTRING},
-    {"dumps",  py_lz4_compress, METH_VARARGS, COMPRESS_DOCSTRING},
-    {"loads",  py_lz4_uncompress, METH_VARARGS, UNCOMPRESS_DOCSTRING},
-    {"lz4version",  py_lz4_versionnumber, METH_VARARGS, "Returns the version number of the lz4 C library"},
-    {NULL, NULL, 0, NULL}
+  {"compress",  (PyCFunction) py_lz4_compress, METH_VARARGS | METH_KEYWORDS, COMPRESS_DOCSTRING},
+  {"decompress",  py_lz4_decompress, METH_VARARGS, DECOMPRESS_DOCSTRING},
+  {"lz4version",  py_lz4_versionnumber, METH_VARARGS, "Returns the version number of the lz4 C library"},
+  {NULL, NULL, 0, NULL}
 };
 #undef COMPRESS_DOCSTRING
-#undef COMPRESSFAST_DOCSTRING
-#undef COMPRESSHC_DOCSTRING
-#undef UNCOMPRESS_DOCSTRING
+#undef DECOMPRESS_DOCSTRING
 
 #if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef moduledef = {
