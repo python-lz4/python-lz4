@@ -20,7 +20,7 @@ class TestLZ4Block(unittest.TestCase):
     def test_random_hc2(self):
       DATA = os.urandom(128 * 1024)  # Read 128kb
       self.assertEqual(DATA, lz4.block.decompress(
-          lz4.compress(DATA, mode='high_compression', acceleration=0,compression=7)))
+          lz4.compress(DATA, mode='high_compression', compression=7)))
 
     def test_random_hc3(self):
       DATA = os.urandom(128 * 1024)  # Read 128kb
