@@ -38,6 +38,14 @@
 #include "lz4frame.h"
 #include "structmember.h"
 
+#ifndef Py_UNUSED /* This is already defined for Python 3.4 onwards */
+#ifdef __GNUC__
+#define Py_UNUSED(name) _unused_ ## name __attribute__((unused))
+#else
+#define Py_UNUSED(name) _unused_ ## name
+#endif
+#endif
+
 #if defined(_WIN32) && defined(_MSC_VER)
 # define inline __inline
 # if _MSC_VER >= 1600
@@ -66,13 +74,10 @@ static int LZ4S_GetBlockSize_FromBlockId (int id) { return (1 << (8 + (2 * id)))
 
 /* Compression methods */
 
-static PyObject *py_lz4f_createCompCtx(PyObject *self, PyObject *args) {
+static PyObject *py_lz4f_createCompCtx(PyObject * PyUNUSED(self), PyObject * Py_UNUSED(args)) {
     PyObject *result;
     LZ4F_compressionContext_t cCtx;
     size_t err;
-
-    (void)self;
-    (void)args;
 
     err = LZ4F_createCompressionContext(&cCtx, LZ4F_VERSION);
     CHECK(err, "Allocation failed (error %i)", (int)err);
@@ -98,7 +103,7 @@ static PyObject *py_lz4f_freeCompCtx(PyObject *self, PyObject *args) {
     return Py_None;
 }
 
-static PyObject *py_lz4f_compressFrame(PyObject *self, PyObject *args) {
+static PyObject *py_lz4f_compressFrame(PyObject * Py_UNUSED(self), PyObject *args) {
     PyObject *result;
     const char* source;
     char* dest;
@@ -107,7 +112,6 @@ static PyObject *py_lz4f_compressFrame(PyObject *self, PyObject *args) {
     size_t final_size;
     size_t ssrc_size;
 
-    (void)self;
     if (!PyArg_ParseTuple(args, "s#", &source, &src_size)) {
         return NULL;
     }
@@ -125,7 +129,7 @@ static PyObject *py_lz4f_compressFrame(PyObject *self, PyObject *args) {
 }
 
 
-static PyObject *py_lz4f_makePrefs(PyObject *self, PyObject *args, PyObject *keywds) {
+static PyObject *py_lz4f_makePrefs(PyObject * Py_UNUSED(self), PyObject *args, PyObject *keywds) {
     LZ4F_frameInfo_t frameInfo;
     LZ4F_preferences_t* prefs;
     PyObject *result = PyDict_New();
@@ -137,7 +141,6 @@ static PyObject *py_lz4f_makePrefs(PyObject *self, PyObject *args, PyObject *key
 //    unsigned int compLevel=0; //For future expansion
     unsigned int autoFlush=0;
 
-    (void)self;
     if (!PyArg_ParseTupleAndKeywords(args, keywds, "|IIII", kwlist, &blkID,
                                      &blkMode, &chkSumFlag, &autoFlush)) {
         return NULL;
@@ -155,7 +158,7 @@ static PyObject *py_lz4f_makePrefs(PyObject *self, PyObject *args, PyObject *key
 //    return Py_None;
 }
 
-static PyObject *py_lz4f_compressBegin(PyObject *self, PyObject *args) {
+static PyObject *py_lz4f_compressBegin(PyObject * Py_UNUSED(self), PyObject *args) {
     char* dest;
     LZ4F_compressionContext_t cCtx;
     LZ4F_preferences_t prefs = {{7, 0, 0, 0, 0, {0}}, 0, 0, {0}};
@@ -166,7 +169,6 @@ static PyObject *py_lz4f_compressBegin(PyObject *self, PyObject *args) {
     size_t dest_size;
     size_t final_size;
 
-    (void)self;
     if (!PyArg_ParseTuple(args, "O|O", &py_cCtx, &py_prefsPtr)) {
         return NULL;
     }
@@ -189,7 +191,7 @@ _output_error:
     return Py_None;
 }
 
-static PyObject *py_lz4f_compressUpdate(PyObject *self, PyObject *args) {
+static PyObject *py_lz4f_compressUpdate(PyObject * Py_UNUSED(self), PyObject *args) {
     const char* source;
     char* dest;
     int src_size;
@@ -200,7 +202,6 @@ static PyObject *py_lz4f_compressUpdate(PyObject *self, PyObject *args) {
     size_t final_size;
     size_t ssrc_size;
 
-    (void)self;
     if (!PyArg_ParseTuple(args, "s#O", &source, &src_size, &py_cCtx)) {
         return NULL;
     }
@@ -221,7 +222,7 @@ _output_error:
     return Py_None;
 }
 
-static PyObject *py_lz4f_compressEnd(PyObject *self, PyObject *args) {
+static PyObject *py_lz4f_compressEnd(PyObject * Py_UNUSED(self), PyObject *args) {
     char* dest;
     LZ4F_compressionContext_t cCtx;
     PyObject *result;
@@ -229,7 +230,6 @@ static PyObject *py_lz4f_compressEnd(PyObject *self, PyObject *args) {
     size_t dest_size;
     size_t final_size;
 
-    (void)self;
     if (!PyArg_ParseTuple(args, "O", &py_cCtx)) {
         return NULL;
     }
@@ -251,13 +251,10 @@ _output_error:
 
 
 /* Decompression methods */
-static PyObject *py_lz4f_createDecompCtx(PyObject *self, PyObject *args) {
+static PyObject *py_lz4f_createDecompCtx(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args)) {
     PyObject *result;
     LZ4F_decompressionContext_t dCtx;
     size_t err;
-
-    (void)self;
-    (void)args;
 
     err = LZ4F_createDecompressionContext(&dCtx, LZ4F_VERSION);
     CHECK(LZ4F_isError(err), "Allocation failed (error %i)", (int)err);
@@ -268,11 +265,10 @@ _output_error:
     return Py_None;
 }
 
-static PyObject *py_lz4f_freeDecompCtx(PyObject *self, PyObject *args) {
+static PyObject *py_lz4f_freeDecompCtx(PyObject * Py_UNUSED(self), PyObject *args) {
     PyObject *py_dCtx;
     LZ4F_decompressionContext_t dCtx;
 
-    (void)self;
     if (!PyArg_ParseTuple(args, "O", &py_dCtx)) {
         return NULL;
     }
@@ -283,7 +279,7 @@ static PyObject *py_lz4f_freeDecompCtx(PyObject *self, PyObject *args) {
     return Py_None;
 }
 
-static PyObject *py_lz4f_getFrameInfo(PyObject *self, PyObject *args) {
+static PyObject *py_lz4f_getFrameInfo(PyObject * Py_UNUSED(self), PyObject *args) {
     const char *source;
     int src_size;
     LZ4F_decompressionContext_t dCtx;
@@ -296,7 +292,6 @@ static PyObject *py_lz4f_getFrameInfo(PyObject *self, PyObject *args) {
     size_t ssrc_size;
     size_t err;
 
-    (void)self;
     if (!PyArg_ParseTuple(args, "s#O", &source, &src_size, &py_dCtx)) {
         return NULL;
     }
@@ -320,11 +315,10 @@ _output_error:
     return Py_None;
 }
 
-static PyObject *py_lz4f_disableChecksum(PyObject *self, PyObject *args) {
+static PyObject *py_lz4f_disableChecksum(PyObject * Py_UNUSED(self), PyObject *args) {
     PyObject *py_dCtx;
     LZ4F_decompressionContext_t dCtx;
 
-    (void)self;
     if (!PyArg_ParseTuple(args, "O", &py_dCtx)) {
         return NULL;
     }
@@ -335,7 +329,7 @@ static PyObject *py_lz4f_disableChecksum(PyObject *self, PyObject *args) {
     return Py_None;
 }
 
-static PyObject *py_lz4f_decompress(PyObject *self, PyObject *args, PyObject *keywds) {
+static PyObject *py_lz4f_decompress(PyObject * Py_UNUSED(self), PyObject *args, PyObject *keywds) {
     const char* source;
     char* dest;
     LZ4F_decompressionContext_t dCtx;
@@ -350,7 +344,6 @@ static PyObject *py_lz4f_decompress(PyObject *self, PyObject *args, PyObject *ke
     static char *kwlist[] = {"source", "dCtx", "blkSizeID", NULL};
     unsigned int blkID=7;
 
-    (void)self;
     if (!PyArg_ParseTupleAndKeywords(args, keywds, "s#O|i", kwlist, &source,
                                      &src_size, &py_dCtx, &blkID)) {
         return NULL;
