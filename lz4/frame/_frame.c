@@ -38,7 +38,7 @@
 #include "lz4frame.h"
 #include "structmember.h"
 
-#ifndef Py_UNUSED /* This is already defined for Python 3.4 onwards */
+#ifndef Py_UNUSED		/* This is already defined for Python 3.4 onwards */
 #ifdef __GNUC__
 #define Py_UNUSED(name) _unused_ ## name __attribute__((unused))
 #else
@@ -47,17 +47,17 @@
 #endif
 
 #if defined(_WIN32) && defined(_MSC_VER)
-# define inline __inline
-# if _MSC_VER >= 1600
-#  include <stdint.h>
-# else /* _MSC_VER >= 1600 */
-   typedef signed char       int8_t;
-   typedef signed short      int16_t;
-   typedef signed int        int32_t;
-   typedef unsigned char     uint8_t;
-   typedef unsigned short    uint16_t;
-   typedef unsigned int      uint32_t;
-# endif /* _MSC_VER >= 1600 */
+#define inline __inline
+#if _MSC_VER >= 1600
+#include <stdint.h>
+#else /* _MSC_VER >= 1600 */
+typedef signed char int8_t;
+typedef signed short int16_t;
+typedef signed int int32_t;
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned int uint32_t;
+#endif /* _MSC_VER >= 1600 */
 #endif
 
 #if defined(__SUNPRO_C) || defined(__hpux) || defined(_AIX)
@@ -65,322 +65,383 @@
 #endif
 
 #if PY_MAJOR_VERSION >= 3
-   #define PyInt_FromSize_t(x) PyLong_FromSize_t(x)
+#define PyInt_FromSize_t(x) PyLong_FromSize_t(x)
 #endif
 
-static int LZ4S_GetBlockSize_FromBlockId (int id) { return (1 << (8 + (2 * id))); }
+static int
+LZ4S_GetBlockSize_FromBlockId (int id)
+{
+  return (1 << (8 + (2 * id)));
+}
 
 /* Compression methods */
 
-static PyObject *py_lz4f_createCompCtx(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args)) {
-    PyObject *result;
-    LZ4F_compressionContext_t cCtx;
-    size_t err;
+static PyObject *
+py_lz4f_createCompCtx (PyObject * Py_UNUSED (self),
+		       PyObject * Py_UNUSED (args))
+{
+  PyObject *result;
+  LZ4F_compressionContext_t cCtx;
+  size_t err;
 
-    err = LZ4F_createCompressionContext(&cCtx, LZ4F_VERSION);
-    if (LZ4F_isError(err))
-      {
-	PyErr_Format (PyExc_MemoryError, "LZ4F_createCompressionContext allocation failed: %s\n", LZ4F_getErrorName(err));
-	return Py_None;
-      }
+  err = LZ4F_createCompressionContext (&cCtx, LZ4F_VERSION);
+  if (LZ4F_isError (err))
+    {
+      PyErr_Format (PyExc_MemoryError,
+		    "LZ4F_createCompressionContext allocation failed: %s\n",
+		    LZ4F_getErrorName (err));
+      return Py_None;
+    }
 
-    result = PyCapsule_New(cCtx, NULL, NULL);
+  result = PyCapsule_New (cCtx, NULL, NULL);
 
-    return result;
+  return result;
 }
 
-static PyObject *py_lz4f_freeCompCtx(PyObject *self, PyObject *args) {
-    PyObject *py_cCtx;
-    LZ4F_compressionContext_t cCtx;
+static PyObject *
+py_lz4f_freeCompCtx (PyObject * self, PyObject * args)
+{
+  PyObject *py_cCtx;
+  LZ4F_compressionContext_t cCtx;
 
-    (void)self;
-    if (!PyArg_ParseTuple(args, "O", &py_cCtx)) {
-        return NULL;
+  (void) self;
+  if (!PyArg_ParseTuple (args, "O", &py_cCtx))
+    {
+      return NULL;
     }
 
-    cCtx = (LZ4F_compressionContext_t)PyCapsule_GetPointer(py_cCtx, NULL);
-    LZ4F_freeCompressionContext(cCtx);
+  cCtx = (LZ4F_compressionContext_t) PyCapsule_GetPointer (py_cCtx, NULL);
+  LZ4F_freeCompressionContext (cCtx);
 
-    return Py_None;
+  return Py_None;
 }
 
-static PyObject *py_lz4f_compressFrame(PyObject * Py_UNUSED(self), PyObject *args) {
-    PyObject *result;
-    const char* source;
-    char* dest;
-    int src_size;
-    size_t dest_size;
-    size_t final_size;
-    size_t ssrc_size;
+static PyObject *
+py_lz4f_compressFrame (PyObject * Py_UNUSED (self), PyObject * args)
+{
+  PyObject *result;
+  const char *source;
+  char *dest;
+  int src_size;
+  size_t dest_size;
+  size_t final_size;
+  size_t ssrc_size;
 
-    if (!PyArg_ParseTuple(args, "s#", &source, &src_size)) {
-        return NULL;
+  if (!PyArg_ParseTuple (args, "s#", &source, &src_size))
+    {
+      return NULL;
     }
 
-    ssrc_size = (size_t)src_size;
-    dest_size = LZ4F_compressFrameBound(ssrc_size, NULL);
-    dest = (char*)malloc(dest_size);
+  ssrc_size = (size_t) src_size;
+  dest_size = LZ4F_compressFrameBound (ssrc_size, NULL);
+  dest = (char *) malloc (dest_size);
 
-    final_size = LZ4F_compressFrame(dest, dest_size, source, ssrc_size, NULL);
-    result = PyBytes_FromStringAndSize(dest, final_size);
+  final_size = LZ4F_compressFrame (dest, dest_size, source, ssrc_size, NULL);
+  result = PyBytes_FromStringAndSize (dest, final_size);
 
-    free(dest);
+  free (dest);
 
-    return result;
+  return result;
 }
 
 
-static PyObject *py_lz4f_makePrefs(PyObject * Py_UNUSED(self), PyObject *args, PyObject *keywds) {
-    LZ4F_frameInfo_t frameInfo;
-    LZ4F_preferences_t* prefs;
-    PyObject *result = PyDict_New();
-    static char *kwlist[] = {"blockSizeID", "blockMode", "chkFlag"
-                             "autoFlush", NULL};
-    unsigned int blkID=7;
-    unsigned int blkMode=1;
-    unsigned int chkSumFlag=0;
-    unsigned int autoFlush=0;
+static PyObject *
+py_lz4f_makePrefs (PyObject * Py_UNUSED (self), PyObject * args,
+		   PyObject * keywds)
+{
+  LZ4F_frameInfo_t frameInfo;
+  LZ4F_preferences_t *prefs;
+  PyObject *result = PyDict_New ();
+  static char *kwlist[] = { "blockSizeID", "blockMode", "chkFlag"
+      "autoFlush", NULL
+  };
+  unsigned int blkID = 7;
+  unsigned int blkMode = 1;
+  unsigned int chkSumFlag = 0;
+  unsigned int autoFlush = 0;
 
-    if (!PyArg_ParseTupleAndKeywords(args, keywds, "|IIII", kwlist, &blkID,
-                                     &blkMode, &chkSumFlag, &autoFlush)) {
-        return NULL;
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "|IIII", kwlist, &blkID,
+				    &blkMode, &chkSumFlag, &autoFlush))
+    {
+      return NULL;
     }
 
-    prefs = calloc(1,sizeof(LZ4F_preferences_t));
-    frameInfo = (LZ4F_frameInfo_t){blkID, blkMode, chkSumFlag, 0, 0, {0,0}};
-    prefs->frameInfo = frameInfo;
-    prefs->autoFlush = autoFlush;
-    result = PyCapsule_New(prefs, NULL, NULL);
+  prefs = calloc (1, sizeof (LZ4F_preferences_t));
+  frameInfo = (LZ4F_frameInfo_t)
+  {
+    blkID, blkMode, chkSumFlag, 0, 0,
+    {0, 0}
+  };
+  prefs->frameInfo = frameInfo;
+  prefs->autoFlush = autoFlush;
+  result = PyCapsule_New (prefs, NULL, NULL);
 
-    return result;
+  return result;
 }
 
-static PyObject *py_lz4f_compressBegin(PyObject * Py_UNUSED(self), PyObject *args) {
-    char* dest;
-    LZ4F_compressionContext_t cCtx;
-    LZ4F_preferences_t prefs = {{7, 0, 0, 0, 0, {0}}, 0, 0, {0}};
-    LZ4F_preferences_t* prefsPtr = &prefs;
-    PyObject *result;
-    PyObject *py_cCtx;
-    PyObject *py_prefsPtr = Py_None;
-    size_t dest_size;
-    size_t final_size;
+static PyObject *
+py_lz4f_compressBegin (PyObject * Py_UNUSED (self), PyObject * args)
+{
+  char *dest;
+  LZ4F_compressionContext_t cCtx;
+  LZ4F_preferences_t prefs = { {7, 0, 0, 0, 0, {0}}, 0, 0, {0} };
+  LZ4F_preferences_t *prefsPtr = &prefs;
+  PyObject *result;
+  PyObject *py_cCtx;
+  PyObject *py_prefsPtr = Py_None;
+  size_t dest_size;
+  size_t final_size;
 
-    if (!PyArg_ParseTuple(args, "O|O", &py_cCtx, &py_prefsPtr)) {
-        return NULL;
+  if (!PyArg_ParseTuple (args, "O|O", &py_cCtx, &py_prefsPtr))
+    {
+      return NULL;
     }
 
-    cCtx = (LZ4F_compressionContext_t)PyCapsule_GetPointer(py_cCtx, NULL);
-    dest_size = 19;
-    dest = (char*)malloc(dest_size);
-    if (py_prefsPtr != Py_None) {
-        prefsPtr = (LZ4F_preferences_t*)PyCapsule_GetPointer(py_prefsPtr, NULL);
+  cCtx = (LZ4F_compressionContext_t) PyCapsule_GetPointer (py_cCtx, NULL);
+  dest_size = 19;
+  dest = (char *) malloc (dest_size);
+  if (py_prefsPtr != Py_None)
+    {
+      prefsPtr =
+	(LZ4F_preferences_t *) PyCapsule_GetPointer (py_prefsPtr, NULL);
     }
 
-    final_size = LZ4F_compressBegin(cCtx, dest, dest_size, prefsPtr);
-    if (LZ4F_isError(final_size))
-      {
-	PyErr_Format (PyExc_RuntimeError, "LZ4F_compressBegin failed: %s\n", LZ4F_getErrorName(final_size));
-	return Py_None;
-      }
+  final_size = LZ4F_compressBegin (cCtx, dest, dest_size, prefsPtr);
+  if (LZ4F_isError (final_size))
+    {
+      PyErr_Format (PyExc_RuntimeError, "LZ4F_compressBegin failed: %s\n",
+		    LZ4F_getErrorName (final_size));
+      return Py_None;
+    }
 
-    result = PyBytes_FromStringAndSize(dest, final_size);
+  result = PyBytes_FromStringAndSize (dest, final_size);
 
-    free(dest);
+  free (dest);
 
-    return result;
+  return result;
 }
 
-static PyObject *py_lz4f_compressUpdate(PyObject * Py_UNUSED(self), PyObject *args) {
-    const char* source;
-    char* dest;
-    int src_size;
-    LZ4F_compressionContext_t cCtx;
-    PyObject *result;
-    PyObject *py_cCtx;
-    size_t dest_size;
-    size_t final_size;
-    size_t ssrc_size;
+static PyObject *
+py_lz4f_compressUpdate (PyObject * Py_UNUSED (self), PyObject * args)
+{
+  const char *source;
+  char *dest;
+  int src_size;
+  LZ4F_compressionContext_t cCtx;
+  PyObject *result;
+  PyObject *py_cCtx;
+  size_t dest_size;
+  size_t final_size;
+  size_t ssrc_size;
 
-    if (!PyArg_ParseTuple(args, "s#O", &source, &src_size, &py_cCtx)) {
-        return NULL;
+  if (!PyArg_ParseTuple (args, "s#O", &source, &src_size, &py_cCtx))
+    {
+      return NULL;
     }
 
-    cCtx = (LZ4F_compressionContext_t)PyCapsule_GetPointer(py_cCtx, NULL);
-    ssrc_size = (size_t)src_size;
-    dest_size = LZ4F_compressBound(ssrc_size, (LZ4F_preferences_t *)cCtx);
-    dest = (char*)malloc(dest_size);
+  cCtx = (LZ4F_compressionContext_t) PyCapsule_GetPointer (py_cCtx, NULL);
+  ssrc_size = (size_t) src_size;
+  dest_size = LZ4F_compressBound (ssrc_size, (LZ4F_preferences_t *) cCtx);
+  dest = (char *) malloc (dest_size);
 
-    final_size = LZ4F_compressUpdate(cCtx, dest, dest_size, source, ssrc_size, NULL);
-    if (LZ4F_isError(final_size))
-      {
-	PyErr_Format (PyExc_RuntimeError, "LZ4F_compressUpdate failed: %s\n", LZ4F_getErrorName(final_size));
-	return Py_None;
-      }
+  final_size =
+    LZ4F_compressUpdate (cCtx, dest, dest_size, source, ssrc_size, NULL);
+  if (LZ4F_isError (final_size))
+    {
+      PyErr_Format (PyExc_RuntimeError, "LZ4F_compressUpdate failed: %s\n",
+		    LZ4F_getErrorName (final_size));
+      return Py_None;
+    }
 
-    result = PyBytes_FromStringAndSize(dest, final_size);
+  result = PyBytes_FromStringAndSize (dest, final_size);
 
-    free(dest);
+  free (dest);
 
-    return result;
+  return result;
 }
 
-static PyObject *py_lz4f_compressEnd(PyObject * Py_UNUSED(self), PyObject *args) {
-    char* dest;
-    LZ4F_compressionContext_t cCtx;
-    PyObject *result;
-    PyObject *py_cCtx;
-    size_t dest_size;
-    size_t final_size;
+static PyObject *
+py_lz4f_compressEnd (PyObject * Py_UNUSED (self), PyObject * args)
+{
+  char *dest;
+  LZ4F_compressionContext_t cCtx;
+  PyObject *result;
+  PyObject *py_cCtx;
+  size_t dest_size;
+  size_t final_size;
 
-    if (!PyArg_ParseTuple(args, "O", &py_cCtx)) {
-        return NULL;
+  if (!PyArg_ParseTuple (args, "O", &py_cCtx))
+    {
+      return NULL;
     }
 
-    cCtx = (LZ4F_compressionContext_t)PyCapsule_GetPointer(py_cCtx, NULL);
-    dest_size = LZ4F_compressBound(0, (LZ4F_preferences_t *)cCtx);
-    dest = (char*)malloc(dest_size);
+  cCtx = (LZ4F_compressionContext_t) PyCapsule_GetPointer (py_cCtx, NULL);
+  dest_size = LZ4F_compressBound (0, (LZ4F_preferences_t *) cCtx);
+  dest = (char *) malloc (dest_size);
 
-    final_size = LZ4F_compressEnd(cCtx, dest, dest_size, NULL);
-    if (LZ4F_isError(final_size))
-      {
-	PyErr_Format (PyExc_RuntimeError, "LZ4F_compressEnd failed: %s\n", LZ4F_getErrorName(final_size));
-	return Py_None;
-      }
+  final_size = LZ4F_compressEnd (cCtx, dest, dest_size, NULL);
+  if (LZ4F_isError (final_size))
+    {
+      PyErr_Format (PyExc_RuntimeError, "LZ4F_compressEnd failed: %s\n",
+		    LZ4F_getErrorName (final_size));
+      return Py_None;
+    }
 
-    result = PyBytes_FromStringAndSize(dest, final_size);
+  result = PyBytes_FromStringAndSize (dest, final_size);
 
-    free(dest);
+  free (dest);
 
-    return result;
+  return result;
 }
 
 
 /* Decompression methods */
-static PyObject *py_lz4f_createDecompCtx(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args)) {
-    PyObject *result;
-    LZ4F_decompressionContext_t dCtx;
-    size_t err;
+static PyObject *
+py_lz4f_createDecompCtx (PyObject * Py_UNUSED (self),
+			 PyObject * Py_UNUSED (args))
+{
+  PyObject *result;
+  LZ4F_decompressionContext_t dCtx;
+  size_t err;
 
-    err = LZ4F_createDecompressionContext(&dCtx, LZ4F_VERSION);
-    if (LZ4F_isError(err))
-      {
-	PyErr_Format (PyExc_MemoryError, "LZ4F_createDecompressionContext failed: %s\n", LZ4F_getErrorName(err));
-	return Py_None;
-      }
-
-    result = PyCapsule_New(dCtx, NULL, NULL);
-
-    return result;
-}
-
-static PyObject *py_lz4f_freeDecompCtx(PyObject * Py_UNUSED(self), PyObject *args) {
-    PyObject *py_dCtx;
-    LZ4F_decompressionContext_t dCtx;
-
-    if (!PyArg_ParseTuple(args, "O", &py_dCtx)) {
-        return NULL;
+  err = LZ4F_createDecompressionContext (&dCtx, LZ4F_VERSION);
+  if (LZ4F_isError (err))
+    {
+      PyErr_Format (PyExc_MemoryError,
+		    "LZ4F_createDecompressionContext failed: %s\n",
+		    LZ4F_getErrorName (err));
+      return Py_None;
     }
 
-    dCtx = (LZ4F_decompressionContext_t)PyCapsule_GetPointer(py_dCtx, NULL);
-    LZ4F_freeDecompressionContext(dCtx);
+  result = PyCapsule_New (dCtx, NULL, NULL);
 
-    return Py_None;
+  return result;
 }
 
-static PyObject *py_lz4f_getFrameInfo(PyObject * Py_UNUSED(self), PyObject *args) {
-    const char *source;
-    int src_size;
-    LZ4F_decompressionContext_t dCtx;
-    LZ4F_frameInfo_t frameInfo;
-    PyObject *blkSize;
-    PyObject *blkMode;
-    PyObject *contChkFlag;
-    PyObject *py_dCtx;
-    PyObject *result = PyDict_New();
-    size_t ssrc_size;
-    size_t err;
+static PyObject *
+py_lz4f_freeDecompCtx (PyObject * Py_UNUSED (self), PyObject * args)
+{
+  PyObject *py_dCtx;
+  LZ4F_decompressionContext_t dCtx;
 
-    if (!PyArg_ParseTuple(args, "s#O", &source, &src_size, &py_dCtx)) {
-        return NULL;
+  if (!PyArg_ParseTuple (args, "O", &py_dCtx))
+    {
+      return NULL;
     }
 
-    dCtx = (LZ4F_decompressionContext_t)PyCapsule_GetPointer(py_dCtx, NULL);
-    ssrc_size = (size_t)src_size;
+  dCtx = (LZ4F_decompressionContext_t) PyCapsule_GetPointer (py_dCtx, NULL);
+  LZ4F_freeDecompressionContext (dCtx);
 
-    err = LZ4F_getFrameInfo(dCtx, &frameInfo, (unsigned char*)source, &ssrc_size);
-    if (LZ4F_isError(err))
-      {
-	PyErr_Format (PyExc_RuntimeError, "LZ4F_getFrameInfo failed: %s\n", LZ4F_getErrorName(err));
-	return Py_None;
-      }
-
-    blkSize = PyInt_FromSize_t(frameInfo.blockSizeID);
-    blkMode = PyInt_FromSize_t(frameInfo.blockMode);
-    contChkFlag = PyInt_FromSize_t(frameInfo.contentChecksumFlag);
-    PyDict_SetItemString(result, "blkSize", blkSize);
-    PyDict_SetItemString(result, "blkMode", blkMode);
-    PyDict_SetItemString(result, "chkFlag", contChkFlag);
-
-    return result;
+  return Py_None;
 }
 
-static PyObject *py_lz4f_disableChecksum(PyObject * Py_UNUSED(self), PyObject *args) {
-    PyObject *py_dCtx;
-    LZ4F_decompressionContext_t dCtx;
+static PyObject *
+py_lz4f_getFrameInfo (PyObject * Py_UNUSED (self), PyObject * args)
+{
+  const char *source;
+  int src_size;
+  LZ4F_decompressionContext_t dCtx;
+  LZ4F_frameInfo_t frameInfo;
+  PyObject *blkSize;
+  PyObject *blkMode;
+  PyObject *contChkFlag;
+  PyObject *py_dCtx;
+  PyObject *result = PyDict_New ();
+  size_t ssrc_size;
+  size_t err;
 
-    if (!PyArg_ParseTuple(args, "O", &py_dCtx)) {
-        return NULL;
+  if (!PyArg_ParseTuple (args, "s#O", &source, &src_size, &py_dCtx))
+    {
+      return NULL;
     }
 
-    dCtx = (LZ4F_decompressionContext_t)PyCapsule_GetPointer(py_dCtx, NULL);
-    LZ4F_disableChecksum(dCtx);
+  dCtx = (LZ4F_decompressionContext_t) PyCapsule_GetPointer (py_dCtx, NULL);
+  ssrc_size = (size_t) src_size;
 
-    return Py_None;
+  err =
+    LZ4F_getFrameInfo (dCtx, &frameInfo, (unsigned char *) source,
+		       &ssrc_size);
+  if (LZ4F_isError (err))
+    {
+      PyErr_Format (PyExc_RuntimeError, "LZ4F_getFrameInfo failed: %s\n",
+		    LZ4F_getErrorName (err));
+      return Py_None;
+    }
+
+  blkSize = PyInt_FromSize_t (frameInfo.blockSizeID);
+  blkMode = PyInt_FromSize_t (frameInfo.blockMode);
+  contChkFlag = PyInt_FromSize_t (frameInfo.contentChecksumFlag);
+  PyDict_SetItemString (result, "blkSize", blkSize);
+  PyDict_SetItemString (result, "blkMode", blkMode);
+  PyDict_SetItemString (result, "chkFlag", contChkFlag);
+
+  return result;
 }
 
-static PyObject *py_lz4f_decompress(PyObject * Py_UNUSED(self), PyObject *args, PyObject *keywds) {
-    const char* source;
-    char* dest;
-    LZ4F_decompressionContext_t dCtx;
-    int src_size;
-    PyObject *decomp;
-    PyObject *next;
-    PyObject *py_dCtx;
-    PyObject *result = PyDict_New();
-    size_t ssrc_size;
-    size_t dest_size;
-    size_t err;
-    static char *kwlist[] = {"source", "dCtx", "blkSizeID", NULL};
-    unsigned int blkID=7;
+static PyObject *
+py_lz4f_disableChecksum (PyObject * Py_UNUSED (self), PyObject * args)
+{
+  PyObject *py_dCtx;
+  LZ4F_decompressionContext_t dCtx;
 
-    if (!PyArg_ParseTupleAndKeywords(args, keywds, "s#O|i", kwlist, &source,
-                                     &src_size, &py_dCtx, &blkID)) {
-        return NULL;
+  if (!PyArg_ParseTuple (args, "O", &py_dCtx))
+    {
+      return NULL;
     }
 
-    dest_size = LZ4S_GetBlockSize_FromBlockId(blkID);
-    dCtx = (LZ4F_decompressionContext_t)PyCapsule_GetPointer(py_dCtx, NULL);
-    ssrc_size = (size_t)src_size;
+  dCtx = (LZ4F_decompressionContext_t) PyCapsule_GetPointer (py_dCtx, NULL);
+  LZ4F_disableChecksum (dCtx);
 
-    dest = (char*)malloc(dest_size);
-    err = LZ4F_decompress(dCtx, dest, &dest_size, source, &ssrc_size, NULL);
-    if (LZ4F_isError(err))
-      {
-	PyErr_Format (PyExc_RuntimeError, "LZ4F_decompress failed: %s\n", LZ4F_getErrorName(err));
-	return Py_None;
-      }
+  return Py_None;
+}
 
-    decomp = PyBytes_FromStringAndSize(dest, dest_size);
-    next = PyInt_FromSize_t(err);
-    PyDict_SetItemString(result, "decomp", decomp);
-    PyDict_SetItemString(result, "next", next);
+static PyObject *
+py_lz4f_decompress (PyObject * Py_UNUSED (self), PyObject * args,
+		    PyObject * keywds)
+{
+  const char *source;
+  char *dest;
+  LZ4F_decompressionContext_t dCtx;
+  int src_size;
+  PyObject *decomp;
+  PyObject *next;
+  PyObject *py_dCtx;
+  PyObject *result = PyDict_New ();
+  size_t ssrc_size;
+  size_t dest_size;
+  size_t err;
+  static char *kwlist[] = { "source", "dCtx", "blkSizeID", NULL };
+  unsigned int blkID = 7;
 
-    Py_XDECREF(decomp);
-    Py_XDECREF(next);
-    free(dest);
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s#O|i", kwlist, &source,
+				    &src_size, &py_dCtx, &blkID))
+    {
+      return NULL;
+    }
 
-    return result;
+  dest_size = LZ4S_GetBlockSize_FromBlockId (blkID);
+  dCtx = (LZ4F_decompressionContext_t) PyCapsule_GetPointer (py_dCtx, NULL);
+  ssrc_size = (size_t) src_size;
+
+  dest = (char *) malloc (dest_size);
+  err = LZ4F_decompress (dCtx, dest, &dest_size, source, &ssrc_size, NULL);
+  if (LZ4F_isError (err))
+    {
+      PyErr_Format (PyExc_RuntimeError, "LZ4F_decompress failed: %s\n",
+		    LZ4F_getErrorName (err));
+      return Py_None;
+    }
+
+  decomp = PyBytes_FromStringAndSize (dest, dest_size);
+  next = PyInt_FromSize_t (err);
+  PyDict_SetItemString (result, "decomp", decomp);
+  PyDict_SetItemString (result, "next", next);
+
+  Py_XDECREF (decomp);
+  Py_XDECREF (next);
+  free (dest);
+
+  return result;
 }
 
 #define CTX_DOCSTRING    "context, to be used with all respective functions."
@@ -418,19 +479,22 @@ static PyObject *py_lz4f_decompress(PyObject * Py_UNUSED(self), PyObject *args, 
                          "complete block. Raises an exception if any error occurs."
 
 static PyMethodDef Lz4fMethods[] = {
-    {"createCompContext",   py_lz4f_createCompCtx,   METH_VARARGS, CCCTX_DOCSTRING},
-    {"compressFrame",       py_lz4f_compressFrame,   METH_VARARGS, COMPF_DOCSTRING},
-    {"makePrefs",  (PyCFunction)py_lz4f_makePrefs,   METH_VARARGS | METH_KEYWORDS, MKPFS_DOCSTRING},
-    {"compressBegin",       py_lz4f_compressBegin,   METH_VARARGS, COMPB_DOCSTRING},
-    {"compressUpdate",      py_lz4f_compressUpdate,  METH_VARARGS, COMPU_DOCSTRING},
-    {"compressEnd",         py_lz4f_compressEnd,     METH_VARARGS, COMPE_DOCSTRING},
-    {"freeCompContext",     py_lz4f_freeCompCtx,     METH_VARARGS, FCCTX_DOCSTRING},
-    {"createDecompContext", py_lz4f_createDecompCtx, METH_VARARGS, CDCTX_DOCSTRING},
-    {"freeDecompContext",   py_lz4f_freeDecompCtx,   METH_VARARGS, FDCTX_DOCSTRING},
-    {"getFrameInfo",        py_lz4f_getFrameInfo,    METH_VARARGS, GETFI_DOCSTRING},
-    {"decompressFrame",  (PyCFunction)py_lz4f_decompress, METH_VARARGS | METH_KEYWORDS, DCOMP_DOCSTRING},
-    {"disableChecksum",     py_lz4f_disableChecksum, METH_VARARGS, DCHKS_DOCSTRING},
-    {NULL, NULL, 0, NULL}
+  {"createCompContext", py_lz4f_createCompCtx, METH_VARARGS, CCCTX_DOCSTRING},
+  {"compressFrame", py_lz4f_compressFrame, METH_VARARGS, COMPF_DOCSTRING},
+  {"makePrefs", (PyCFunction) py_lz4f_makePrefs, METH_VARARGS | METH_KEYWORDS,
+   MKPFS_DOCSTRING},
+  {"compressBegin", py_lz4f_compressBegin, METH_VARARGS, COMPB_DOCSTRING},
+  {"compressUpdate", py_lz4f_compressUpdate, METH_VARARGS, COMPU_DOCSTRING},
+  {"compressEnd", py_lz4f_compressEnd, METH_VARARGS, COMPE_DOCSTRING},
+  {"freeCompContext", py_lz4f_freeCompCtx, METH_VARARGS, FCCTX_DOCSTRING},
+  {"createDecompContext", py_lz4f_createDecompCtx, METH_VARARGS,
+   CDCTX_DOCSTRING},
+  {"freeDecompContext", py_lz4f_freeDecompCtx, METH_VARARGS, FDCTX_DOCSTRING},
+  {"getFrameInfo", py_lz4f_getFrameInfo, METH_VARARGS, GETFI_DOCSTRING},
+  {"decompressFrame", (PyCFunction) py_lz4f_decompress,
+   METH_VARARGS | METH_KEYWORDS, DCOMP_DOCSTRING},
+  {"disableChecksum", py_lz4f_disableChecksum, METH_VARARGS, DCHKS_DOCSTRING},
+  {NULL, NULL, 0, NULL}
 };
 
 #undef CTX_DOCSTRING
@@ -449,15 +513,15 @@ static PyMethodDef Lz4fMethods[] = {
 
 #if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef moduledef = {
-        PyModuleDef_HEAD_INIT,
-        "_frame",
-        NULL,
-        -1,
-        Lz4fMethods,
-	NULL,
-	NULL,
-	NULL,
-        NULL
+  PyModuleDef_HEAD_INIT,
+  "_frame",
+  NULL,
+  -1,
+  Lz4fMethods,
+  NULL,
+  NULL,
+  NULL,
+  NULL
 };
 
 PyObject *
