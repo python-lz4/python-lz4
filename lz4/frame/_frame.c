@@ -30,13 +30,7 @@
  */
 #include <Python.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <math.h>
-#include "lz4.h"
-#include "lz4hc.h"
-#include "lz4frame.h"
-#include "structmember.h"
+#include <lz4frame.h>
 
 #ifndef Py_UNUSED		/* This is already defined for Python 3.4 onwards */
 #ifdef __GNUC__
