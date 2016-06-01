@@ -139,7 +139,6 @@ static PyObject *py_lz4f_makePrefs(PyObject * Py_UNUSED(self), PyObject *args, P
     unsigned int blkID=7;
     unsigned int blkMode=1;
     unsigned int chkSumFlag=0;
-//    unsigned int compLevel=0; //For future expansion
     unsigned int autoFlush=0;
 
     if (!PyArg_ParseTupleAndKeywords(args, keywds, "|IIII", kwlist, &blkID,
@@ -147,7 +146,6 @@ static PyObject *py_lz4f_makePrefs(PyObject * Py_UNUSED(self), PyObject *args, P
         return NULL;
     }
 
-    //fprintf(stdout, "blkID: %u As self.", blkID);
     prefs = calloc(1,sizeof(LZ4F_preferences_t));
     frameInfo = (LZ4F_frameInfo_t){blkID, blkMode, chkSumFlag, 0, 0, {0,0}};
     prefs->frameInfo = frameInfo;
@@ -155,8 +153,6 @@ static PyObject *py_lz4f_makePrefs(PyObject * Py_UNUSED(self), PyObject *args, P
     result = PyCapsule_New(prefs, NULL, NULL);
 
     return result;
-//_output_error:
-//    return Py_None;
 }
 
 static PyObject *py_lz4f_compressBegin(PyObject * Py_UNUSED(self), PyObject *args) {
