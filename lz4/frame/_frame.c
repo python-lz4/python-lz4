@@ -130,7 +130,7 @@ static PyObject *py_lz4f_makePrefs(PyObject *self, PyObject *args, PyObject *key
     LZ4F_preferences_t* prefs;
     PyObject *result = PyDict_New();
     static char *kwlist[] = {"blockSizeID", "blockMode", "chkFlag"
-                             "autoFlush"};
+                             "autoFlush", NULL};
     unsigned int blkID=7;
     unsigned int blkMode=1;
     unsigned int chkSumFlag=0;
@@ -347,7 +347,7 @@ static PyObject *py_lz4f_decompress(PyObject *self, PyObject *args, PyObject *ke
     size_t ssrc_size;
     size_t dest_size;
     size_t err;
-    static char *kwlist[] = {"source", "dCtx", "blkSizeID"};
+    static char *kwlist[] = {"source", "dCtx", "blkSizeID", NULL};
     unsigned int blkID=7;
 
     (void)self;
