@@ -128,7 +128,12 @@ py_lz4f_compressFrame (PyObject * Py_UNUSED (self), PyObject * args)
 
   ssrc_size = (size_t) src_size;
   dest_size = LZ4F_compressFrameBound (ssrc_size, NULL);
+
   dest = (char *) malloc (dest_size);
+  if (dest == NULL)
+    {
+      return PyErr_NoMemory();
+    }
 
   final_size = LZ4F_compressFrame (dest, dest_size, source, ssrc_size, NULL);
   result = PyBytes_FromStringAndSize (dest, final_size);
@@ -194,6 +199,11 @@ py_lz4f_compressBegin (PyObject * Py_UNUSED (self), PyObject * args)
   cCtx = (LZ4F_compressionContext_t) PyCapsule_GetPointer (py_cCtx, NULL);
   dest_size = 19;
   dest = (char *) malloc (dest_size);
+  if (dest == NULL)
+    {
+      return PyErr_NoMemory();
+    }
+
   if (py_prefsPtr != Py_None)
     {
       prefsPtr =
@@ -205,6 +215,7 @@ py_lz4f_compressBegin (PyObject * Py_UNUSED (self), PyObject * args)
     {
       PyErr_Format (PyExc_RuntimeError, "LZ4F_compressBegin failed: %s\n",
 		    LZ4F_getErrorName (final_size));
+      free (dest);
       return Py_None;
     }
 
@@ -234,9 +245,15 @@ py_lz4f_compressUpdate (PyObject * Py_UNUSED (self), PyObject * args)
     }
 
   cCtx = (LZ4F_compressionContext_t) PyCapsule_GetPointer (py_cCtx, NULL);
+
   ssrc_size = (size_t) src_size;
   dest_size = LZ4F_compressBound (ssrc_size, (LZ4F_preferences_t *) cCtx);
+
   dest = (char *) malloc (dest_size);
+  if (dest == NULL)
+    {
+      return PyErr_NoMemory();
+    }
 
   final_size =
     LZ4F_compressUpdate (cCtx, dest, dest_size, source, ssrc_size, NULL);
@@ -244,6 +261,7 @@ py_lz4f_compressUpdate (PyObject * Py_UNUSED (self), PyObject * args)
     {
       PyErr_Format (PyExc_RuntimeError, "LZ4F_compressUpdate failed: %s\n",
 		    LZ4F_getErrorName (final_size));
+      free (dest);
       return Py_None;
     }
 
@@ -272,12 +290,17 @@ py_lz4f_compressEnd (PyObject * Py_UNUSED (self), PyObject * args)
   cCtx = (LZ4F_compressionContext_t) PyCapsule_GetPointer (py_cCtx, NULL);
   dest_size = LZ4F_compressBound (0, (LZ4F_preferences_t *) cCtx);
   dest = (char *) malloc (dest_size);
+  if (dest == NULL)
+    {
+      return PyErr_NoMemory();
+    }
 
   final_size = LZ4F_compressEnd (cCtx, dest, dest_size, NULL);
   if (LZ4F_isError (final_size))
     {
       PyErr_Format (PyExc_RuntimeError, "LZ4F_compressEnd failed: %s\n",
 		    LZ4F_getErrorName (final_size));
+      free (dest);
       return Py_None;
     }
 
@@ -418,11 +441,17 @@ py_lz4f_decompress (PyObject * Py_UNUSED (self), PyObject * args,
   ssrc_size = (size_t) src_size;
 
   dest = (char *) malloc (dest_size);
+  if (dest == NULL)
+    {
+      return PyErr_NoMemory();
+    }
+
   err = LZ4F_decompress (dCtx, dest, &dest_size, source, &ssrc_size, NULL);
   if (LZ4F_isError (err))
     {
       PyErr_Format (PyExc_RuntimeError, "LZ4F_decompress failed: %s\n",
 		    LZ4F_getErrorName (err));
+      free (dest);
       return Py_None;
     }
 
