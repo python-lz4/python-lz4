@@ -36,8 +36,25 @@
 #include "lz4.h"
 #include "lz4hc.h"
 #include "lz4frame.h"
-#include "python-lz4f.h"
 #include "structmember.h"
+
+#if defined(_WIN32) && defined(_MSC_VER)
+# define inline __inline
+# if _MSC_VER >= 1600
+#  include <stdint.h>
+# else /* _MSC_VER >= 1600 */
+   typedef signed char       int8_t;
+   typedef signed short      int16_t;
+   typedef signed int        int32_t;
+   typedef unsigned char     uint8_t;
+   typedef unsigned short    uint16_t;
+   typedef unsigned int      uint32_t;
+# endif /* _MSC_VER >= 1600 */
+#endif
+
+#if defined(__SUNPRO_C) || defined(__hpux) || defined(_AIX)
+#define inline
+#endif
 
 #if PY_MAJOR_VERSION >= 3
    #define PyInt_FromSize_t(x) PyLong_FromSize_t(x)
@@ -362,6 +379,40 @@ _output_error:
     return Py_None;
 }
 
+#define CTX_DOCSTRING    "context, to be used with all respective functions."
+#define CCCTX_DOCSTRING  "::rtype cCtx::\nGenerates a compression " CTX_DOCSTRING
+#define COMPF_DOCSTRING  "(source)\n :type string: source\n::rtype string::\n" \
+                         "Accepts a string, and compresses the string in one go, returning the compressed string. \n" \
+                         "This generates a header, compressed data and endmark, making the result ready to be written to file."
+#define MKPFS_DOCSTRING  "(blockSizeID=7, blockMode=1, chkFlag=0, autoFlush=0)\n:type int: blockSizeID\n:type int: blockMode\n" \
+                         ":type int: chkFlag\n:type int: autoFlush\n::rtype PyCapsule:\n" \
+                         "All accepted arguments are keyword args. Valid entries for blockSizeID are 4-7. Valid values for the\n" \
+                         "remaining optional arguments are 0-1."
+#define COMPB_DOCSTRING  "(cCtx)\n:type cCtx: cCtx\n::rtype string::\n" \
+                         "Accepts a compression context as a PyCObject. Returns a frame header, based on context variables."
+#define COMPU_DOCSTRING  "(source, cCtx)\n:type string: source\n:type cCtx: cCtx\n::rtype string::\n" \
+                         "Accepts a string, and a compression context. Returns the string as a compressed block, if the\n" \
+                         "block is filled. If not, it will return a blank string and hold the compressed data until the\n" \
+                         "block is filled, flush is called or compressEnd is called."
+#define COMPE_DOCSTRING  "(cCtx)\n:type cCtx: cCtx\n::rtype string::\n" \
+                         "Accepts a compression context as a PyCObject. Flushed the holding buffer, applies endmark and if\n" \
+                         "applicable will generate a checksum. Returns a string."
+#define FCCTX_DOCSTRING  "(cCtx)\n:type cCtx: cCtx\n::NO RETURN::\nFrees a compression context, passed as a PyCObject."
+#define CDCTX_DOCSTRING  "::rtype dCtx::\nGenerates a decompression " CTX_DOCSTRING
+#define FDCTX_DOCSTRING  "(dCtx)\n:type dCtx: dCtx\n::NO RETURN::\nFrees a decompression context, passed as a PyCObject."
+#define GETFI_DOCSTRING  "(header, dctx)\n:type string: header\n:type dCtx: dCtx\n" \
+                         "::rtype dict:: {'chkFlag': int, 'blkSize': int, 'blkMode': int}\n" \
+                         "Accepts a string, which should be the first 7 bytes of a lz4 file, the 'header,'  and a dCtx PyCObject.\n" \
+                         "Returns a dictionary object containing the frame info for the given header."
+#define DCHKS_DOCSTRING  "(dCtx)\n:type dCtx: dCtx\nDisables the checksum portion of a the frameInfo struct in the dCtx. \n" \
+                         "This is required for arbitrary seeking of a lz4 file. Without this, decompress will error out if blocks\n" \
+                         "are read out of order."
+#define DCOMP_DOCSTRING  "(source, dCtx, blkSizeID = 7)\n:type string: source\n:type dCtx: dCtx\n:type int: blkSizeID\n" \
+                         "::rtype dict :: {'decomp': '', 'next': ''}\n" \
+                         "Accepts required source string and decompressionContext, returns a dictionary containing the uncompressed\n" \
+                         "data if block was complete and next block size. If block was incomplete, returns characters remaining to\n" \
+                         "complete block. Raises an exception if any error occurs."
+
 static PyMethodDef Lz4fMethods[] = {
     {"createCompContext",   py_lz4f_createCompCtx,   METH_VARARGS, CCCTX_DOCSTRING},
     {"compressFrame",       py_lz4f_compressFrame,   METH_VARARGS, COMPF_DOCSTRING},
@@ -378,74 +429,50 @@ static PyMethodDef Lz4fMethods[] = {
     {NULL, NULL, 0, NULL}
 };
 
-struct module_state {
-    PyObject *error;
-};
+#undef CTX_DOCSTRING
+#undef CCCTX_DOCSTRING
+#undef COMPF_DOCSTRING
+#undef MKPFS_DOCSTRING
+#undef COMPB_DOCSTRING
+#undef COMPU_DOCSTRING
+#undef COMPE_DOCSTRING
+#undef FCCTX_DOCSTRING
+#undef CDCTX_DOCSTRING
+#undef FDCTX_DOCSTRING
+#undef GETFI_DOCSTRING
+#undef DCHKS_DOCSTRING
+#undef DCOMP_DOCSTRING
 
 #if PY_MAJOR_VERSION >= 3
-#define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
-#else
-#define GETSTATE(m) (&_state)
-static struct module_state _state;
-#endif
-
-#if PY_MAJOR_VERSION >= 3
-
-static int myextension_traverse(PyObject *m, visitproc visit, void *arg) {
-    Py_VISIT(GETSTATE(m)->error);
-    return 0;
-}
-
-static int myextension_clear(PyObject *m) {
-    Py_CLEAR(GETSTATE(m)->error);
-    return 0;
-}
-
-
 static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT,
-        "lz4f",
+        "_frame",
         NULL,
-        sizeof(struct module_state),
+        -1,
         Lz4fMethods,
-        NULL,
-        myextension_traverse,
-        myextension_clear,
+	NULL,
+	NULL,
+	NULL,
         NULL
 };
 
-#define INITERROR return NULL
-PyObject *PyInit_lz4f(void)
-
-#else
-#define INITERROR return
-void initlz4f(void)
-
-#endif
+PyObject *
+PyInit__frame (void)
 {
-#if PY_MAJOR_VERSION >= 3
-    PyObject *module = PyModule_Create(&moduledef);
-#else
-    PyObject *module = Py_InitModule("lz4f", Lz4fMethods);
-#endif
-    struct module_state *state = NULL;
+  PyObject *module = PyModule_Create (&moduledef);
 
-    if (module == NULL) {
-        INITERROR;
-    }
-    state = GETSTATE(module);
-
-    state->error = PyErr_NewException("lz4.Error", NULL, NULL);
-    if (state->error == NULL) {
-        Py_DECREF(module);
-        INITERROR;
+  if (module == NULL)
+    {
+      return NULL;
     }
 
-    PyModule_AddStringConstant(module, "VERSION", VERSION);
-    PyModule_AddStringConstant(module, "__version__", VERSION);
-    PyModule_AddStringConstant(module, "LZ4_VERSION", LZ4_VERSION);
-
-#if PY_MAJOR_VERSION >= 3
-    return module;
-#endif
+  return module;
 }
+
+#else /* Python 2 */
+PyMODINIT_FUNC
+init_frame (void)
+{
+  (void) Py_InitModule ("_frame", Lz4Methods);
+}
+#endif /* PY_MAJOR_VERSION >= 3 */
