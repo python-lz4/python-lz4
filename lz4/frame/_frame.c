@@ -72,7 +72,7 @@ static int LZ4S_GetBlockSize_FromBlockId (int id) { return (1 << (8 + (2 * id)))
 
 /* Compression methods */
 
-static PyObject *py_lz4f_createCompCtx(PyObject * PyUNUSED(self), PyObject * Py_UNUSED(args)) {
+static PyObject *py_lz4f_createCompCtx(PyObject * Py_UNUSED(self), PyObject * Py_UNUSED(args)) {
     PyObject *result;
     LZ4F_compressionContext_t cCtx;
     size_t err;
@@ -477,6 +477,6 @@ PyInit__frame (void)
 PyMODINIT_FUNC
 init_frame (void)
 {
-  (void) Py_InitModule ("_frame", Lz4Methods);
+  (void) Py_InitModule ("_frame", Lz4fMethods);
 }
 #endif /* PY_MAJOR_VERSION >= 3 */
