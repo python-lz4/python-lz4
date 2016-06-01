@@ -68,8 +68,6 @@
    #define PyInt_FromSize_t(x) PyLong_FromSize_t(x)
 #endif
 
-#define CHECK(cond, ...) if (LZ4F_isError(cond)) { printf("%s%s", "Error => ", LZ4F_getErrorName(cond)); goto _output_error; }
-
 static int LZ4S_GetBlockSize_FromBlockId (int id) { return (1 << (8 + (2 * id))); }
 
 /* Compression methods */
@@ -80,12 +78,15 @@ static PyObject *py_lz4f_createCompCtx(PyObject * PyUNUSED(self), PyObject * Py_
     size_t err;
 
     err = LZ4F_createCompressionContext(&cCtx, LZ4F_VERSION);
-    CHECK(err, "Allocation failed (error %i)", (int)err);
+    if (LZ4F_isError(err))
+      {
+	PyErr_Format (PyExc_MemoryError, "LZ4F_createCompressionContext allocation failed: %s\n", LZ4F_getErrorName(err));
+	return Py_None;
+      }
+
     result = PyCapsule_New(cCtx, NULL, NULL);
 
     return result;
-_output_error:
-    return Py_None;
 }
 
 static PyObject *py_lz4f_freeCompCtx(PyObject *self, PyObject *args) {
@@ -181,14 +182,17 @@ static PyObject *py_lz4f_compressBegin(PyObject * Py_UNUSED(self), PyObject *arg
     }
 
     final_size = LZ4F_compressBegin(cCtx, dest, dest_size, prefsPtr);
-    CHECK(final_size);
+    if (LZ4F_isError(final_size))
+      {
+	PyErr_Format (PyExc_RuntimeError, "LZ4F_compressBegin failed: %s\n", LZ4F_getErrorName(final_size));
+	return Py_None;
+      }
+
     result = PyBytes_FromStringAndSize(dest, final_size);
 
     free(dest);
 
     return result;
-_output_error:
-    return Py_None;
 }
 
 static PyObject *py_lz4f_compressUpdate(PyObject * Py_UNUSED(self), PyObject *args) {
@@ -212,14 +216,17 @@ static PyObject *py_lz4f_compressUpdate(PyObject * Py_UNUSED(self), PyObject *ar
     dest = (char*)malloc(dest_size);
 
     final_size = LZ4F_compressUpdate(cCtx, dest, dest_size, source, ssrc_size, NULL);
-    CHECK(final_size);
+    if (LZ4F_isError(final_size))
+      {
+	PyErr_Format (PyExc_RuntimeError, "LZ4F_compressUpdate failed: %s\n", LZ4F_getErrorName(final_size));
+	return Py_None;
+      }
+
     result = PyBytes_FromStringAndSize(dest, final_size);
 
     free(dest);
 
     return result;
-_output_error:
-    return Py_None;
 }
 
 static PyObject *py_lz4f_compressEnd(PyObject * Py_UNUSED(self), PyObject *args) {
@@ -239,14 +246,17 @@ static PyObject *py_lz4f_compressEnd(PyObject * Py_UNUSED(self), PyObject *args)
     dest = (char*)malloc(dest_size);
 
     final_size = LZ4F_compressEnd(cCtx, dest, dest_size, NULL);
-    CHECK(final_size);
+    if (LZ4F_isError(final_size))
+      {
+	PyErr_Format (PyExc_RuntimeError, "LZ4F_compressEnd failed: %s\n", LZ4F_getErrorName(final_size));
+	return Py_None;
+      }
+
     result = PyBytes_FromStringAndSize(dest, final_size);
 
     free(dest);
 
     return result;
-_output_error:
-    return Py_None;
 }
 
 
@@ -257,12 +267,15 @@ static PyObject *py_lz4f_createDecompCtx(PyObject * Py_UNUSED(self), PyObject * 
     size_t err;
 
     err = LZ4F_createDecompressionContext(&dCtx, LZ4F_VERSION);
-    CHECK(LZ4F_isError(err), "Allocation failed (error %i)", (int)err);
+    if (LZ4F_isError(err))
+      {
+	PyErr_Format (PyExc_MemoryError, "LZ4F_createDecompressionContext failed: %s\n", LZ4F_getErrorName(err));
+	return Py_None;
+      }
+
     result = PyCapsule_New(dCtx, NULL, NULL);
 
     return result;
-_output_error:
-    return Py_None;
 }
 
 static PyObject *py_lz4f_freeDecompCtx(PyObject * Py_UNUSED(self), PyObject *args) {
@@ -300,7 +313,11 @@ static PyObject *py_lz4f_getFrameInfo(PyObject * Py_UNUSED(self), PyObject *args
     ssrc_size = (size_t)src_size;
 
     err = LZ4F_getFrameInfo(dCtx, &frameInfo, (unsigned char*)source, &ssrc_size);
-    CHECK(LZ4F_isError(err), "Failed getting frameInfo. (error %i)", (int)err);
+    if (LZ4F_isError(err))
+      {
+	PyErr_Format (PyExc_RuntimeError, "LZ4F_getFrameInfo failed: %s\n", LZ4F_getErrorName(err));
+	return Py_None;
+      }
 
     blkSize = PyInt_FromSize_t(frameInfo.blockSizeID);
     blkMode = PyInt_FromSize_t(frameInfo.blockMode);
@@ -309,10 +326,7 @@ static PyObject *py_lz4f_getFrameInfo(PyObject * Py_UNUSED(self), PyObject *args
     PyDict_SetItemString(result, "blkMode", blkMode);
     PyDict_SetItemString(result, "chkFlag", contChkFlag);
 
-
     return result;
-_output_error:
-    return Py_None;
 }
 
 static PyObject *py_lz4f_disableChecksum(PyObject * Py_UNUSED(self), PyObject *args) {
@@ -355,8 +369,11 @@ static PyObject *py_lz4f_decompress(PyObject * Py_UNUSED(self), PyObject *args, 
 
     dest = (char*)malloc(dest_size);
     err = LZ4F_decompress(dCtx, dest, &dest_size, source, &ssrc_size, NULL);
-    CHECK(LZ4F_isError(err), "Failed getting frameInfo. (error %i)", (int)err);
-    //fprintf(stdout, "Dest_size: %zu  Error Code:%zu \n", dest_size, err);
+    if (LZ4F_isError(err))
+      {
+	PyErr_Format (PyExc_RuntimeError, "LZ4F_decompress failed: %s\n", LZ4F_getErrorName(err));
+	return Py_None;
+      }
 
     decomp = PyBytes_FromStringAndSize(dest, dest_size);
     next = PyInt_FromSize_t(err);
@@ -368,8 +385,6 @@ static PyObject *py_lz4f_decompress(PyObject * Py_UNUSED(self), PyObject *args, 
     free(dest);
 
     return result;
-_output_error:
-    return Py_None;
 }
 
 #define CTX_DOCSTRING    "context, to be used with all respective functions."
