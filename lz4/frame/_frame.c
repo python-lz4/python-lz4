@@ -408,7 +408,7 @@ py_lz4f_disableChecksum (PyObject * Py_UNUSED (self), PyObject * args)
     }
 
   dCtx = (LZ4F_decompressionContext_t) PyCapsule_GetPointer (py_dCtx, NULL);
-  dctxPtr = (LZ4F_dctx_t*)decompressionContext;
+  dctxPtr = (LZ4F_dctx_t*)dCtx;
   dctxPtr->frameInfo.contentChecksumFlag = 0;
 
   Py_RETURN_NONE;
