@@ -81,10 +81,9 @@ py_lz4f_createCompCtx (PyObject * Py_UNUSED (self),
   err = LZ4F_createCompressionContext (&cCtx, LZ4F_VERSION);
   if (LZ4F_isError (err))
     {
-      PyErr_Format (PyExc_MemoryError,
-		    "LZ4F_createCompressionContext allocation failed: %s\n",
-		    LZ4F_getErrorName (err));
-      return Py_None;
+      return PyErr_Format (PyExc_MemoryError,
+			   "LZ4F_createCompressionContext allocation failed: %s\n",
+			   LZ4F_getErrorName (err));
     }
 
   result = PyCapsule_New (cCtx, NULL, NULL);
@@ -107,7 +106,7 @@ py_lz4f_freeCompCtx (PyObject * self, PyObject * args)
   cCtx = (LZ4F_compressionContext_t) PyCapsule_GetPointer (py_cCtx, NULL);
   LZ4F_freeCompressionContext (cCtx);
 
-  return Py_None;
+  Py_RETURN_NONE;
 }
 
 static PyObject *
@@ -213,10 +212,9 @@ py_lz4f_compressBegin (PyObject * Py_UNUSED (self), PyObject * args)
   final_size = LZ4F_compressBegin (cCtx, dest, dest_size, prefsPtr);
   if (LZ4F_isError (final_size))
     {
-      PyErr_Format (PyExc_RuntimeError, "LZ4F_compressBegin failed: %s\n",
-		    LZ4F_getErrorName (final_size));
       free (dest);
-      return Py_None;
+      return PyErr_Format (PyExc_RuntimeError, "LZ4F_compressBegin failed: %s\n",
+			   LZ4F_getErrorName (final_size));
     }
 
   result = PyBytes_FromStringAndSize (dest, final_size);
@@ -259,10 +257,9 @@ py_lz4f_compressUpdate (PyObject * Py_UNUSED (self), PyObject * args)
     LZ4F_compressUpdate (cCtx, dest, dest_size, source, ssrc_size, NULL);
   if (LZ4F_isError (final_size))
     {
-      PyErr_Format (PyExc_RuntimeError, "LZ4F_compressUpdate failed: %s\n",
-		    LZ4F_getErrorName (final_size));
       free (dest);
-      return Py_None;
+      return PyErr_Format (PyExc_RuntimeError, "LZ4F_compressUpdate failed: %s\n",
+			   LZ4F_getErrorName (final_size));
     }
 
   result = PyBytes_FromStringAndSize (dest, final_size);
@@ -298,10 +295,9 @@ py_lz4f_compressEnd (PyObject * Py_UNUSED (self), PyObject * args)
   final_size = LZ4F_compressEnd (cCtx, dest, dest_size, NULL);
   if (LZ4F_isError (final_size))
     {
-      PyErr_Format (PyExc_RuntimeError, "LZ4F_compressEnd failed: %s\n",
-		    LZ4F_getErrorName (final_size));
       free (dest);
-      return Py_None;
+      return PyErr_Format (PyExc_RuntimeError, "LZ4F_compressEnd failed: %s\n",
+			   LZ4F_getErrorName (final_size));
     }
 
   result = PyBytes_FromStringAndSize (dest, final_size);
@@ -324,10 +320,9 @@ py_lz4f_createDecompCtx (PyObject * Py_UNUSED (self),
   err = LZ4F_createDecompressionContext (&dCtx, LZ4F_VERSION);
   if (LZ4F_isError (err))
     {
-      PyErr_Format (PyExc_MemoryError,
-		    "LZ4F_createDecompressionContext failed: %s\n",
-		    LZ4F_getErrorName (err));
-      return Py_None;
+      return PyErr_Format (PyExc_MemoryError,
+			   "LZ4F_createDecompressionContext failed: %s\n",
+			   LZ4F_getErrorName (err));
     }
 
   result = PyCapsule_New (dCtx, NULL, NULL);
@@ -349,7 +344,7 @@ py_lz4f_freeDecompCtx (PyObject * Py_UNUSED (self), PyObject * args)
   dCtx = (LZ4F_decompressionContext_t) PyCapsule_GetPointer (py_dCtx, NULL);
   LZ4F_freeDecompressionContext (dCtx);
 
-  return Py_None;
+  Py_RETURN_NONE;
 }
 
 static PyObject *
@@ -380,9 +375,8 @@ py_lz4f_getFrameInfo (PyObject * Py_UNUSED (self), PyObject * args)
 		       &ssrc_size);
   if (LZ4F_isError (err))
     {
-      PyErr_Format (PyExc_RuntimeError, "LZ4F_getFrameInfo failed: %s\n",
-		    LZ4F_getErrorName (err));
-      return Py_None;
+      return PyErr_Format (PyExc_RuntimeError, "LZ4F_getFrameInfo failed: %s\n",
+			   LZ4F_getErrorName (err));
     }
 
   blkSize = PyInt_FromSize_t (frameInfo.blockSizeID);
@@ -453,10 +447,9 @@ py_lz4f_decompress (PyObject * Py_UNUSED (self), PyObject * args,
   err = LZ4F_decompress (dCtx, dest, &dest_size, source, &ssrc_size, NULL);
   if (LZ4F_isError (err))
     {
-      PyErr_Format (PyExc_RuntimeError, "LZ4F_decompress failed: %s\n",
-		    LZ4F_getErrorName (err));
       free (dest);
-      return Py_None;
+      return PyErr_Format (PyExc_RuntimeError, "LZ4F_decompress failed: %s\n",
+			   LZ4F_getErrorName (err));
     }
 
   decomp = PyBytes_FromStringAndSize (dest, dest_size);
