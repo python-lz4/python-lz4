@@ -402,11 +402,14 @@ py_lz4f_disableChecksum (PyObject * Py_UNUSED (self), PyObject * args)
     }
 
   /* This works because the first element of the LZ4F_dctx_t type is a
-     LZ4F_frameInfo_t object. */
+     LZ4F_frameInfo_t object. Eventually the 2nd and 3rd lines should
+     be replaced by a call to LZ4F_disableChecksum() when it is merged
+     in upstream lz4. This will be sometime after release 131 of
+     lz4. See:  https://github.com/Cyan4973/lz4/pull/214 */
   dCtx = (LZ4F_decompressionContext_t) PyCapsule_GetPointer (py_dCtx, NULL);
   dctxPtr = (LZ4F_frameInfo_t *) dCtx;
   dctxPtr->contentChecksumFlag = 0;
-
+  /* Replace above two lines with: LZ4F_disableChecksum(&dCtx); */
   Py_RETURN_NONE;
 }
 
