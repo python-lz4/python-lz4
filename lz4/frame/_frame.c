@@ -40,6 +40,13 @@
 #endif
 #endif
 
+/* On Python < 2.7 the Capsule API isn't available, so work around that */
+#ifndef PyCapsule_New
+#define PyCapsule_New PyCObject_FromVoidPtrAndDesc
+/*#define PyCapsule_CheckExact PyCObject_Check*/
+#define PyCapsule_GetPointer(o, n) PyCObject_GetDesc((o))
+#endif
+
 #if defined(_WIN32) && defined(_MSC_VER)
 #define inline __inline
 #if _MSC_VER >= 1600
