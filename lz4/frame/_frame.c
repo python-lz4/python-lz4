@@ -41,9 +41,8 @@
 #endif
 
 /* On Python < 2.7 the Capsule API isn't available, so work around that */
-#ifndef PyCapsule_New
+#if PY_MAJOR_VERSION < 3 && PY_MINOR_VERSION < 7
 #define PyCapsule_New PyCObject_FromVoidPtrAndDesc
-/*#define PyCapsule_CheckExact PyCObject_Check*/
 #define PyCapsule_GetPointer(o, n) PyCObject_GetDesc((o))
 #endif
 
