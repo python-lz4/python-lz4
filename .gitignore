@@ -44,3 +44,4 @@ lz4/lz4version.py
 
 # Emacs backups
 *~
+docs/_build
