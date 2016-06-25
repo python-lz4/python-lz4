@@ -473,39 +473,122 @@ py_lz4f_decompress (PyObject * Py_UNUSED (self), PyObject * args,
   return result;
 }
 
-#define CTX_DOCSTRING    "context, to be used with all respective functions."
-#define CCCTX_DOCSTRING  "::rtype cCtx::\nGenerates a compression " CTX_DOCSTRING
-#define COMPF_DOCSTRING  "(source)\n :type string: source\n::rtype string::\n" \
-                         "Accepts a string, and compresses the string in one go, returning the compressed string. \n" \
-                         "This generates a header, compressed data and endmark, making the result ready to be written to file."
-#define MKPFS_DOCSTRING  "(blockSizeID=7, blockMode=1, chkFlag=0, autoFlush=0)\n:type int: blockSizeID\n:type int: blockMode\n" \
-                         ":type int: chkFlag\n:type int: autoFlush\n::rtype PyCapsule:\n" \
-                         "All accepted arguments are keyword args. Valid entries for blockSizeID are 4-7. Valid values for the\n" \
-                         "remaining optional arguments are 0-1."
-#define COMPB_DOCSTRING  "(cCtx)\n:type cCtx: cCtx\n::rtype string::\n" \
-                         "Accepts a compression context as a PyCObject. Returns a frame header, based on context variables."
-#define COMPU_DOCSTRING  "(source, cCtx)\n:type string: source\n:type cCtx: cCtx\n::rtype string::\n" \
-                         "Accepts a string, and a compression context. Returns the string as a compressed block, if the\n" \
-                         "block is filled. If not, it will return a blank string and hold the compressed data until the\n" \
-                         "block is filled, flush is called or compressEnd is called."
-#define COMPE_DOCSTRING  "(cCtx)\n:type cCtx: cCtx\n::rtype string::\n" \
-                         "Accepts a compression context as a PyCObject. Flushed the holding buffer, applies endmark and if\n" \
-                         "applicable will generate a checksum. Returns a string."
-#define FCCTX_DOCSTRING  "(cCtx)\n:type cCtx: cCtx\n::NO RETURN::\nFrees a compression context, passed as a PyCObject."
-#define CDCTX_DOCSTRING  "::rtype dCtx::\nGenerates a decompression " CTX_DOCSTRING
-#define FDCTX_DOCSTRING  "(dCtx)\n:type dCtx: dCtx\n::NO RETURN::\nFrees a decompression context, passed as a PyCObject."
-#define GETFI_DOCSTRING  "(header, dctx)\n:type string: header\n:type dCtx: dCtx\n" \
-                         "::rtype dict:: {'chkFlag': int, 'blkSize': int, 'blkMode': int}\n" \
-                         "Accepts a string, which should be the first 7 bytes of a lz4 file, the 'header,'  and a dCtx PyCObject.\n" \
-                         "Returns a dictionary object containing the frame info for the given header."
-#define DCHKS_DOCSTRING  "(dCtx)\n:type dCtx: dCtx\nDisables the checksum portion of a the frameInfo struct in the dCtx. \n" \
-                         "This is required for arbitrary seeking of a lz4 file. Without this, decompress will error out if blocks\n" \
-                         "are read out of order."
-#define DCOMP_DOCSTRING  "(source, dCtx, blkSizeID = 7)\n:type string: source\n:type dCtx: dCtx\n:type int: blkSizeID\n" \
-                         "::rtype dict :: {'decomp': '', 'next': ''}\n" \
-                         "Accepts required source string and decompressionContext, returns a dictionary containing the uncompressed\n" \
-                         "data if block was complete and next block size. If block was incomplete, returns characters remaining to\n" \
-                         "complete block. Raises an exception if any error occurs."
+
+#define CCCTX_DOCSTRING \
+  "createCompContext()\n\n"				\
+  "Generates a compression context.\n\n"		\
+  "Returns:\n"						\
+  "    cCtx: A compression context\n"
+
+#define CDCTX_DOCSTRING \
+  "createDecompContext()\n\n"				\
+  "Generates a decompression context.\n\n"		\
+  "Returns:\n"						\
+  "    dCtx: A compression context\n"
+
+#define COMPF_DOCSTRING \
+  "compressFrame(source)\n\n" \
+  "Accepts a string, and compresses the string in one go, returning the\n" \
+  "compressed string. the compressed string includes a header and endmark\n" \
+  "and so is suitable for writing to a file, for example.\n\n"		\
+  "Args:\n"								\
+  "    source (str): String to compress\n\n"				\
+  "Returns:\n"								\
+  "    str: Compressed data as a string\n"
+
+#define MKPFS_DOCSTRING \
+  "makePrefs(blockSizeID=7, blockMode=1, chkFlag=0, autoFlush=0)\n\n"	\
+  "Create an object defining compression settings.\n\n"			\
+  "Args:\n"								\
+  "    blockSizeID (int): Sepcifies the blocksize to use. Options are:\n" \
+  "        0 (the lz4 library specified default), 4 (64 KB), 5 (256 kB),\n" \
+  "        6 (1 MB), 7 (4 MB). If unspecified, will default to 7.\n"	\
+  "    blockMode (int): Specifies whether to use block-linked\n"	\
+  "        compression (blockMode=1) or independent block compression\n" \
+  "        (blockMode=0). The default is 1.\n"				\
+  "    chkFlag (int): Specifies whether to enable checksumming of the\n" \
+  "        payload content. The value 0 disables the checksum, and 1\n" \
+  "        enables it. The default is 0.\n" \
+  "    autoFlush (int): Specify whether to enable always flush the buffer\n" \
+  "        To always flush, specify 1. To disable auto-flushing specify 0.\n" \
+  "        The default is 0.\n\n"					\
+  "Returns:\n"								\
+  "    PyCapsule: preferences object.\n"
+
+#define COMPB_DOCSTRING \
+  "compressBegin(cCtx)\n\n" \
+  "Creates a frame header from a compression context.\n\n" \
+  "Args:\n"						 \
+  "    cCtx (cCtx): A compression context.\n\n"		 \
+  "Returns:\n"						 \
+  "    str: Frame header.\n"
+
+#define COMPU_DOCSTRING  \
+  "compressUpdate(source, cCtx)\n\n" \
+  "Accepts a string, and a compression context and returns the string as\n" \
+  "a compressed block if the block is filled. If not, it will return a\n" \
+  "blank string and hold the compressed data until the block is filled,\n" \
+  "flush is called or compressEnd is called.\n\n"			\
+  "Args:\n"								\
+  "    source (str): Source string to compress.\n"			\
+  "    cCtx (cCtx): Compression context.\n\n"				\
+  "Returns:\n"								\
+  "    str: compressed block or empty string.\n"
+
+#define COMPE_DOCSTRING  \
+  "compressEnd(cCtx)\n\n" \
+  "Ends a compression session by flushing the holding buffer, applying\n" \
+  "an end mark, and if applicable, creating a checksum.\n\n"		\
+  "Args:\n"								\
+  "    cCtx (cCtx): a compression context.\n\n"				\
+  "Returns:\n"								\
+  "    str: String containing the remaining compressed data, end mark\n" \
+  "        and optional checksum.\n"
+
+#define FCCTX_DOCSTRING  \
+  "freeCompContext(cCtx)\n\n"						\
+  "Releases the resources held by a compression context.\n\n"		\
+  "Args:\n"								\
+  "    cCtx (cCtx): Compression context.\n"
+
+#define FDCTX_DOCSTRING  \
+  "freeDecompContext(dCtx)\n\n"						\
+  "Releases the resources held by a decompression context.\n\n"		\
+  "Args:\n"								\
+  "    dCtx (dCtx): Decompression context.\n"
+
+#define GETFI_DOCSTRING \
+  "getFrameInfo(header, dctx)\n\n"					\
+  "Take a 7 byte string corresponding to the a compresed frame header\n" \
+  "together with a decompression context, and return a dictionary\n" \
+  "object containing the frame information corresponding to the header\n\n" \
+  "Args:\n"								\
+  "    header (str): LZ4 header\n"					\
+  "    dCtx (dCtx): Decompression context\n\n"				\
+  "Returns:\n"								\
+  "    dict: a dictionary object with keys `chkFlag`, `blkSize` and\n" \
+  "        `blkMode`.\n"
+
+#define DCHKS_DOCSTRING \
+  "disableChecksum(dCtx)\n\n" \
+  "Disables the checksum portion of a the frameInfo struct in the dCtx.\n" \
+  "This is required for arbitrary seeking within a lz4 file. Without\n" \
+  "this, decompress will error out if blocks are read out of order.\n\n" \
+  "Args:\n"								\
+  "    dCtx (dCtx): Decompression context.\n"
+
+#define DCOMP_DOCSTRING \
+  "decompressFrame(source, dCtx, blkSizeID = 7)\n\n"			\
+  "Accepts required source string and decompressionContext, and returns\n" \
+  "a dictionary containing the uncompressed data and next block size if\n" \
+  "block was complete. If block was incomplete, returns characters\n"	\
+  "remaining to complete block. Raises an exception if any error\n"	\
+  "occurs.\n\n"								\
+  "Args:\n"								\
+  "    source (str): Data to decompress.\n"				\
+  "    dCtx (dCtx): Decompression context.\n\n"				\
+  "Returns:\n"								\
+  "    dict: A dictionary with keys `decomp` and `next`\n"
 
 static PyMethodDef Lz4fMethods[] = {
   {"createCompContext", py_lz4f_createCompCtx, METH_VARARGS, CCCTX_DOCSTRING},
