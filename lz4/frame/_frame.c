@@ -109,7 +109,6 @@ static PyObject *
 py_lz4f_freeCompCtx (PyObject * Py_UNUSED (self), PyObject * args)
 {
   PyObject *py_cCtx;
-  LZ4F_compressionContext_t cCtx;
 
   if (!PyArg_ParseTuple (args, "O", &py_cCtx))
     {
