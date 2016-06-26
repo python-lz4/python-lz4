@@ -75,6 +75,14 @@ LZ4S_GetBlockSize_FromBlockId (int id)
 }
 
 /* Compression methods */
+static void
+destroyCompCtx (PyObject * py_cCtx)
+{
+  LZ4F_compressionContext_t cCtx;
+
+  cCtx = (LZ4F_compressionContext_t) PyCapsule_GetPointer (py_cCtx, NULL);
+  LZ4F_freeCompressionContext (cCtx);
+}
 
 static PyObject *
 py_lz4f_createCompCtx (PyObject * Py_UNUSED (self),
@@ -92,25 +100,23 @@ py_lz4f_createCompCtx (PyObject * Py_UNUSED (self),
 			   LZ4F_getErrorName (err));
     }
 
-  result = PyCapsule_New (cCtx, NULL, NULL);
+  result = PyCapsule_New (cCtx, NULL, destroyCompCtx);
 
   return result;
 }
 
 static PyObject *
-py_lz4f_freeCompCtx (PyObject * self, PyObject * args)
+py_lz4f_freeCompCtx (PyObject * Py_UNUSED (self), PyObject * args)
 {
   PyObject *py_cCtx;
   LZ4F_compressionContext_t cCtx;
 
-  (void) self;
   if (!PyArg_ParseTuple (args, "O", &py_cCtx))
     {
       return NULL;
     }
 
-  cCtx = (LZ4F_compressionContext_t) PyCapsule_GetPointer (py_cCtx, NULL);
-  LZ4F_freeCompressionContext (cCtx);
+  destroyCompCtx (py_cCtx);
 
   Py_RETURN_NONE;
 }
