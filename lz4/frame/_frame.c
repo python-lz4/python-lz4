@@ -326,6 +326,15 @@ py_lz4f_compressEnd (PyObject * Py_UNUSED (self), PyObject * args)
 
 
 /* Decompression methods */
+static void
+destroyDecompCtx (PyObject * py_dCtx)
+{
+  LZ4F_decompressionContext_t dCtx;
+
+  dCtx = (LZ4F_decompressionContext_t) PyCapsule_GetPointer (py_dCtx, NULL);
+  LZ4F_freeDecompressionContext (dCtx);
+}
+
 static PyObject *
 py_lz4f_createDecompCtx (PyObject * Py_UNUSED (self),
 			 PyObject * Py_UNUSED (args))
@@ -342,7 +351,7 @@ py_lz4f_createDecompCtx (PyObject * Py_UNUSED (self),
 			   LZ4F_getErrorName (err));
     }
 
-  result = PyCapsule_New (dCtx, NULL, NULL);
+  result = PyCapsule_New (dCtx, NULL, destroyDecompCtx);
 
   return result;
 }
@@ -351,15 +360,13 @@ static PyObject *
 py_lz4f_freeDecompCtx (PyObject * Py_UNUSED (self), PyObject * args)
 {
   PyObject *py_dCtx;
-  LZ4F_decompressionContext_t dCtx;
 
   if (!PyArg_ParseTuple (args, "O", &py_dCtx))
     {
       return NULL;
     }
 
-  dCtx = (LZ4F_decompressionContext_t) PyCapsule_GetPointer (py_dCtx, NULL);
-  LZ4F_freeDecompressionContext (dCtx);
+  destroyDecompCtx(py_dCtx);
 
   Py_RETURN_NONE;
 }
