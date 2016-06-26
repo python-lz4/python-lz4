@@ -153,7 +153,6 @@ static PyObject *
 py_lz4f_makePrefs (PyObject * Py_UNUSED (self), PyObject * args,
 		   PyObject * keywds)
 {
-  LZ4F_frameInfo_t frameInfo;
   LZ4F_preferences_t *prefs;
   PyObject *result = PyDict_New ();
   static char *kwlist[] = { "blockSizeID", "blockMode", "chkFlag"
@@ -171,12 +170,13 @@ py_lz4f_makePrefs (PyObject * Py_UNUSED (self), PyObject * args,
     }
 
   prefs = calloc (1, sizeof (LZ4F_preferences_t));
-  frameInfo = (LZ4F_frameInfo_t)
   {
-    blkID, blkMode, chkSumFlag, 0, 0,
-    {0, 0}
-  };
-  prefs->frameInfo = frameInfo;
+    LZ4F_frameInfo_t frameInfo = {
+      blkID, blkMode, chkSumFlag, 0, 0,
+      {0, 0}
+    };
+    prefs->frameInfo = frameInfo;
+  }
   prefs->autoFlush = autoFlush;
   result = PyCapsule_New (prefs, NULL, NULL);
 
