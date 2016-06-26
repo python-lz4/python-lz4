@@ -170,6 +170,12 @@ py_lz4f_makePrefs (PyObject * Py_UNUSED (self), PyObject * args,
     }
 
   prefs = calloc (1, sizeof (LZ4F_preferences_t));
+
+  if (prefs == NULL)
+    {
+      return PyErr_NoMemory();
+    }
+
   {
     LZ4F_frameInfo_t frameInfo = {
       blkID, blkMode, chkSumFlag, 0, 0,
