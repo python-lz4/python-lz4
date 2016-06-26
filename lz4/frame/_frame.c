@@ -153,6 +153,14 @@ py_lz4f_compressFrame (PyObject * Py_UNUSED (self), PyObject * args)
   return result;
 }
 
+static void
+destroyPrefs (PyObject * py_prefs)
+{
+  LZ4F_preferences_t *prefs;
+
+  prefs = (LZ4F_preferences_t *) PyCapsule_GetPointer (py_prefs, NULL);
+  free (prefs);
+}
 
 static PyObject *
 py_lz4f_makePrefs (PyObject * Py_UNUSED (self), PyObject * args,
@@ -189,7 +197,7 @@ py_lz4f_makePrefs (PyObject * Py_UNUSED (self), PyObject * args,
     prefs->frameInfo = frameInfo;
   }
   prefs->autoFlush = autoFlush;
-  result = PyCapsule_New (prefs, NULL, NULL);
+  result = PyCapsule_New (prefs, NULL, destroyPrefs);
 
   return result;
 }
