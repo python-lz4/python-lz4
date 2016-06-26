@@ -609,7 +609,6 @@ static PyMethodDef Lz4fMethods[] = {
   {NULL, NULL, 0, NULL}
 };
 
-#undef CTX_DOCSTRING
 #undef CCCTX_DOCSTRING
 #undef COMPF_DOCSTRING
 #undef MKPFS_DOCSTRING
