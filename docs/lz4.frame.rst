@@ -1,9 +1,15 @@
 lz4.frame package
 =================
 
-The LZ4 frame specification can be found on the author's page `LZ4
-frame
-specification<https://github.com/Cyan4973/lz4/wiki/lz4_Frame_format.md>`_
+This module provides the capability to compress and decompress data using the
+LZ4 frame specification. A key benefit of using the frame specification
+(compared to the block specification) is interoperability with other
+implementations.
+
+The LZ4 frame specification can be found on the author's page LZ4 frame
+specification_.
+
+.. _specification: https://github.com/Cyan4973/lz4/wiki/lz4_Frame_format.md>`_
 
 Module contents
 ---------------
