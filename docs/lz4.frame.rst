@@ -9,9 +9,10 @@ Module contents
 ---------------
 
 .. automodule:: lz4.frame
-    :members: compressBegin, compressEnd, compressFrame,
-	      compressUpdate, createCompContext, createDecompContext,
-	      decompressFrame, disableChecksum, freeCompContext,
-	      freeDecompContext, getFrameInfo, makePrefs
+   :members:
+      create_compression_context, free_compression_context,
+      compress_frame, compress_begin, compress_update, compress_end,
+      create_decompression_context, free_decompression_context,
+      decompress_frame, get_frame_info
     :undoc-members:
     :show-inheritance:
