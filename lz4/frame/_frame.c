@@ -732,13 +732,13 @@ static PyMethodDef module_methods[] =
 static struct PyModuleDef moduledef =
 {
   PyModuleDef_HEAD_INIT,
-  "lz4frame",
+  "_frame",
   NULL,
   -1,
   module_methods
 };
 
-MODULE_INIT_FUNC (lz4frame)
+MODULE_INIT_FUNC (_frame)
 {
   PyObject *module = PyModule_Create (&moduledef);
 
