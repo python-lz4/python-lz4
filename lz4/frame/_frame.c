@@ -224,22 +224,21 @@ compress_frame (PyObject * Py_UNUSED (self), PyObject * args,
                             "content_checksum",
                             "block_mode",
                             "frame_type",
-                            "auto_flush",
                             NULL
                           };
 
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s#|iiiiii", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s#|iiiii", kwlist,
                                     &source, &source_size,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
                                     &preferences.
                                     frameInfo.contentChecksumFlag,
                                     &preferences.frameInfo.blockMode,
-                                    &preferences.frameInfo.frameType,
-                                    &preferences.autoFlush))
+                                    &preferences.frameInfo.frameType))
     {
       return NULL;
     }
+  preferences.autoFlush = 0;
   preferences.frameInfo.contentSize = source_size;
 
   size_t compressed_bound =
