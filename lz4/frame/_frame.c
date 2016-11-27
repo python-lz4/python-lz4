@@ -68,6 +68,105 @@ struct compression_context
   LZ4F_preferences_t preferences;
 };
 
+/*****************************
+* create_compression_context *
+******************************/
+PyDoc_STRVAR(create_compression_context__doc,
+             "create_compression_context()\n\n"      \
+             "Generates a compression context.\n\n" \
+             "Returns:\n"                           \
+             "    cCtx: A compression context\n"
+            );
+
+static PyObject *
+create_compression_context (PyObject * Py_UNUSED (self),
+                            PyObject * Py_UNUSED (args),
+                            PyObject * Py_UNUSED (keywds))
+{
+  struct compression_context *context =
+    (struct compression_context *)
+    PyMem_Malloc (sizeof (struct compression_context));
+
+  if (!context)
+    {
+      return PyErr_NoMemory ();
+    }
+
+  memset (context, 0, sizeof (*context));
+
+  LZ4F_errorCode_t result =
+    LZ4F_createCompressionContext (&context->compression_context,
+                                   LZ4F_VERSION);
+
+  if (LZ4F_isError (result))
+    {
+      PyErr_Format (PyExc_RuntimeError,
+                    "LZ4F_createCompressionContext failed with code: %s",
+                    LZ4F_getErrorName (result));
+      return NULL;
+    }
+
+  return PyCapsule_New (context, NULL, NULL);
+}
+
+/****************************
+ * free_compression_context *
+ ****************************/
+PyDoc_STRVAR(free_compression_context__doc,
+             "freeCompContext(context)\n\n"                                \
+             "Releases the resources held by a compression context.\n\n" \
+             "Args:\n"                                                  \
+             "    context (cCtx): Compression context.\n"
+             );
+
+static PyObject *
+free_compression_context (PyObject * Py_UNUSED (self), PyObject * args,
+                          PyObject * keywds)
+{
+  PyObject *py_context = NULL;
+  static char *kwlist[] = { "context", NULL };
+
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O", kwlist, &py_context))
+    {
+      return NULL;
+    }
+
+  struct compression_context *context =
+    (struct compression_context *) PyCapsule_GetPointer (py_context, NULL);
+  if (!context)
+    {
+      PyErr_Format (PyExc_ValueError, "No compression context supplied");
+      return NULL;
+    }
+
+  LZ4F_errorCode_t result =
+    LZ4F_freeCompressionContext (context->compression_context);
+  if (LZ4F_isError (result))
+    {
+      PyErr_Format (PyExc_RuntimeError,
+                    "LZ4F_freeCompressionContext failed with code: %s",
+                    LZ4F_getErrorName (result));
+      return NULL;
+    }
+  PyMem_Free (context);
+
+  Py_RETURN_NONE;
+}
+
+/******************
+ * compress_frame *
+ ******************/
+PyDoc_STRVAR(compress_frame__doc,
+             "compress_frame(source)\n\n"                               \
+             "Accepts a string, and compresses the string in one go, returning the\n" \
+             "compressed string. the compressed string includes a header and endmark\n" \
+             "and so is suitable for writing to a file, for example.\n\n" \
+             "Args:\n"                                                  \
+             "    source (str): String to compress\n\n"                 \
+             "Returns:\n"                                               \
+             "    str: Compressed data as a string\n"
+             );
+
 static PyObject *
 compress_frame (PyObject * Py_UNUSED (self), PyObject * args,
                 PyObject * keywds)
@@ -151,70 +250,28 @@ compress_frame (PyObject * Py_UNUSED (self), PyObject * args,
   return py_dest;
 }
 
-static PyObject *
-create_compression_context (PyObject * Py_UNUSED (self),
-                            PyObject * Py_UNUSED (args),
-                            PyObject * Py_UNUSED (keywds))
-{
-  struct compression_context *context =
-    (struct compression_context *)
-    PyMem_Malloc (sizeof (struct compression_context));
-
-  if (!context)
-    {
-      return PyErr_NoMemory ();
-    }
-
-  memset (context, 0, sizeof (*context));
-
-  LZ4F_errorCode_t result =
-    LZ4F_createCompressionContext (&context->compression_context,
-                                   LZ4F_VERSION);
-
-  if (LZ4F_isError (result))
-    {
-      PyErr_Format (PyExc_RuntimeError,
-                    "LZ4F_createCompressionContext failed with code: %s",
-                    LZ4F_getErrorName (result));
-      return NULL;
-    }
-
-  return PyCapsule_New (context, NULL, NULL);
-}
-
-static PyObject *
-free_compression_context (PyObject * Py_UNUSED (self), PyObject * args,
-                          PyObject * keywds)
-{
-  PyObject *py_context = NULL;
-  static char *kwlist[] = { "context", NULL };
-
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O", kwlist, &py_context))
-    {
-      return NULL;
-    }
-
-  struct compression_context *context =
-    (struct compression_context *) PyCapsule_GetPointer (py_context, NULL);
-  if (!context)
-    {
-      PyErr_Format (PyExc_ValueError, "No compression context supplied");
-      return NULL;
-    }
-
-  LZ4F_errorCode_t result =
-    LZ4F_freeCompressionContext (context->compression_context);
-  if (LZ4F_isError (result))
-    {
-      PyErr_Format (PyExc_RuntimeError,
-                    "LZ4F_freeCompressionContext failed with code: %s",
-                    LZ4F_getErrorName (result));
-      return NULL;
-    }
-  PyMem_Free (context);
-
-  Py_RETURN_NONE;
-}
+/******************
+ * compress_begin *
+ ******************/
+PyDoc_STRVAR(compress_begin__doc,
+             "compressBegin(cCntxt)\n\n"                              \
+             "Creates a frame header from a compression context.\n\n" \
+             "Args:\n"                                                \
+             "    cCtx (cCtx): A compression context.\n\n"              \
+             "    blockSizeID (int): Sepcifies the blocksize to use. Options are:\n" \
+             "        0 (the lz4 library specified default), 4 (64 KB), 5 (256 kB),\n" \
+             "        6 (1 MB), 7 (4 MB). If unspecified, will default to 0.\n" \
+             "    blockMode (int): Specifies whether to use block-linked\n" \
+             "        compression (blockMode=1) or independent block compression\n" \
+             "        (blockMode=0). The default is 0.\n"               \
+             "    chkFlag (int): Specifies whether to enable checksumming of the\n" \
+             "        payload content. The value 0 disables the checksum, and 1\n" \
+             "        enables it. The default is 0.\n"                  \
+             "    autoFlush (int): Specify whether to enable always flush the buffer\n" \
+             "        To always flush, specify 1. To disable auto-flushing specify 0.\n" \
+             "Returns:\n"                                               \
+             "    str: Frame header.\n"
+             );
 
 static PyObject *
 compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
@@ -240,8 +297,7 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
                                     &source_size,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
-                                    &preferences.
-                                    frameInfo.contentChecksumFlag,
+                                    &preferences.frameInfo.contentChecksumFlag,
                                     &preferences.frameInfo.blockMode,
                                     &preferences.frameInfo.frameType))
     {
@@ -555,11 +611,6 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   return py_dest;
 }
 
-#define CCCTX_DOCSTRING \
-  "createCompContext()\n\n"				\
-  "Generates a compression context.\n\n"		\
-  "Returns:\n"						\
-  "    cCtx: A compression context\n"
 
 #define CDCTX_DOCSTRING \
   "createDecompContext()\n\n"				\
@@ -567,15 +618,6 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   "Returns:\n"						\
   "    dCtx: A compression context\n"
 
-#define COMPF_DOCSTRING \
-  "compressFrame(source)\n\n" \
-  "Accepts a string, and compresses the string in one go, returning the\n" \
-  "compressed string. the compressed string includes a header and endmark\n" \
-  "and so is suitable for writing to a file, for example.\n\n"		\
-  "Args:\n"								\
-  "    source (str): String to compress\n\n"				\
-  "Returns:\n"								\
-  "    str: Compressed data as a string\n"
 
 #define MKPFS_DOCSTRING \
   "makePrefs(blockSizeID=7, blockMode=1, chkFlag=0, autoFlush=0)\n\n"	\
@@ -596,13 +638,6 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   "Returns:\n"								\
   "    PyCapsule: preferences object.\n"
 
-#define COMPB_DOCSTRING \
-  "compressBegin(cCtx)\n\n" \
-  "Creates a frame header from a compression context.\n\n" \
-  "Args:\n"						 \
-  "    cCtx (cCtx): A compression context.\n\n"		 \
-  "Returns:\n"						 \
-  "    str: Frame header.\n"
 
 #define COMPU_DOCSTRING  \
   "compressUpdate(source, cCtx)\n\n" \
@@ -626,11 +661,6 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   "    str: String containing the remaining compressed data, end mark\n" \
   "        and optional checksum.\n"
 
-#define FCCTX_DOCSTRING  \
-  "freeCompContext(cCtx)\n\n"						\
-  "Releases the resources held by a compression context.\n\n"		\
-  "Args:\n"								\
-  "    cCtx (cCtx): Compression context.\n"
 
 #define FDCTX_DOCSTRING  \
   "freeDecompContext(dCtx)\n\n"						\
@@ -674,20 +704,16 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
 static PyMethodDef module_methods[] =
 {
   {
-    "compress_frame", (PyCFunction) compress_frame,
-    METH_VARARGS | METH_KEYWORDS,
-    "Compresses an entire frame of data and returns it as a string of bytes."
-  },
-
-  {
     "create_compression_context", (PyCFunction) create_compression_context,
-    METH_VARARGS | METH_KEYWORDS,
-    "Creates a Compression Context object, which will be used in all compression operations."
+    METH_VARARGS | METH_KEYWORDS, create_compression_context__doc
   },
   {
     "free_compression_context", (PyCFunction) free_compression_context,
-    METH_VARARGS | METH_KEYWORDS,
-    "Frees a Compression Context object, previously created by create_compression_context."
+    METH_VARARGS | METH_KEYWORDS, free_compression_context__doc
+  },
+  {
+    "compress_frame", (PyCFunction) compress_frame,
+    METH_VARARGS | METH_KEYWORDS, compress_frame__doc
   },
   {
     "compress_begin", (PyCFunction) compress_begin,
