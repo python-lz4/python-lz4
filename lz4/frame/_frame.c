@@ -254,23 +254,47 @@ compress_frame (PyObject * Py_UNUSED (self), PyObject * args,
  * compress_begin *
  ******************/
 PyDoc_STRVAR(compress_begin__doc,
-             "compressBegin(cCntxt)\n\n"                              \
-             "Creates a frame header from a compression context.\n\n" \
-             "Args:\n"                                                \
-             "    cCtx (cCtx): A compression context.\n\n"              \
-             "    blockSizeID (int): Sepcifies the blocksize to use. Options are:\n" \
-             "        0 (the lz4 library specified default), 4 (64 KB), 5 (256 kB),\n" \
-             "        6 (1 MB), 7 (4 MB). If unspecified, will default to 0.\n" \
-             "    blockMode (int): Specifies whether to use block-linked\n" \
-             "        compression (blockMode=1) or independent block compression\n" \
-             "        (blockMode=0). The default is 0.\n"               \
-             "    chkFlag (int): Specifies whether to enable checksumming of the\n" \
-             "        payload content. The value 0 disables the checksum, and 1\n" \
-             "        enables it. The default is 0.\n"                  \
-             "    autoFlush (int): Specify whether to enable always flush the buffer\n" \
-             "        To always flush, specify 1. To disable auto-flushing specify 0.\n" \
+             "compressBegin(cCtx)\n\n"                                  \
+             "Creates a frame header from a compression context.\n\n"   \
+             "Args:\n"                                                  \
+             "    context (cCtx): A compression context.\n\n"           \
+             "Keyword Args:\n"                                                \
+             "    block_size (int): Sepcifies the maximum blocksize to use.\n" \
+             "        Options:\n" \
+             "            - BLOCKSIZE_DEFAULT or 0: the lz4 library default\n" \
+             "            - BLOCKSIZE_MAX64KB or 4: 64 kB\n"              \
+             "            - BLOCKSIZE_MAX256KB or 5: 256 kB\n"            \
+             "            - BLOCKSIZE_MAX1MB or 6: 1 MB\n"                \
+             "            - BLOCKSIZE_MAX1MB or 7: 4 MB\n\n"                \
+             "        If unspecified, will default to BLOCKSIZE_DEFAULT.\n" \
+             "    block_mode (int): Specifies whether to use block-linked\n" \
+             "        compression. Options:\n"                      \
+             "            - BLOCKMODE_INDEPENDENT or 0: disable linked mode\n" \
+             "            - BLOCKMODE_LINKED or 1: linked mode\n"         \
+             "        The default is BLOCKMODE_INDEPENDENT.\n"          \
+             "    compression_level (int): Specifies the level of compression used.\n" \
+             "        Values between 0-16 are valid, with 0 (default) being the\n" \
+             "        lowest compression, and 16 the highest. Values above 16 will\n" \
+             "        be treated as 16. Values betwee 3-6 are recommended.\n" \
+             "        The following module constants are provided as a convenience:\n" \
+             "            - COMPRESSIONLEVEL_MIN: Minimum compression (0, the default)\n" \
+             "            - COMPRESSIONLEVEL_MINHC: Minimum high-compression mode (3)\n" \
+             "            - COMPRESSIONLEVEL_MAX: Maximum compression (16)\n" \
+             "    content_checksum (int): Specifies whether to enable checksumming of\n" \
+             "        the payload content. Options:\n"              \
+             "            - CONTENTCHECKSUM_DISABLED or 0: disables checksumming\n" \
+             "            - CONTENTCHECKSUM_ENABLED or 1: enables checksumming\n" \
+             "        The default is CONTENTCHECKSUM_DISABLED.\n"       \
+             "    frame_type (int): Specifies whether user data can be injected between\n" \
+             "        frames. Options:\n"                               \
+             "            - FRAMETYPE_FRAME or 0: disables user data injection\n" \
+             "            - FRAMETYPE_SKIPPABLEFRAME or 1: enables user data injection\n" \
+             "        The default is FRAMETYPE_FRAME.\n"                \
+             "    source_size (int): This optionally specifies  the uncompressed size\n" \
+             "        of the full frame content. This arument is optional, but can be\n" \
+             "        used to add a frame size restriction or validate content correctness.\n\n" \
              "Returns:\n"                                               \
-             "    str: Frame header.\n"
+             "    str (str): Frame header.\n"
              );
 
 static PyObject *
@@ -717,8 +741,7 @@ static PyMethodDef module_methods[] =
   },
   {
     "compress_begin", (PyCFunction) compress_begin,
-    METH_VARARGS | METH_KEYWORDS,
-    "Begins the frame compression. Returns the frame header in a string of bytes."
+    METH_VARARGS | METH_KEYWORDS, compress_begin__doc
   },
   {
     "compress_update", (PyCFunction) compress_update,
@@ -755,11 +778,15 @@ static PyMethodDef module_methods[] =
 #undef DCHKS_DOCSTRING
 #undef DCOMP_DOCSTRING
 
+PyDoc_STRVAR(lz4frame__doc,
+             "A Python wrapper for the LZ4 frame protocol"
+             );
+
 static struct PyModuleDef moduledef =
 {
   PyModuleDef_HEAD_INIT,
   "_frame",
-  NULL,
+  lz4frame__doc,
   -1,
   module_methods
 };
