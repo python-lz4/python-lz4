@@ -72,9 +72,10 @@ struct compression_context
 * create_compression_context *
 ******************************/
 PyDoc_STRVAR(create_compression_context__doc,
-             "create_compression_context()\n\n"      \
-             "Generates a compression context.\n\n" \
-             "Returns:\n"                           \
+             "create_compression_context()\n\n"                         \
+             "Creates a Compression Context object, which will be used in all\n" \
+             "compression operations.\n\n"                              \
+             "Returns:\n"                                               \
              "    cCtx: A compression context\n"
             );
 
@@ -113,8 +114,9 @@ create_compression_context (PyObject * Py_UNUSED (self),
  * free_compression_context *
  ****************************/
 PyDoc_STRVAR(free_compression_context__doc,
-             "freeCompContext(context)\n\n"                                \
-             "Releases the resources held by a compression context.\n\n" \
+             "free_compression_context(context)\n\n"                                \
+             "Releases the resources held by a compression context previously\n" \
+             "created with create_compression_context.\n\n"             \
              "Args:\n"                                                  \
              "    context (cCtx): Compression context.\n"
              );
@@ -156,13 +158,52 @@ free_compression_context (PyObject * Py_UNUSED (self), PyObject * args,
 /******************
  * compress_frame *
  ******************/
+#define COMPRESS_KWARGS_DOCSTRING \
+  "    block_size (int): Sepcifies the maximum blocksize to use.\n"     \
+  "        Options:\n\n"                                                \
+  "        - BLOCKSIZE_DEFAULT or 0: the lz4 library default\n"         \
+  "        - BLOCKSIZE_MAX64KB or 4: 64 kB\n"                           \
+  "        - BLOCKSIZE_MAX256KB or 5: 256 kB\n"                         \
+  "        - BLOCKSIZE_MAX1MB or 6: 1 MB\n"                             \
+  "        - BLOCKSIZE_MAX1MB or 7: 4 MB\n\n"                           \
+  "        If unspecified, will default to BLOCKSIZE_DEFAULT.\n"        \
+  "    block_mode (int): Specifies whether to use block-linked\n"       \
+  "        compression. Options:\n\n"                                  \
+  "        - BLOCKMODE_INDEPENDENT or 0: disable linked mode\n"         \
+  "        - BLOCKMODE_LINKED or 1: linked mode\n\n"                    \
+  "        The default is BLOCKMODE_INDEPENDENT.\n"                     \
+  "    compression_level (int): Specifies the level of compression used.\n" \
+  "        Values between 0-16 are valid, with 0 (default) being the\n" \
+  "        lowest compression, and 16 the highest. Values above 16 will\n" \
+  "        be treated as 16. Values betwee 3-6 are recommended.\n"      \
+  "        The following module constants are provided as a convenience:\n\n" \
+  "        - COMPRESSIONLEVEL_MIN: Minimum compression (0, the default)\n" \
+  "        - COMPRESSIONLEVEL_MINHC: Minimum high-compression mode (3)\n" \
+  "        - COMPRESSIONLEVEL_MAX: Maximum compression (16)\n\n"        \
+  "    content_checksum (int): Specifies whether to enable checksumming of\n" \
+  "        the payload content. Options:\n\n"                             \
+  "        - CONTENTCHECKSUM_DISABLED or 0: disables checksumming\n"    \
+  "        - CONTENTCHECKSUM_ENABLED or 1: enables checksumming\n\n"      \
+  "        The default is CONTENTCHECKSUM_DISABLED.\n"                  \
+  "    frame_type (int): Specifies whether user data can be injected between\n" \
+  "        frames. Options:\n\n"                                          \
+  "        - FRAMETYPE_FRAME or 0: disables user data injection\n"      \
+  "        - FRAMETYPE_SKIPPABLEFRAME or 1: enables user data injection\n\n" \
+  "        The default is FRAMETYPE_FRAME.\n"                           \
+  "    source_size (int): This optionally specifies  the uncompressed size\n" \
+  "        of the full frame content. This arument is optional, but can be\n" \
+
 PyDoc_STRVAR(compress_frame__doc,
              "compress_frame(source)\n\n"                               \
              "Accepts a string, and compresses the string in one go, returning the\n" \
-             "compressed string. the compressed string includes a header and endmark\n" \
-             "and so is suitable for writing to a file, for example.\n\n" \
+             "compressed string as a string of bytes. The compressed string includes\n" \
+             "a header and endmark and so is suitable for writing to a file.\n\n" \
              "Args:\n"                                                  \
              "    source (str): String to compress\n\n"                 \
+             "Keyword Args:\n"                                          \
+             COMPRESS_KWARGS_DOCSTRING                                  \
+             "auto_flush:\n"                                            \
+             "     \n"                                                  \
              "Returns:\n"                                               \
              "    str: Compressed data as a string\n"
              );
@@ -258,41 +299,8 @@ PyDoc_STRVAR(compress_begin__doc,
              "Creates a frame header from a compression context.\n\n"   \
              "Args:\n"                                                  \
              "    context (cCtx): A compression context.\n\n"           \
-             "Keyword Args:\n"                                                \
-             "    block_size (int): Sepcifies the maximum blocksize to use.\n" \
-             "        Options:\n" \
-             "            - BLOCKSIZE_DEFAULT or 0: the lz4 library default\n" \
-             "            - BLOCKSIZE_MAX64KB or 4: 64 kB\n"              \
-             "            - BLOCKSIZE_MAX256KB or 5: 256 kB\n"            \
-             "            - BLOCKSIZE_MAX1MB or 6: 1 MB\n"                \
-             "            - BLOCKSIZE_MAX1MB or 7: 4 MB\n\n"                \
-             "        If unspecified, will default to BLOCKSIZE_DEFAULT.\n" \
-             "    block_mode (int): Specifies whether to use block-linked\n" \
-             "        compression. Options:\n"                      \
-             "            - BLOCKMODE_INDEPENDENT or 0: disable linked mode\n" \
-             "            - BLOCKMODE_LINKED or 1: linked mode\n"         \
-             "        The default is BLOCKMODE_INDEPENDENT.\n"          \
-             "    compression_level (int): Specifies the level of compression used.\n" \
-             "        Values between 0-16 are valid, with 0 (default) being the\n" \
-             "        lowest compression, and 16 the highest. Values above 16 will\n" \
-             "        be treated as 16. Values betwee 3-6 are recommended.\n" \
-             "        The following module constants are provided as a convenience:\n" \
-             "            - COMPRESSIONLEVEL_MIN: Minimum compression (0, the default)\n" \
-             "            - COMPRESSIONLEVEL_MINHC: Minimum high-compression mode (3)\n" \
-             "            - COMPRESSIONLEVEL_MAX: Maximum compression (16)\n" \
-             "    content_checksum (int): Specifies whether to enable checksumming of\n" \
-             "        the payload content. Options:\n"              \
-             "            - CONTENTCHECKSUM_DISABLED or 0: disables checksumming\n" \
-             "            - CONTENTCHECKSUM_ENABLED or 1: enables checksumming\n" \
-             "        The default is CONTENTCHECKSUM_DISABLED.\n"       \
-             "    frame_type (int): Specifies whether user data can be injected between\n" \
-             "        frames. Options:\n"                               \
-             "            - FRAMETYPE_FRAME or 0: disables user data injection\n" \
-             "            - FRAMETYPE_SKIPPABLEFRAME or 1: enables user data injection\n" \
-             "        The default is FRAMETYPE_FRAME.\n"                \
-             "    source_size (int): This optionally specifies  the uncompressed size\n" \
-             "        of the full frame content. This arument is optional, but can be\n" \
-             "        used to add a frame size restriction or validate content correctness.\n\n" \
+             "Keyword Args:\n"                                          \
+             COMPRESS_KWARGS_DOCSTRING \
              "Returns:\n"                                               \
              "    str (str): Frame header.\n"
              );
