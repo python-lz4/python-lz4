@@ -158,7 +158,7 @@ free_compression_context (PyObject * Py_UNUSED (self), PyObject * args,
 /******************
  * compress_frame *
  ******************/
-#define COMPRESS_KWARGS_DOCSTRING \
+#define __COMPRESS_KWARGS_DOCSTRING \
   "    block_size (int): Sepcifies the maximum blocksize to use.\n"     \
   "        Options:\n\n"                                                \
   "        - BLOCKSIZE_DEFAULT or 0: the lz4 library default\n"         \
@@ -168,7 +168,7 @@ free_compression_context (PyObject * Py_UNUSED (self), PyObject * args,
   "        - BLOCKSIZE_MAX1MB or 7: 4 MB\n\n"                           \
   "        If unspecified, will default to BLOCKSIZE_DEFAULT.\n"        \
   "    block_mode (int): Specifies whether to use block-linked\n"       \
-  "        compression. Options:\n\n"                                  \
+  "        compression. Options:\n\n"                                   \
   "        - BLOCKMODE_INDEPENDENT or 0: disable linked mode\n"         \
   "        - BLOCKMODE_LINKED or 1: linked mode\n\n"                    \
   "        The default is BLOCKMODE_INDEPENDENT.\n"                     \
@@ -181,12 +181,12 @@ free_compression_context (PyObject * Py_UNUSED (self), PyObject * args,
   "        - COMPRESSIONLEVEL_MINHC: Minimum high-compression mode (3)\n" \
   "        - COMPRESSIONLEVEL_MAX: Maximum compression (16)\n\n"        \
   "    content_checksum (int): Specifies whether to enable checksumming of\n" \
-  "        the payload content. Options:\n\n"                             \
+  "        the payload content. Options:\n\n"                           \
   "        - CONTENTCHECKSUM_DISABLED or 0: disables checksumming\n"    \
-  "        - CONTENTCHECKSUM_ENABLED or 1: enables checksumming\n\n"      \
+  "        - CONTENTCHECKSUM_ENABLED or 1: enables checksumming\n\n"    \
   "        The default is CONTENTCHECKSUM_DISABLED.\n"                  \
   "    frame_type (int): Specifies whether user data can be injected between\n" \
-  "        frames. Options:\n\n"                                          \
+  "        frames. Options:\n\n"                                        \
   "        - FRAMETYPE_FRAME or 0: disables user data injection\n"      \
   "        - FRAMETYPE_SKIPPABLEFRAME or 1: enables user data injection\n\n" \
   "        The default is FRAMETYPE_FRAME.\n"                           \
@@ -270,7 +270,7 @@ compress_frame (PyObject * Py_UNUSED (self), PyObject * args,
         {
           Py_DECREF (py_dest);
           PyErr_Format (PyExc_RuntimeError,
-                        "LZ4F_compressFrame failed with code failed with code: %s",
+                        "LZ4F_compressFrame failed with code: %s",
                         LZ4F_getErrorName (compressed_size));
           return NULL;
         }
@@ -301,8 +301,13 @@ PyDoc_STRVAR(compress_begin__doc,
              "Keyword Args:\n"                                          \
              COMPRESS_KWARGS_DOCSTRING \
              "Returns:\n"                                               \
-             "    str (str): Frame header.\n"
+             "    str (str): Frame header.\n"                           \
+             "\nNotes:\n"                                                 \
+             "    Currently we force autoFlush such that no data is buffered.\n" \
+             "    This will change in a future update.\n"
              );
+
+#undef __COMPRESS_KWARGS_DOCSTRING
 
 static PyObject *
 compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
@@ -334,6 +339,15 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
     {
       return NULL;
     }
+
+  /* We enable autoFlush explicitly here. In the future, we may wish to expose
+     this as a keyword argument to allow disabling of autoFlush, and so enable
+     buffering. In doing so, we'd also need to add logic to compress_end to size
+     its destination buffer accordingly - with autoFlush disabled, the call to
+     compressEnd will flush the buffer. Furthermore, with autoFlush disabled,
+     compress_update may return an empty string if the buffer is not filled, so
+     this needs adding to the docstring. https://github.com/lz4/lz4/issues/280
+  */
   preferences.autoFlush = 1;
   preferences.frameInfo.contentSize = source_size;
 
@@ -367,6 +381,22 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
 
   return PyBytes_FromStringAndSize (destination_buffer, result);
 }
+
+/*******************
+ * compress_update *
+ *******************/
+PyDoc_STRVAR(compress_update__doc,
+             "compress_update(context, source)\n\n" \
+             "Compresses blocks of data and returns the compressed data in a string of bytes.\n" \
+             "Args:\n"                                                  \
+             "    context (cCtx): compression context\n"                \
+             "    source (str): data to compress\n\n"                   \
+             "Returns:\n"                                               \
+             "    str: Compressed data as a string\n"                   \
+             "\nNotes:\n"                                               \
+             "    Currently autoFlush is enabled. In a future update we will allow for autoFlush\n" \
+             "    to be disabled, at which point this function may return empty strings.\n"
+             );
 
 static PyObject *
 compress_update (PyObject * Py_UNUSED (self), PyObject * args,
@@ -429,6 +459,19 @@ compress_update (PyObject * Py_UNUSED (self), PyObject * args,
   return bytes;
 }
 
+/****************
+ * compress_end *
+ ****************/
+PyDoc_STRVAR(compress_end__doc,
+             "compress_end(context)\n\n" \
+             "Flushes a compression context returning an endmark and optional checksum\n" \
+             "as a string of bytes.\n" \
+             "Args:\n"                                                  \
+             "    context (cCtx): compression context\n"                \
+             "Returns:\n"                                               \
+             "    str: Remaining (buffered) compressed data, end mark and optional checksum as a string\n"
+             );
+
 static PyObject *
 compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
 {
@@ -471,6 +514,19 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
 
   return PyBytes_FromStringAndSize (destination_buffer, result);
 }
+
+/******************
+ * get_frame_info *
+ ******************/
+PyDoc_STRVAR(get_frame_info__doc,
+             "get_frame_info(frame)\n\n"                                \
+             "Given a frame of compressed data, returns information about the frame.\n" \
+             "Args:\n"                                                  \
+             "    frame (str): LZ4 frame as a string\n"                \
+             "Returns:\n"                                               \
+             "    dict: Dictionary with keys blockSizeID, blockMode, contentChecksumFlag\n" \
+             "         frameType and contentSize.\n"
+             );
 
 static PyObject *
 get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
@@ -526,6 +582,22 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
                         "frameType", frame_info.frameType,
                         "contentSize", frame_info.contentSize);
 }
+
+/**************
+ * decompress *
+ **************/
+PyDoc_STRVAR(decompress__doc,
+             "decompress(source, uncompressed_size=0)\n\n"                                \
+             "Decompressed a frame of data and returns it as a string of bytes.\n" \
+             "Args:\n"                                                  \
+             "    source (str): LZ4 frame as a string\n\n"              \
+             "Keyword Args:\n"                                          \
+             "    uncompressed_size (int): size of data once uncompressed.\n" \
+             "        This is only needed if for the uncompressed payload\n" \
+             "        size is not encoded within the frame.\n\n"        \
+             "Returns:\n"                                               \
+             "    str: Uncompressed data as a string.\n"
+             );
 
 static PyObject *
 decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
@@ -642,96 +714,6 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   return py_dest;
 }
 
-
-#define CDCTX_DOCSTRING \
-  "createDecompContext()\n\n"				\
-  "Generates a decompression context.\n\n"		\
-  "Returns:\n"						\
-  "    dCtx: A compression context\n"
-
-
-#define MKPFS_DOCSTRING \
-  "makePrefs(blockSizeID=7, blockMode=1, chkFlag=0, autoFlush=0)\n\n"	\
-  "Create an object defining compression settings.\n\n"			\
-  "Args:\n"								\
-  "    blockSizeID (int): Sepcifies the blocksize to use. Options are:\n" \
-  "        0 (the lz4 library specified default), 4 (64 KB), 5 (256 kB),\n" \
-  "        6 (1 MB), 7 (4 MB). If unspecified, will default to 0.\n"	\
-  "    blockMode (int): Specifies whether to use block-linked\n"	\
-  "        compression (blockMode=1) or independent block compression\n" \
-  "        (blockMode=0). The default is 0.\n"				\
-  "    chkFlag (int): Specifies whether to enable checksumming of the\n" \
-  "        payload content. The value 0 disables the checksum, and 1\n" \
-  "        enables it. The default is 0.\n" \
-  "    autoFlush (int): Specify whether to enable always flush the buffer\n" \
-  "        To always flush, specify 1. To disable auto-flushing specify 0.\n" \
-  "        The default is 0.\n\n"					\
-  "Returns:\n"								\
-  "    PyCapsule: preferences object.\n"
-
-
-#define COMPU_DOCSTRING  \
-  "compressUpdate(source, cCtx)\n\n" \
-  "Accepts a string, and a compression context and returns the string as\n" \
-  "a compressed block if the block is filled. If not, it will return a\n" \
-  "blank string and hold the compressed data until the block is filled,\n" \
-  "flush is called or compressEnd is called.\n\n"			\
-  "Args:\n"								\
-  "    source (str): Source string to compress.\n"			\
-  "    cCtx (cCtx): Compression context.\n\n"				\
-  "Returns:\n"								\
-  "    str: compressed block or empty string.\n"
-
-#define COMPE_DOCSTRING  \
-  "compressEnd(cCtx)\n\n" \
-  "Ends a compression session by flushing the holding buffer, applying\n" \
-  "an end mark, and if applicable, creating a checksum.\n\n"		\
-  "Args:\n"								\
-  "    cCtx (cCtx): a compression context.\n\n"				\
-  "Returns:\n"								\
-  "    str: String containing the remaining compressed data, end mark\n" \
-  "        and optional checksum.\n"
-
-
-#define FDCTX_DOCSTRING  \
-  "freeDecompContext(dCtx)\n\n"						\
-  "Releases the resources held by a decompression context.\n\n"		\
-  "Args:\n"								\
-  "    dCtx (dCtx): Decompression context.\n"
-
-#define GETFI_DOCSTRING \
-  "getFrameInfo(header, dctx)\n\n"					\
-  "Take a 7 byte string corresponding to the a compresed frame header\n" \
-  "together with a decompression context, and return a dictionary\n" \
-  "object containing the frame information corresponding to the header\n\n" \
-  "Args:\n"								\
-  "    header (str): LZ4 header\n"					\
-  "    dCtx (dCtx): Decompression context\n\n"				\
-  "Returns:\n"								\
-  "    dict: a dictionary object with keys `chkFlag`, `blkSize` and\n" \
-  "        `blkMode`.\n"
-
-#define DCHKS_DOCSTRING \
-  "disableChecksum(dCtx)\n\n" \
-  "Disables the checksum portion of a the frameInfo struct in the dCtx.\n" \
-  "This is required for arbitrary seeking within a lz4 file. Without\n" \
-  "this, decompress will error out if blocks are read out of order.\n\n" \
-  "Args:\n"								\
-  "    dCtx (dCtx): Decompression context.\n"
-
-#define DCOMP_DOCSTRING \
-  "decompressFrame(source, dCtx, blkSizeID = 7)\n\n"			\
-  "Accepts required source string and decompressionContext, and returns\n" \
-  "a dictionary containing the uncompressed data and next block size if\n" \
-  "block was complete. If block was incomplete, returns characters\n"	\
-  "remaining to complete block. Raises an exception if any error\n"	\
-  "occurs.\n\n"								\
-  "Args:\n"								\
-  "    source (str): Data to decompress.\n"				\
-  "    dCtx (dCtx): Decompression context.\n\n"				\
-  "Returns:\n"								\
-  "    dict: A dictionary with keys `decomp` and `next`\n"
-
 static PyMethodDef module_methods[] =
 {
   {
@@ -752,38 +734,22 @@ static PyMethodDef module_methods[] =
   },
   {
     "compress_update", (PyCFunction) compress_update,
-    METH_VARARGS | METH_KEYWORDS,
-    "Compresses blocks of data and returns the compressed data in a string of bytes. Returned strings may be empty if auto-flush is disabled."
+    METH_VARARGS | METH_KEYWORDS, compress_update__doc
   },
   {
-    "compress_end", (PyCFunction) compress_end, METH_VARARGS | METH_KEYWORDS,
-    "Flushes and returns any remaining compressed data along with the endmark and optional checksum as a string of bytes."
+    "compress_end", (PyCFunction) compress_end,
+    METH_VARARGS | METH_KEYWORDS, compress_end__doc
   },
-
   {
     "get_frame_info", (PyCFunction) get_frame_info,
-    METH_VARARGS | METH_KEYWORDS,
-    "Given a frame of compressed data, returns information about the frame."
+    METH_VARARGS | METH_KEYWORDS, get_frame_info__doc
   },
   {
-    "decompress", (PyCFunction) decompress, METH_VARARGS | METH_KEYWORDS,
-    "Decompressed a frame of data and returns it as a string of bytes."
+    "decompress", (PyCFunction) decompress,
+    METH_VARARGS | METH_KEYWORDS, decompress__doc
   },
   {NULL, NULL, 0, NULL}		/* Sentinel */
 };
-
-#undef CCCTX_DOCSTRING
-#undef COMPF_DOCSTRING
-#undef MKPFS_DOCSTRING
-#undef COMPB_DOCSTRING
-#undef COMPU_DOCSTRING
-#undef COMPE_DOCSTRING
-#undef FCCTX_DOCSTRING
-#undef CDCTX_DOCSTRING
-#undef FDCTX_DOCSTRING
-#undef GETFI_DOCSTRING
-#undef DCHKS_DOCSTRING
-#undef DCOMP_DOCSTRING
 
 PyDoc_STRVAR(lz4frame__doc,
              "A Python wrapper for the LZ4 frame protocol"
