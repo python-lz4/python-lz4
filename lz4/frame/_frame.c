@@ -420,8 +420,24 @@ compress_update (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  size_t compressed_bound =
-    LZ4F_compressFrameBound (source_size, &context->preferences);
+  /* If autoFlush is enabled, then the destination buffer only needs to be as
+     big as LZ4F_compressFrameBound specifies for this source size. However, if
+     autoFlush is disabled, previous calls may have resulted in buffered data,
+     and so we need instead to use LZ4F_compressBound to find the size required
+     for the destination buffer. This means that with autoFlush disabled we may
+     frequently allocate more memory than needed. */
+  size_t compressed_bound;
+  if (context->preferences.autoFlush == 1)
+    {
+      compressed_bound =
+        LZ4F_compressFrameBound (source_size, &context->preferences);
+    }
+  else
+    {
+      compressed_bound =
+        LZ4F_compressBound (source_size, &context->preferences);
+    }
+
   if (compressed_bound > PY_SSIZE_T_MAX)
     {
       PyErr_Format (PyExc_ValueError,
@@ -439,6 +455,7 @@ compress_update (PyObject * Py_UNUSED (self), PyObject * args,
   LZ4F_compressOptions_t compress_options;
   compress_options.stableSrc = 0;
 
+  printf("compressed_bound: %d source_size: %d\n", compressed_bound, source_size);
   size_t result =
     LZ4F_compressUpdate (context->compression_context, destination_buffer,
                          compressed_bound, source, source_size,
