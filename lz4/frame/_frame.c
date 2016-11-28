@@ -201,9 +201,8 @@ PyDoc_STRVAR(compress_frame__doc,
              "Args:\n"                                                  \
              "    source (str): String to compress\n\n"                 \
              "Keyword Args:\n"                                          \
-             __COMPRESS_KWARGS_DOCSTRING                                  \
-             "auto_flush:\n"                                            \
-             "     \n"                                                  \
+             __COMPRESS_KWARGS_DOCSTRING                                \
+             "\n"                                                       \
              "Returns:\n"                                               \
              "    str: Compressed data as a string\n"
              );
@@ -299,12 +298,12 @@ PyDoc_STRVAR(compress_begin__doc,
              "Args:\n"                                                  \
              "    context (cCtx): A compression context.\n\n"           \
              "Keyword Args:\n"                                          \
-             __COMPRESS_KWARGS_DOCSTRING                                  \
+             __COMPRESS_KWARGS_DOCSTRING                                \
+             "    auto_flush (int): Enable () or disable (0) autoFlush in LZ4\n" \
+             "         When autoFlush is disabled, the LZ4 library may buffer data\n" \
+             "         until a block is full\n\n"                       \
              "Returns:\n"                                               \
-             "    str (str): Frame header.\n"                           \
-             "\nNotes:\n"                                                 \
-             "    Currently we force autoFlush such that no data is buffered.\n" \
-             "    This will change in a future update.\n"
+             "    str (str): Frame header.\n"
              );
 
 #undef __COMPRESS_KWARGS_DOCSTRING
@@ -323,32 +322,30 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
                             "content_checksum",
                             "block_mode",
                             "frame_type",
+                            "auto_flush",
                             NULL
                           };
 
   memset (&preferences, 0, sizeof (preferences));
 
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiiiii", kwlist,
+  /* Default to having autoFlush enabled unless specified otherwise via keyword
+     argument */
+  preferences.autoFlush = 1;
+
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiiiiii", kwlist,
                                     &py_context,
                                     &source_size,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
                                     &preferences.frameInfo.contentChecksumFlag,
                                     &preferences.frameInfo.blockMode,
-                                    &preferences.frameInfo.frameType))
+                                    &preferences.frameInfo.frameType,
+                                    &preferences.autoFlush
+                                    ))
     {
       return NULL;
     }
 
-  /* We enable autoFlush explicitly here. In the future, we may wish to expose
-     this as a keyword argument to allow disabling of autoFlush, and so enable
-     buffering. In doing so, we'd also need to add logic to compress_end to size
-     its destination buffer accordingly - with autoFlush disabled, the call to
-     compressEnd will flush the buffer. Furthermore, with autoFlush disabled,
-     compress_update may return an empty string if the buffer is not filled, so
-     this needs adding to the docstring. https://github.com/lz4/lz4/issues/280
-  */
-  preferences.autoFlush = 1;
   preferences.frameInfo.contentSize = source_size;
 
   struct compression_context *context =
@@ -392,10 +389,11 @@ PyDoc_STRVAR(compress_update__doc,
              "    context (cCtx): compression context\n"                \
              "    source (str): data to compress\n\n"                   \
              "Returns:\n"                                               \
-             "    str: Compressed data as a string\n"                   \
-             "\nNotes:\n"                                               \
-             "    Currently autoFlush is enabled. In a future update we will allow for autoFlush\n" \
-             "    to be disabled, at which point this function may return empty strings.\n"
+             "    str: Compressed data as a string\n\n"                 \
+             "Notes:\n"                                               \
+             "    If autoFlush is disabled (auto_flush=0 when calling compress_begin)\n" \
+             "    this function may return an empty string if LZ4 decides to buffer.\n" \
+             "    the input.\n"
              );
 
 static PyObject *
@@ -495,11 +493,12 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   LZ4F_compressOptions_t compress_options;
   compress_options.stableSrc = 0;
 
-  /* Because we compress with auto-flush enabled, this only needs to be large
-   * enough for a footer, which is 4-8 bytes. Unfortunately, the lz4 library
-   * doesn't provide a #define for this. We over-allocate to allow for larger
-   * footers in the future. */
-  char destination_buffer[64];
+  /* Calling LZ4F_compressBound with srcSize equal to 1 returns a size
+     sufficient to fit (i) any remaining buffered data (when autoFlush is
+     disabled) and the footer size, which is either 4 or 8 bytes depending on
+     whether checksums are enabled. https://github.com/lz4/lz4/issues/280 */
+  size_t destination_size = LZ4F_compressBound(1, &(context->preferences));
+  char destination_buffer[destination_size];
 
   size_t result =
     LZ4F_compressEnd (context->compression_context, destination_buffer,
