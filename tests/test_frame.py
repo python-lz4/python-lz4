@@ -1,4 +1,4 @@
-from lz4ex import lz4frame
+import lz4.frame as lz4frame
 import unittest
 
 class TestLZ4Frame(unittest.TestCase):
@@ -33,7 +33,6 @@ class TestLZ4Frame(unittest.TestCase):
         input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
         compressed = lz4frame.compress_frame(
             input_data,
-            len(input_data),
             lz4frame.COMPRESSIONLEVEL_MAX,
             lz4frame.BLOCKSIZE_MAX64KB,
             lz4frame.CONTENTCHECKSUM_DISABLED,
