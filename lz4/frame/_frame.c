@@ -447,7 +447,7 @@ compress_update (PyObject * Py_UNUSED (self), PyObject * args,
     {
       PyMem_Free (destination_buffer);
       PyErr_Format (PyExc_RuntimeError,
-                    "LZ4F_compressBegin failed with code: %s",
+                    "LZ4F_compressUpdate failed with code: %s",
                     LZ4F_getErrorName (result));
       return NULL;
     }
