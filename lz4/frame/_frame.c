@@ -201,7 +201,7 @@ PyDoc_STRVAR(compress_frame__doc,
              "Args:\n"                                                  \
              "    source (str): String to compress\n\n"                 \
              "Keyword Args:\n"                                          \
-             COMPRESS_KWARGS_DOCSTRING                                  \
+             __COMPRESS_KWARGS_DOCSTRING                                  \
              "auto_flush:\n"                                            \
              "     \n"                                                  \
              "Returns:\n"                                               \
@@ -299,7 +299,7 @@ PyDoc_STRVAR(compress_begin__doc,
              "Args:\n"                                                  \
              "    context (cCtx): A compression context.\n\n"           \
              "Keyword Args:\n"                                          \
-             COMPRESS_KWARGS_DOCSTRING \
+             __COMPRESS_KWARGS_DOCSTRING                                  \
              "Returns:\n"                                               \
              "    str (str): Frame header.\n"                           \
              "\nNotes:\n"                                                 \
