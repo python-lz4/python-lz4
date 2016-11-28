@@ -656,7 +656,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
     {
       LZ4F_freeDecompressionContext (context);
       PyErr_Format (PyExc_ValueError,
-                    "Decompressed content size was not encoded in this compressed data; therefore, you must specify it manually when calling decompress.");
+                    "Decompressed content size was not encoded in this compressed data; use the uncompressed_size keyword to specify it.");
       return NULL;
     }
   size_t destination_size = (size_t) frame_info.contentSize;
