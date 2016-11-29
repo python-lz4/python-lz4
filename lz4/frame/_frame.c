@@ -678,6 +678,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   void * destination_start = destination_buffer;
 
   size_t destination_written = 0;
+  size_t source_read_total = 0;
   while (1)
     {
       size_t result = LZ4F_decompress (context,
@@ -698,6 +699,8 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
         }
 
       destination_written += destination_write;
+      source_read_total += source_read;
+
       if (result != 0)
         {
           if (destination_written == destination_size)
@@ -721,7 +724,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
           destination_start = destination_buffer + destination_written;
           source_start += source_read;
           destination_write = destination_size - destination_written;
-          source_read = source_size - source_read;
+          source_read = source_size - source_read_total;
         }
       else
         {
