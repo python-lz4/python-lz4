@@ -455,7 +455,6 @@ compress_update (PyObject * Py_UNUSED (self), PyObject * args,
   LZ4F_compressOptions_t compress_options;
   compress_options.stableSrc = 0;
 
-  printf("compressed_bound: %d source_size: %d\n", compressed_bound, source_size);
   size_t result =
     LZ4F_compressUpdate (context->compression_context, destination_buffer,
                          compressed_bound, source, source_size,
@@ -607,10 +606,6 @@ PyDoc_STRVAR(decompress__doc,
              "Decompressed a frame of data and returns it as a string of bytes.\n" \
              "Args:\n"                                                  \
              "    source (str): LZ4 frame as a string\n\n"              \
-             "Keyword Args:\n"                                          \
-             "    uncompressed_size (int): size of data once uncompressed.\n" \
-             "        This is only needed if for the uncompressed payload\n" \
-             "        size is not encoded within the frame.\n\n"        \
              "Returns:\n"                                               \
              "    str: Uncompressed data as a string.\n"
              );
@@ -620,12 +615,8 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
 {
   char const *source;
   int source_size;
-  int uncompressed_size = 0;
-  static char *kwlist[] = { "source", "uncompressed_size", NULL };
 
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s#|i", kwlist,
-                                    &source, &source_size,
-                                    &uncompressed_size))
+  if (!PyArg_ParseTuple (args, "s#", &source, &source_size))
     {
       return NULL;
     }
@@ -641,9 +632,9 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
     }
 
   LZ4F_frameInfo_t frame_info;
-  size_t source_size_copy = source_size;
+  size_t source_read = source_size;
   result =
-    LZ4F_getFrameInfo (context, &frame_info, source, &source_size_copy);
+    LZ4F_getFrameInfo (context, &frame_info, source, &source_read);
   if (LZ4F_isError (result))
     {
       LZ4F_freeDecompressionContext (context);
@@ -652,32 +643,25 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
                     LZ4F_getErrorName (result));
       return NULL;
     }
-  /* advance the source pointer past the header */
-  source += source_size_copy;
+  /* Advance the source pointer past the header - the call to getFrameInfo above
+     replaces the passed source_read value with the number of bytes
+     read. Also reduce source_size accordingly. */
+  source += source_read;
+  source_size -= source_read;
 
-  if (frame_info.contentSize > PY_SSIZE_T_MAX)
-    {
-      LZ4F_freeDecompressionContext (context);
-      PyErr_Format (PyExc_ValueError,
-                    "decompressed data would require %zu bytes, which is larger than the maximum supported size of %zd bytes",
-                    (size_t) frame_info.contentSize, PY_SSIZE_T_MAX);
-      return NULL;
-    }
-
+  size_t destination_size;
   if (frame_info.contentSize == 0)
     {
-      frame_info.contentSize = uncompressed_size;
+      /* We'll allocate twice the source buffer size as the output size, and
+         later increase it if needed. */
+      destination_size = 2 * source_size;
     }
-  if (frame_info.contentSize == 0)
+  else
     {
-      LZ4F_freeDecompressionContext (context);
-      PyErr_Format (PyExc_ValueError,
-                    "Decompressed content size was not encoded in this compressed data; use the uncompressed_size keyword to specify it.");
-      return NULL;
+      destination_size = frame_info.contentSize;
     }
-  size_t destination_size = (size_t) frame_info.contentSize;
 
-  char *destination_buffer = (char *) PyMem_Malloc (destination_size);
+  char * destination_buffer = (char *) PyMem_Malloc (destination_size);
   if (!destination_buffer)
     {
       LZ4F_freeDecompressionContext (context);
@@ -687,30 +671,61 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   LZ4F_decompressOptions_t options;
   options.stableDst = 1;
 
-  size_t destination_size_copy = destination_size;
-  source_size_copy = source_size;
+  size_t destination_write = destination_size;
+  source_read = source_size;
 
-  result = LZ4F_decompress (context,
-                            destination_buffer,
-                            &destination_size_copy,
-                            source, &source_size_copy, &options);
-  if (result != 0)
+  const void * source_start = source;
+  void * destination_start = destination_buffer;
+
+  size_t destination_written = 0;
+  while (1)
     {
-      LZ4F_freeDecompressionContext (context);
-      PyMem_Free (destination_buffer);
+      size_t result = LZ4F_decompress (context,
+                                       destination_start,
+                                       &destination_write,
+                                       source_start,
+                                       &source_read,
+                                       &options);
+
       if (LZ4F_isError (result))
         {
           PyErr_Format (PyExc_RuntimeError,
                         "LZ4F_decompress failed with code: %s",
                         LZ4F_getErrorName (result));
+          LZ4F_freeDecompressionContext (context);
+          PyMem_Free (destination_buffer);
           return NULL;
+        }
+
+      destination_written += destination_write;
+      if (result != 0)
+        {
+          if (destination_written == destination_size)
+            {
+              /* Destination_buffer is full, so need to expand it. We'll expand
+                 it by the approximate size needed from the return value - see
+                 LZ4 docs */
+              destination_size += result;
+              if (!PyMem_Realloc(destination_buffer, destination_size))
+                {
+                  PyErr_SetString (PyExc_RuntimeError,
+                                   "Failed to increase destination buffer size");
+                  LZ4F_freeDecompressionContext (context);
+                  PyMem_Free (destination_buffer);
+                  return NULL;
+                }
+            }
+          /* Data still remaining to be decompressed, so increment the
+             source and destination start locations, and reset source_read
+             and destination_write ready for the next iteration. */
+          destination_start = destination_buffer + destination_written;
+          source_start += source_read;
+          destination_write = destination_size - destination_written;
+          source_read = source_size - source_read;
         }
       else
         {
-          PyErr_Format (PyExc_RuntimeError,
-                        "Something unexpected happened and decompress wants to be called again with %zu more bytes",
-                        result);
-          return NULL;
+          break;
         }
     }
 
@@ -725,7 +740,14 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
     }
 
   PyObject *py_dest =
-    PyBytes_FromStringAndSize (destination_buffer, destination_size_copy);
+    PyBytes_FromStringAndSize (destination_buffer, destination_written);
+
+  if (py_dest == NULL)
+    {
+      PyErr_SetString (PyExc_RuntimeError,
+                       "Failed to create Python object from destination_buffer");
+    }
+
   PyMem_Free (destination_buffer);
   return py_dest;
 }
