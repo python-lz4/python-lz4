@@ -671,20 +671,20 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   LZ4F_decompressOptions_t options;
   options.stableDst = 1;
 
-  size_t destination_write = destination_size;
   source_read = source_size;
+  const void * source_cursor = source;
+  const void * source_end = source + source_size;
 
-  const void * source_start = source;
-  void * destination_start = destination_buffer;
-
+  size_t destination_write = destination_size;
+  void * destination_cursor = destination_buffer;
   size_t destination_written = 0;
-  size_t source_read_total = 0;
+
   while (1)
     {
       size_t result = LZ4F_decompress (context,
-                                       destination_start,
+                                       destination_cursor,
                                        &destination_write,
-                                       source_start,
+                                       source_cursor,
                                        &source_read,
                                        &options);
 
@@ -699,37 +699,36 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
         }
 
       destination_written += destination_write;
-      source_read_total += source_read;
 
-      if (result != 0)
-        {
-          if (destination_written == destination_size)
-            {
-              /* Destination_buffer is full, so need to expand it. We'll expand
-                 it by the approximate size needed from the return value - see
-                 LZ4 docs */
-              destination_size += result;
-              if (!PyMem_Realloc(destination_buffer, destination_size))
-                {
-                  PyErr_SetString (PyExc_RuntimeError,
-                                   "Failed to increase destination buffer size");
-                  LZ4F_freeDecompressionContext (context);
-                  PyMem_Free (destination_buffer);
-                  return NULL;
-                }
-            }
-          /* Data still remaining to be decompressed, so increment the
-             source and destination start locations, and reset source_read
-             and destination_write ready for the next iteration. */
-          destination_start = destination_buffer + destination_written;
-          source_start += source_read;
-          destination_write = destination_size - destination_written;
-          source_read = source_size - source_read_total;
-        }
-      else
+      if (result == 0)
         {
           break;
         }
+
+      if (destination_written == destination_size)
+        {
+          /* Destination_buffer is full, so need to expand it. We'll expand
+             it by the approximate size needed from the return value - see
+             LZ4 docs */
+          destination_size += result;
+          if (!PyMem_Realloc(destination_buffer, destination_size))
+            {
+              PyErr_SetString (PyExc_RuntimeError,
+                               "Failed to increase destination buffer size");
+              LZ4F_freeDecompressionContext (context);
+              PyMem_Free (destination_buffer);
+              return NULL;
+            }
+        }
+      /* Data still remaining to be decompressed, so increment the source and
+         destination cursor locations, and reset source_read and
+         destination_write ready for the next iteration. Important to
+         re-initialize destination_cursor here in this was (as opposed to simply
+         incrementing it) so we're pointing to the realloc'd memory location. */
+      destination_cursor = destination_buffer + destination_written;
+      source_cursor += source_read;
+      destination_write = destination_size - destination_written;
+      source_read = source_end - source_cursor;
     }
 
   result = LZ4F_freeDecompressionContext (context);
