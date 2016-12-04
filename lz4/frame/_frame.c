@@ -660,6 +660,8 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   size_t destination_write;
   void * destination_cursor;
   size_t destination_written;
+  const void * source_cursor;
+  const void * source_end;
   PyObject *py_dest;
 
   if (!PyArg_ParseTuple (args, "s#", &source, &source_size))
@@ -714,8 +716,8 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   options.stableDst = 1;
 
   source_read = source_size;
-  const void * source_cursor = source;
-  const void * source_end = source + source_size;
+  source_cursor = source;
+  source_end = source + source_size;
 
   destination_write = destination_size;
   destination_cursor = destination_buffer;
