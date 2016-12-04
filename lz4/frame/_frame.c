@@ -219,8 +219,10 @@ compress_frame (PyObject * Py_UNUSED (self), PyObject * args,
   const char *source;
   int source_size;
   LZ4F_preferences_t preferences;
-
-  memset (&preferences, 0, sizeof (preferences));
+  size_t compressed_bound;
+  Py_ssize_t dest_size;
+  PyObject *py_dest;
+  char *dest;
 
   static char *kwlist[] = { "source",
                             "compression_level",
@@ -230,6 +232,9 @@ compress_frame (PyObject * Py_UNUSED (self), PyObject * args,
                             "frame_type",
                             NULL
                           };
+
+
+  memset (&preferences, 0, sizeof (preferences));
 
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "s#|iiiii", kwlist,
                                     &source, &source_size,
@@ -245,7 +250,7 @@ compress_frame (PyObject * Py_UNUSED (self), PyObject * args,
   preferences.autoFlush = 0;
   preferences.frameInfo.contentSize = source_size;
 
-  size_t compressed_bound =
+  compressed_bound =
     LZ4F_compressFrameBound (source_size, &preferences);
 
   if (compressed_bound > PY_SSIZE_T_MAX)
@@ -256,15 +261,15 @@ compress_frame (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  Py_ssize_t dest_size = (Py_ssize_t) compressed_bound;
+  dest_size = (Py_ssize_t) compressed_bound;
 
-  PyObject *py_dest = PyBytes_FromStringAndSize (NULL, dest_size);
+  py_dest = PyBytes_FromStringAndSize (NULL, dest_size);
   if (py_dest == NULL)
     {
       return NULL;
     }
 
-  char *dest = PyBytes_AS_STRING (py_dest);
+  dest = PyBytes_AS_STRING (py_dest);
   if (source_size > 0)
     {
       size_t compressed_size =
