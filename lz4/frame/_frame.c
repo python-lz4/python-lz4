@@ -369,7 +369,7 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
 
   if (!context || !context->compression_context)
     {
-      PyErr_Format (PyExc_ValueError, "No compression context supplied");
+      PyErr_SetString (PyExc_ValueError, "No compression context supplied");
       return NULL;
     }
 
