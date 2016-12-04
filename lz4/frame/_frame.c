@@ -130,13 +130,15 @@ free_compression_context (PyObject * Py_UNUSED (self), PyObject * args,
 {
   PyObject *py_context = NULL;
   static char *kwlist[] = { "context", NULL };
+  struct compression_context *context;
+  LZ4F_errorCode_t result;
 
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "O", kwlist, &py_context))
     {
       return NULL;
     }
 
-  struct compression_context *context =
+  context =
     (struct compression_context *) PyCapsule_GetPointer (py_context, NULL);
   if (!context)
     {
@@ -144,7 +146,7 @@ free_compression_context (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  LZ4F_errorCode_t result =
+  result =
     LZ4F_freeCompressionContext (context->compression_context);
   if (LZ4F_isError (result))
     {
