@@ -553,7 +553,11 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
     }
 
   bytes = PyBytes_FromStringAndSize (destination_buffer, result);
-
+  if (bytes == NULL)
+    {
+      PyErr_SetString (PyExc_RuntimeError,
+                       "Failed to create Python object from destination_buffer");
+    }
   PyMem_Free (destination_buffer);
 
   return bytes;
