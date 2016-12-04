@@ -325,6 +325,12 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
   PyObject *py_context = NULL;
   unsigned long source_size = 0;
   LZ4F_preferences_t preferences;
+  /* Only needs to be large enough for a header, which is 15 bytes.
+   * Unfortunately, the lz4 library doesn't provide a #define for this.
+   * We over-allocate to allow for larger headers in the future. */
+  char destination_buffer[64];
+  struct compression_context *context;
+  size_t result;
   static char *kwlist[] = { "context",
                             "source_size",
                             "compression_level",
@@ -358,7 +364,7 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
 
   preferences.frameInfo.contentSize = source_size;
 
-  struct compression_context *context =
+  context =
     (struct compression_context *) PyCapsule_GetPointer (py_context, NULL);
 
   if (!context || !context->compression_context)
@@ -369,15 +375,10 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
 
   context->preferences = preferences;
 
-  /* Only needs to be large enough for a header, which is 15 bytes.
-   * Unfortunately, the lz4 library doesn't provide a #define for this.
-   * We over-allocate to allow for larger headers in the future. */
-  char destination_buffer[64];
-
-  size_t result = LZ4F_compressBegin (context->compression_context,
-                                      destination_buffer,
-                                      sizeof (destination_buffer),
-                                      &context->preferences);
+  result = LZ4F_compressBegin (context->compression_context,
+                               destination_buffer,
+                               sizeof (destination_buffer),
+                               &context->preferences);
   if (LZ4F_isError (result))
     {
       PyErr_Format (PyExc_RuntimeError,
@@ -527,8 +528,17 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   char destination_buffer[destination_size];
 
   size_t result =
+  destination_size = LZ4F_compressBound (1, &(context->preferences));
+
+  destination_buffer = (char *) PyMem_Malloc(destination_size * sizeof(char));
+  if (destination_buffer == NULL)
+    {
+      return PyErr_NoMemory ();
+    }
+
+  result =
     LZ4F_compressEnd (context->compression_context, destination_buffer,
-                      sizeof (destination_buffer), &compress_options);
+                      destination_size, &compress_options);
   if (LZ4F_isError (result))
     {
       PyErr_Format (PyExc_RuntimeError,
