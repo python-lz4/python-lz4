@@ -533,8 +533,6 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
      whether checksums are enabled. https://github.com/lz4/lz4/issues/280 */
   destination_size = LZ4F_compressBound (1, &(context->preferences));
 
-  destination_buffer = PyMem_Malloc(destination_size * sizeof(char));
-
   destination_buffer = (char *) PyMem_Malloc(destination_size * sizeof(char));
   if (destination_buffer == NULL)
     {
