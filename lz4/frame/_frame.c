@@ -547,7 +547,7 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   if (LZ4F_isError (result))
     {
       PyErr_Format (PyExc_RuntimeError,
-                    "LZ4F_compressBegin failed with code: %s",
+                    "LZ4F_compressEnd failed with code: %s",
                     LZ4F_getErrorName (result));
       return NULL;
     }
