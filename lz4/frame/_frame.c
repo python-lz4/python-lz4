@@ -414,7 +414,12 @@ compress_update (PyObject * Py_UNUSED (self), PyObject * args,
   PyObject *py_context = NULL;
   const char *source = NULL;
   unsigned long source_size = 0;
-
+  struct compression_context *context;
+  size_t compressed_bound;
+  char *destination_buffer;
+  LZ4F_compressOptions_t compress_options;
+  size_t result;
+  PyObject *bytes;
   static char *kwlist[] = { "context", "source", NULL };
 
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os#", kwlist,
@@ -423,7 +428,7 @@ compress_update (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  struct compression_context *context =
+  context =
     (struct compression_context *) PyCapsule_GetPointer (py_context, NULL);
   if (!context || !context->compression_context)
     {
@@ -437,7 +442,6 @@ compress_update (PyObject * Py_UNUSED (self), PyObject * args,
      and so we need instead to use LZ4F_compressBound to find the size required
      for the destination buffer. This means that with autoFlush disabled we may
      frequently allocate more memory than needed. */
-  size_t compressed_bound;
   if (context->preferences.autoFlush == 1)
     {
       compressed_bound =
@@ -457,16 +461,15 @@ compress_update (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  char *destination_buffer = (char *) PyMem_Malloc (compressed_bound);
+  destination_buffer = (char *) PyMem_Malloc (compressed_bound);
   if (!destination_buffer)
     {
       return PyErr_NoMemory ();
     }
 
-  LZ4F_compressOptions_t compress_options;
   compress_options.stableSrc = 0;
 
-  size_t result =
+  result =
     LZ4F_compressUpdate (context->compression_context, destination_buffer,
                          compressed_bound, source, source_size,
                          &compress_options);
@@ -478,7 +481,7 @@ compress_update (PyObject * Py_UNUSED (self), PyObject * args,
                     LZ4F_getErrorName (result));
       return NULL;
     }
-  PyObject *bytes = PyBytes_FromStringAndSize (destination_buffer, result);
+  bytes = PyBytes_FromStringAndSize (destination_buffer, result);
   PyMem_Free (destination_buffer);
 
   return bytes;
