@@ -84,7 +84,10 @@ create_compression_context (PyObject * Py_UNUSED (self),
                             PyObject * Py_UNUSED (args),
                             PyObject * Py_UNUSED (keywds))
 {
-  struct compression_context *context =
+  struct compression_context * context;
+  LZ4F_errorCode_t result;
+
+  context =
     (struct compression_context *)
     PyMem_Malloc (sizeof (struct compression_context));
 
@@ -95,7 +98,7 @@ create_compression_context (PyObject * Py_UNUSED (self),
 
   memset (context, 0, sizeof (*context));
 
-  LZ4F_errorCode_t result =
+  result =
     LZ4F_createCompressionContext (&context->compression_context,
                                    LZ4F_VERSION);
 
