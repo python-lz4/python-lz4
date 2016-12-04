@@ -646,14 +646,17 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
 {
   char const *source;
   int source_size;
+  LZ4F_decompressionContext_t context;
+  LZ4F_frameInfo_t frame_info;
+  size_t result;
+  size_t source_read;
 
   if (!PyArg_ParseTuple (args, "s#", &source, &source_size))
     {
       return NULL;
     }
 
-  LZ4F_decompressionContext_t context;
-  size_t result = LZ4F_createDecompressionContext (&context, LZ4F_VERSION);
+  result = LZ4F_createDecompressionContext (&context, LZ4F_VERSION);
   if (LZ4F_isError (result))
     {
       PyErr_Format (PyExc_RuntimeError,
@@ -662,8 +665,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
       return NULL;
     }
 
-  LZ4F_frameInfo_t frame_info;
-  size_t source_read = source_size;
+  source_read = source_size;
   result =
     LZ4F_getFrameInfo (context, &frame_info, source, &source_read);
   if (LZ4F_isError (result))
