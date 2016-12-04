@@ -578,6 +578,10 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
 {
   const char *source;
   int source_size;
+  size_t source_size_copy;
+  LZ4F_decompressionContext_t context;
+  LZ4F_frameInfo_t frame_info;
+  size_t result;
 
   static char *kwlist[] = { "source", NULL };
 
@@ -587,8 +591,7 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  LZ4F_decompressionContext_t context;
-  size_t result = LZ4F_createDecompressionContext (&context, LZ4F_VERSION);
+  result = LZ4F_createDecompressionContext (&context, LZ4F_VERSION);
   if (LZ4F_isError (result))
     {
       PyErr_Format (PyExc_RuntimeError,
@@ -597,8 +600,7 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  LZ4F_frameInfo_t frame_info;
-  size_t source_size_copy = source_size;
+  source_size_copy = source_size;
   result =
     LZ4F_getFrameInfo (context, &frame_info, source, &source_size_copy);
   if (LZ4F_isError (result))
