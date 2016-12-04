@@ -504,7 +504,12 @@ static PyObject *
 compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
 {
   PyObject *py_context = NULL;
-
+  LZ4F_compressOptions_t compress_options;
+  struct compression_context *context;
+  size_t destination_size;
+  char * destination_buffer;
+  size_t result;
+  PyObject *bytes;
   static char *kwlist[] = { "context", NULL };
 
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "O", kwlist, &py_context))
@@ -512,26 +517,23 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
       return NULL;
     }
 
-  struct compression_context *context =
+  context =
     (struct compression_context *) PyCapsule_GetPointer (py_context, NULL);
   if (!context || !context->compression_context)
     {
-      PyErr_Format (PyExc_ValueError, "No compression context supplied");
+      PyErr_SetString (PyExc_ValueError, "No compression context supplied");
       return NULL;
     }
 
-  LZ4F_compressOptions_t compress_options;
   compress_options.stableSrc = 0;
 
   /* Calling LZ4F_compressBound with srcSize equal to 1 returns a size
      sufficient to fit (i) any remaining buffered data (when autoFlush is
      disabled) and the footer size, which is either 4 or 8 bytes depending on
      whether checksums are enabled. https://github.com/lz4/lz4/issues/280 */
-  size_t destination_size = LZ4F_compressBound(1, &(context->preferences));
-  char destination_buffer[destination_size];
-
-  size_t result =
   destination_size = LZ4F_compressBound (1, &(context->preferences));
+
+  destination_buffer = PyMem_Malloc(destination_size * sizeof(char));
 
   destination_buffer = (char *) PyMem_Malloc(destination_size * sizeof(char));
   if (destination_buffer == NULL)
@@ -550,7 +552,11 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
       return NULL;
     }
 
-  return PyBytes_FromStringAndSize (destination_buffer, result);
+  bytes = PyBytes_FromStringAndSize (destination_buffer, result);
+
+  PyMem_Free (destination_buffer);
+
+  return bytes;
 }
 
 /******************
