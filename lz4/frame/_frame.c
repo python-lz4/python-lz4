@@ -652,8 +652,15 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   int source_size;
   LZ4F_decompressionContext_t context;
   LZ4F_frameInfo_t frame_info;
+  LZ4F_decompressOptions_t options;
   size_t result;
   size_t source_read;
+  size_t destination_size;
+  char * destination_buffer;
+  size_t destination_write;
+  void * destination_cursor;
+  size_t destination_written;
+  PyObject *py_dest;
 
   if (!PyArg_ParseTuple (args, "s#", &source, &source_size))
     {
@@ -686,7 +693,6 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   source += source_read;
   source_size -= source_read;
 
-  size_t destination_size;
   if (frame_info.contentSize == 0)
     {
       /* We'll allocate twice the source buffer size as the output size, and
@@ -698,32 +704,31 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
       destination_size = frame_info.contentSize;
     }
 
-  char * destination_buffer = (char *) PyMem_Malloc (destination_size);
+  destination_buffer = (char *) PyMem_Malloc (destination_size);
   if (!destination_buffer)
     {
       LZ4F_freeDecompressionContext (context);
       return PyErr_NoMemory ();
     }
 
-  LZ4F_decompressOptions_t options;
   options.stableDst = 1;
 
   source_read = source_size;
   const void * source_cursor = source;
   const void * source_end = source + source_size;
 
-  size_t destination_write = destination_size;
-  void * destination_cursor = destination_buffer;
-  size_t destination_written = 0;
+  destination_write = destination_size;
+  destination_cursor = destination_buffer;
+  destination_written = 0;
 
   while (1)
     {
-      size_t result = LZ4F_decompress (context,
-                                       destination_cursor,
-                                       &destination_write,
-                                       source_cursor,
-                                       &source_read,
-                                       &options);
+      result = LZ4F_decompress (context,
+                                destination_cursor,
+                                &destination_write,
+                                source_cursor,
+                                &source_read,
+                                &options);
 
       if (LZ4F_isError (result))
         {
@@ -778,8 +783,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
       return NULL;
     }
 
-  PyObject *py_dest =
-    PyBytes_FromStringAndSize (destination_buffer, destination_written);
+  py_dest = PyBytes_FromStringAndSize (destination_buffer, destination_written);
 
   if (py_dest == NULL)
     {
