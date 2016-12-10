@@ -656,10 +656,10 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   size_t destination_size;
   char * destination_buffer;
   size_t destination_write;
-  void * destination_cursor;
+  char * destination_cursor;
   size_t destination_written;
-  const void * source_cursor;
-  const void * source_end;
+  const char * source_cursor;
+  const char * source_end;
   PyObject *py_dest;
 
   if (!PyArg_ParseTuple (args, "s#", &source, &source_size))
