@@ -587,7 +587,6 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
   LZ4F_decompressionContext_t context;
   LZ4F_frameInfo_t frame_info;
   size_t result;
-
   static char *kwlist[] = { "source", NULL };
 
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "s#", kwlist,
@@ -682,6 +681,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
     }
 
   source_read = source_size;
+
   result =
     LZ4F_getFrameInfo (context, &frame_info, source, &source_read);
   if (LZ4F_isError (result))
@@ -692,6 +692,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
                     LZ4F_getErrorName (result));
       return NULL;
     }
+
   /* Advance the source pointer past the header - the call to getFrameInfo above
      replaces the passed source_read value with the number of bytes
      read. Also reduce source_size accordingly. */
