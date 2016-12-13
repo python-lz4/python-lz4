@@ -729,6 +729,17 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
 
   while (1)
     {
+      /* Decompress from the source string and write to the destination_buffer
+         until there's no more source string to read.
+
+         On calling LZ4F_decompress, source_read is set to the remaining length
+         of source available to read. On return, source_read is set to the
+         actual number of bytes read from source, which may be less than
+         available.
+
+         On calling LZ4F_decompres, destination_write is the number of bytes in
+         destination available for writing. On exit, destination_write is set to
+         the actual number of bytes written to destination. */
       result = LZ4F_decompress (context,
                                 destination_cursor,
                                 &destination_write,
@@ -757,7 +768,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
         {
           /* Destination_buffer is full, so need to expand it. We'll expand
              it by the approximate size needed from the return value - see
-             LZ4 docs */
+             LZ4 docs. */
           destination_size += result;
           if (!PyMem_Realloc(destination_buffer, destination_size))
             {
@@ -771,7 +782,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
       /* Data still remaining to be decompressed, so increment the source and
          destination cursor locations, and reset source_read and
          destination_write ready for the next iteration. Important to
-         re-initialize destination_cursor here in this was (as opposed to simply
+         re-initialize destination_cursor here (as opposed to simply
          incrementing it) so we're pointing to the realloc'd memory location. */
       destination_cursor = destination_buffer + destination_written;
       source_cursor += source_read;
