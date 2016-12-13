@@ -664,8 +664,10 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   const char * source_cursor;
   const char * source_end;
   PyObject *py_dest;
+  static char *kwlist[] = { "source", NULL };
 
-  if (!PyArg_ParseTuple (args, "s#", &source, &source_size))
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s#", kwlist,
+                                    &source, &source_size))
     {
       return NULL;
     }
