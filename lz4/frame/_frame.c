@@ -104,6 +104,8 @@ create_compression_context (PyObject * Py_UNUSED (self),
 
   if (LZ4F_isError (result))
     {
+      LZ4F_freeCompressionContext (context->compression_context);
+      PyMem_Free (context);
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_createCompressionContext failed with code: %s",
                     LZ4F_getErrorName (result));
@@ -150,6 +152,7 @@ free_compression_context (PyObject * Py_UNUSED (self), PyObject * args,
     LZ4F_freeCompressionContext (context->compression_context);
   if (LZ4F_isError (result))
     {
+      PyMem_Free (context);
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_freeCompressionContext failed with code: %s",
                     LZ4F_getErrorName (result));
@@ -544,6 +547,7 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
                       destination_size, &compress_options);
   if (LZ4F_isError (result))
     {
+      PyMem_Free (destination_buffer);
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_compressEnd failed with code: %s",
                     LZ4F_getErrorName (result));
