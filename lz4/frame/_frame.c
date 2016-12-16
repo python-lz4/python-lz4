@@ -96,11 +96,13 @@ create_compression_context (PyObject * Py_UNUSED (self),
       return PyErr_NoMemory ();
     }
 
+  Py_BEGIN_ALLOW_THREADS;
   memset (context, 0, sizeof (*context));
 
   result =
     LZ4F_createCompressionContext (&context->compression_context,
                                    LZ4F_VERSION);
+  Py_END_ALLOW_THREADS;
 
   if (LZ4F_isError (result))
     {
@@ -148,8 +150,11 @@ free_compression_context (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
+  Py_BEGIN_ALLOW_THREADS;
   result =
     LZ4F_freeCompressionContext (context->compression_context);
+  Py_END_ALLOW_THREADS;
+
   if (LZ4F_isError (result))
     {
       PyErr_Format (PyExc_RuntimeError,
@@ -249,11 +254,14 @@ compress_frame (PyObject * Py_UNUSED (self), PyObject * args,
     {
       return NULL;
     }
+
   preferences.autoFlush = 0;
   preferences.frameInfo.contentSize = source_size;
 
+  Py_BEGIN_ALLOW_THREADS;
   compressed_bound =
     LZ4F_compressFrameBound (source_size, &preferences);
+  Py_END_ALLOW_THREADS;
 
   if (compressed_bound > PY_SSIZE_T_MAX)
     {
@@ -274,9 +282,13 @@ compress_frame (PyObject * Py_UNUSED (self), PyObject * args,
   dest = PyBytes_AS_STRING (py_dest);
   if (source_size > 0)
     {
-      size_t compressed_size =
+      size_t compressed_size;
+      Py_BEGIN_ALLOW_THREADS;
+      compressed_size =
         LZ4F_compressFrame (dest, dest_size, source, source_size,
                             &preferences);
+      Py_END_ALLOW_THREADS;
+
       if (LZ4F_isError (compressed_size))
         {
           Py_DECREF (py_dest);
@@ -298,6 +310,7 @@ compress_frame (PyObject * Py_UNUSED (self), PyObject * args,
           Py_SIZE (py_dest) = (Py_ssize_t) compressed_size;
         }
     }
+
   return py_dest;
 }
 
@@ -377,10 +390,13 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
 
   context->preferences = preferences;
 
+  Py_BEGIN_ALLOW_THREADS;
   result = LZ4F_compressBegin (context->compression_context,
                                destination_buffer,
                                sizeof (destination_buffer),
                                &context->preferences);
+  Py_END_ALLOW_THREADS;
+
   if (LZ4F_isError (result))
     {
       PyErr_Format (PyExc_RuntimeError,
@@ -444,6 +460,7 @@ compress_update (PyObject * Py_UNUSED (self), PyObject * args,
      and so we need instead to use LZ4F_compressBound to find the size required
      for the destination buffer. This means that with autoFlush disabled we may
      frequently allocate more memory than needed. */
+  Py_BEGIN_ALLOW_THREADS;
   if (context->preferences.autoFlush == 1)
     {
       compressed_bound =
@@ -454,6 +471,7 @@ compress_update (PyObject * Py_UNUSED (self), PyObject * args,
       compressed_bound =
         LZ4F_compressBound (source_size, &context->preferences);
     }
+  Py_END_ALLOW_THREADS;
 
   if (compressed_bound > PY_SSIZE_T_MAX)
     {
@@ -471,10 +489,13 @@ compress_update (PyObject * Py_UNUSED (self), PyObject * args,
 
   compress_options.stableSrc = 0;
 
+  Py_BEGIN_ALLOW_THREADS;
   result =
     LZ4F_compressUpdate (context->compression_context, destination_buffer,
                          compressed_bound, source, source_size,
                          &compress_options);
+  Py_END_ALLOW_THREADS;
+
   if (LZ4F_isError (result))
     {
       PyMem_Free (destination_buffer);
@@ -533,7 +554,9 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
      sufficient to fit (i) any remaining buffered data (when autoFlush is
      disabled) and the footer size, which is either 4 or 8 bytes depending on
      whether checksums are enabled. https://github.com/lz4/lz4/issues/280 */
+  Py_BEGIN_ALLOW_THREADS;
   destination_size = LZ4F_compressBound (1, &(context->preferences));
+  Py_END_ALLOW_THREADS;
 
   destination_buffer = (char *) PyMem_Malloc(destination_size * sizeof(char));
   if (destination_buffer == NULL)
@@ -541,9 +564,12 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
       return PyErr_NoMemory ();
     }
 
+  Py_BEGIN_ALLOW_THREADS;
   result =
     LZ4F_compressEnd (context->compression_context, destination_buffer,
                       destination_size, &compress_options);
+  Py_END_ALLOW_THREADS;
+
   if (LZ4F_isError (result))
     {
       PyMem_Free (destination_buffer);
@@ -595,7 +621,10 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
+  Py_BEGIN_ALLOW_THREADS;
   result = LZ4F_createDecompressionContext (&context, LZ4F_VERSION);
+  Py_END_ALLOW_THREADS;
+
   if (LZ4F_isError (result))
     {
       PyErr_Format (PyExc_RuntimeError,
@@ -605,8 +634,12 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
     }
 
   source_size_copy = source_size;
+
+  Py_BEGIN_ALLOW_THREADS;
   result =
     LZ4F_getFrameInfo (context, &frame_info, source, &source_size_copy);
+  Py_END_ALLOW_THREADS;
+
   if (LZ4F_isError (result))
     {
       LZ4F_freeDecompressionContext (context);
@@ -615,8 +648,10 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
                     LZ4F_getErrorName (result));
       return NULL;
     }
-
+  Py_BEGIN_ALLOW_THREADS;
   result = LZ4F_freeDecompressionContext (context);
+  Py_END_ALLOW_THREADS;
+
   if (LZ4F_isError (result))
     {
       PyErr_Format (PyExc_RuntimeError,
@@ -682,8 +717,11 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
 
   source_read = source_size;
 
+  Py_BEGIN_ALLOW_THREADS;
   result =
     LZ4F_getFrameInfo (context, &frame_info, source, &source_read);
+  Py_END_ALLOW_THREADS;
+
   if (LZ4F_isError (result))
     {
       LZ4F_freeDecompressionContext (context);
@@ -696,6 +734,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   /* Advance the source pointer past the header - the call to getFrameInfo above
      replaces the passed source_read value with the number of bytes
      read. Also reduce source_size accordingly. */
+  Py_BEGIN_ALLOW_THREADS;
   source += source_read;
   source_size -= source_read;
 
@@ -709,6 +748,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
     {
       destination_size = frame_info.contentSize;
     }
+  Py_END_ALLOW_THREADS;
 
   destination_buffer = (char *) PyMem_Malloc (destination_size);
   if (!destination_buffer)
@@ -717,6 +757,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
       return PyErr_NoMemory ();
     }
 
+  Py_BEGIN_ALLOW_THREADS;
   options.stableDst = 1;
 
   source_read = source_size;
@@ -726,6 +767,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   destination_write = destination_size;
   destination_cursor = destination_buffer;
   destination_written = 0;
+  Py_END_ALLOW_THREADS;
 
   while (1)
     {
@@ -740,19 +782,21 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
          On calling LZ4F_decompres, destination_write is the number of bytes in
          destination available for writing. On exit, destination_write is set to
          the actual number of bytes written to destination. */
+      Py_BEGIN_ALLOW_THREADS;
       result = LZ4F_decompress (context,
                                 destination_cursor,
                                 &destination_write,
                                 source_cursor,
                                 &source_read,
                                 &options);
+      Py_END_ALLOW_THREADS;
 
       if (LZ4F_isError (result))
         {
+          LZ4F_freeDecompressionContext (context);
           PyErr_Format (PyExc_RuntimeError,
                         "LZ4F_decompress failed with code: %s",
                         LZ4F_getErrorName (result));
-          LZ4F_freeDecompressionContext (context);
           PyMem_Free (destination_buffer);
           return NULL;
         }
@@ -772,9 +816,9 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
           destination_size += result;
           if (!PyMem_Realloc(destination_buffer, destination_size))
             {
+              LZ4F_freeDecompressionContext (context);
               PyErr_SetString (PyExc_RuntimeError,
                                "Failed to increase destination buffer size");
-              LZ4F_freeDecompressionContext (context);
               PyMem_Free (destination_buffer);
               return NULL;
             }
@@ -784,13 +828,18 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
          destination_write ready for the next iteration. Important to
          re-initialize destination_cursor here (as opposed to simply
          incrementing it) so we're pointing to the realloc'd memory location. */
+      Py_BEGIN_ALLOW_THREADS;
       destination_cursor = destination_buffer + destination_written;
       source_cursor += source_read;
       destination_write = destination_size - destination_written;
       source_read = source_end - source_cursor;
+      Py_END_ALLOW_THREADS;
     }
 
+  Py_BEGIN_ALLOW_THREADS;
   result = LZ4F_freeDecompressionContext (context);
+  Py_END_ALLOW_THREADS;
+
   if (LZ4F_isError (result))
     {
       PyMem_Free (destination_buffer);
