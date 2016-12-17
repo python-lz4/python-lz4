@@ -42,6 +42,36 @@ class TestLZ4Block(unittest.TestCase):
       self.assertEqual(DATA, lz4.block.decompress(
           lz4.compress(DATA, mode='fast', acceleration=9)))
 
+    def test_random_no_store_size(self):
+      DATA = os.urandom(128 * 1024)  # Read 128kb
+
+      self.assertEqual(
+          DATA, lz4.block.decompress(
+              lz4.compress(DATA, store_size=False),
+              uncompressed_size=128 * 1024
+          )
+      )
+
+    def test_random_hc_no_store_size(self):
+      DATA = os.urandom(128 * 1024)  # Read 128kb
+
+      self.assertEqual(
+          DATA, lz4.block.decompress(
+              lz4.compress(DATA, mode='high_compression', compression=9, store_size=False),
+              uncompressed_size=128 * 1024
+          )
+      )
+
+    def test_random_fast_no_store_size(self):
+      DATA = os.urandom(128 * 1024)  # Read 128kb
+
+      self.assertEqual(
+          DATA, lz4.block.decompress(
+              lz4.compress(DATA, mode='fast', acceleration=9, store_size=False),
+              uncompressed_size=128 * 1024
+          )
+      )
+
     def test_threads(self):
         data = [os.urandom(128 * 1024) for i in range(100)]
         def roundtrip(x):
