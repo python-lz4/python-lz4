@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013, Steeve Morin
+ * Copyright (c) 2012-2013, Steeve Morin, 2016 Jonathan Underwood
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,12 +28,13 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <py3c.h>
+#include <py3c/capsulethunk.h>
 
-#include <Python.h>
 #include <stdlib.h>
 #include <math.h>
-#include "lz4.h"
-#include "lz4hc.h"
+#include <lz4.h>
+#include <lz4hc.h>
 
 #ifndef Py_UNUSED /* This is already defined for Python 3.4 onwards */
 #ifdef __GNUC__
