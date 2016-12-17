@@ -305,6 +305,9 @@ PyDoc_STRVAR(compress__doc,
              "        argument specifies the compression. Valid values are between\n" \
              "        0 and 16. Values between 4-9 are recommended, and 0 is the\n" \
              "        default.\n\n"                                     \
+             "    store_size (bool): If True (the default) then the size of the" \
+             "        uncompressed data is stored at the start of the compressed" \
+             "        block."                                            \
              "Returns:\n"                                               \
              "    str: Compressed data\n");
 
@@ -314,6 +317,9 @@ PyDoc_STRVAR(decompress__doc,
              "Raises an exception if any error occurs.\n\n"             \
              "Args:\n"                                                  \
              "    source (str): Data to decompress\n\n"                 \
+             "    uncompressed_size (int): If not specified, the uncompressed data" \
+             "        size is read from the start of the source block. If specified," \
+             "        it is assumed that the full source data is compressed data."
              "Returns:\n"                                               \
              "    str: decompressed data\n");
 
