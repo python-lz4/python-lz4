@@ -98,21 +98,23 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   const char *mode = "default";
   int source_size, dest_size;
   int acceleration = 1, compression = 0;
+  int store_size;
   PyObject *py_dest;
   char *dest, *dest_start;
   compression_type comp;
-  int osize, actual_size;
+  int output_size;
   static char *argnames[] = {
     "source",
     "mode",
     "acceleration",
     "compression",
+    "store_size",
     NULL
   };
 
-  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s#|sII", argnames,
+  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s#|siii", argnames,
                                     &source, &source_size,
-                                    &mode, &acceleration, &compression))
+                                    &mode, &store_size, &acceleration, &compression))
     {
       return NULL;
     }
@@ -144,7 +146,15 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 
   dest_size = LZ4_compressBound (source_size);
 
-  py_dest = PyBytes_FromStringAndSize (NULL, dest_size + hdr_size);
+  if (store_size)
+    {
+      py_dest = PyBytes_FromStringAndSize (NULL, dest_size + hdr_size);
+    }
+  else
+    {
+      py_dest = PyBytes_FromStringAndSize (NULL, dest_size);
+    }
+
   if (py_dest == NULL)
     {
       return PyErr_NoMemory();
@@ -154,38 +164,48 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 
   Py_BEGIN_ALLOW_THREADS
 
-  store_le32 (dest, source_size);
-  dest_start = dest + hdr_size;
+  if (store_size)
+    {
+      store_le32 (dest, source_size);
+      dest_start = dest + hdr_size;
+    }
+  else
+    {
+      dest_start = dest;
+    }
 
   switch (comp)
     {
     case DEFAULT:
-      osize = LZ4_compress_default (source, dest_start, source_size,
-                                    dest_size);
+      output_size = LZ4_compress_default (source, dest_start, source_size,
+                                          dest_size);
       break;
     case FAST:
-      osize = LZ4_compress_fast (source, dest_start, source_size,
-                                 dest_size, acceleration);
+      output_size = LZ4_compress_fast (source, dest_start, source_size,
+                                       dest_size, acceleration);
       break;
     case HIGH_COMPRESSION:
-      osize = LZ4_compress_fast (source, dest_start, source_size,
+      output_size = LZ4_compress_fast (source, dest_start, source_size,
                                  dest_size, compression);
       break;
     }
 
-  actual_size = hdr_size + osize;
+  if (store_size)
+    {
+      output_size += hdr_size;
+    }
 
   Py_END_ALLOW_THREADS
 
-    /* Resizes are expensive; tolerate some slop to avoid. */
-    if (actual_size < (dest_size / 4) * 3)
-      {
-        _PyBytes_Resize (&py_dest, actual_size);
-      }
-    else
-      {
-        Py_SIZE (py_dest) = actual_size;
-      }
+  /* Resizes are expensive; tolerate some slop to avoid. */
+  if (output_size < (dest_size / 4) * 3)
+    {
+      _PyBytes_Resize (&py_dest, output_size);
+    }
+  else
+    {
+      Py_SIZE (py_dest) = output_size;
+    }
 
   return py_dest;
 }
