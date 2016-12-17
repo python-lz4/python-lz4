@@ -218,13 +218,15 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   char *dest;
   int source_size, output_size;
   size_t dest_size;
+  int uncompressed_size = -1;
   static char *argnames[] = {
     "source",
+    "uncompressed_size",
     NULL
   };
 
-  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s#", argnames,
-                                    &source, &source_size))
+  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s#|i", argnames,
+                                    &source, &source_size, &uncompressed_size))
     {
       return NULL;
     }
@@ -235,7 +237,14 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       return NULL;
     }
 
-  dest_size = load_le32 (source);
+  if (uncompressed_size < 0)
+    {
+      dest_size = load_le32 (source);
+    }
+  else
+    {
+      dest_size = uncompressed_size;
+    }
 
   if (dest_size <= 0 || dest_size > INT_MAX)
     {
