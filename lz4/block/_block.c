@@ -92,7 +92,7 @@ typedef enum
 } compression_type;
 
 static PyObject *
-py_lz4_compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
+compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 {
   const char *source;
   const char *mode = "default";
@@ -191,7 +191,7 @@ py_lz4_compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs
 }
 
 static PyObject *
-py_lz4_decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
+decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 {
   const char *source, *source_start;
   PyObject *py_dest;
@@ -252,7 +252,7 @@ py_lz4_decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwar
 }
 
 static PyObject *
-py_lz4_versionnumber (PyObject * Py_UNUSED (self), PyObject * Py_UNUSED (args))
+versionnumber (PyObject * Py_UNUSED (self), PyObject * Py_UNUSED (args))
 {
   return Py_BuildValue ("i", LZ4_versionNumber ());
 }
@@ -295,19 +295,19 @@ PyDoc_STRVAR(lz4block__doc,
 static PyMethodDef module_methods[] = {
   {
     "compress",
-    (PyCFunction) py_lz4_compress,
+    (PyCFunction) compress,
     METH_VARARGS | METH_KEYWORDS,
     compress__doc
   },
   {
     "decompress",
-    (PyCFunction) py_lz4_decompress,
+    (PyCFunction) decompress,
     METH_VARARGS | METH_KEYWORDS,
     decompress__doc
   },
   {
     "lz4version",
-    (PyCFunction) py_lz4_versionnumber,
+    (PyCFunction) versionnumber,
     METH_VARARGS,
    "Returns the version number of the lz4 C library"
   },
