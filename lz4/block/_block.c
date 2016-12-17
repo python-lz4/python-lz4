@@ -242,48 +242,45 @@ py_lz4_versionnumber (PyObject * Py_UNUSED (self), PyObject * Py_UNUSED (args))
   return Py_BuildValue ("i", LZ4_versionNumber ());
 }
 
-#define COMPRESS_DOCSTRING \
-  "compress(source, mode='default', acceleration=1, compression=0)\n\n"	\
-  "Compress source, returning the compressed data as a string.\n"	\
-  "Raises an exception if any error occurs.\n\n"			\
-  "Args:\n"								\
-  "    source (str): Data to compress\n"				\
-  "    mode (str): If 'default' or unspecified use the default LZ4\n"	\
-  "        compression mode. Set to 'fast' to use the fast compression\n" \
-  "        LZ4 mode at the expense of compression. Set to\n"		\
-  "        'high_compression' to use the LZ4 high-compression mode at\n" \
-  "        the exepense of speed\n"					\
-  "    acceleration (int): When mode is set to 'fast' this argument\n"	\
-  "        specifies the acceleration. The larger the acceleration, the\n" \
-  "        faster the but the lower the compression. The default\n"	\
-  "        compression corresponds to a value of 1.\n"			\
-  "    compression (int): When mode is set to `high_compression` this\n" \
-  "        argument specifies the compression. Valid values are between\n" \
-  "        0 and 16. Values between 4-9 are recommended, and 0 is the\n" \
-  "        default.\n\n"						\
-  "Returns:\n"								\
-  "    str: Compressed data\n"
+PyDoc_STRVAR(compress__doc,
+             "compress(source, mode='default', acceleration=1, compression=0)\n\n" \
+             "Compress source, returning the compressed data as a string.\n" \
+             "Raises an exception if any error occurs.\n\n"             \
+             "Args:\n"                                                  \
+             "    source (str): Data to compress\n"                     \
+             "    mode (str): If 'default' or unspecified use the default LZ4\n" \
+             "        compression mode. Set to 'fast' to use the fast compression\n" \
+             "        LZ4 mode at the expense of compression. Set to\n" \
+             "        'high_compression' to use the LZ4 high-compression mode at\n" \
+             "        the exepense of speed\n"                          \
+             "    acceleration (int): When mode is set to 'fast' this argument\n" \
+             "        specifies the acceleration. The larger the acceleration, the\n" \
+             "        faster the but the lower the compression. The default\n" \
+             "        compression corresponds to a value of 1.\n"       \
+             "    compression (int): When mode is set to `high_compression` this\n" \
+             "        argument specifies the compression. Valid values are between\n" \
+             "        0 and 16. Values between 4-9 are recommended, and 0 is the\n" \
+             "        default.\n\n"                                     \
+             "Returns:\n"                                               \
+             "    str: Compressed data\n");
 
-#define DECOMPRESS_DOCSTRING \
-  "decompress(source)\n\n"					      \
-  "Decompress source, returning the uncompressed data as a string.\n" \
-  "Raises an exception if any error occurs.\n\n"		      \
-  "Args:\n"							      \
-  "    source (str): Data to decompress\n\n"			      \
-  "Returns:\n"							      \
-  "    str: decompressed data\n"
+PyDoc_STRVAR(decompress__doc,
+             "decompress(source)\n\n"                                   \
+             "Decompress source, returning the uncompressed data as a string.\n" \
+             "Raises an exception if any error occurs.\n\n"             \
+             "Args:\n"                                                  \
+             "    source (str): Data to decompress\n\n"                 \
+             "Returns:\n"                                               \
+             "    str: decompressed data\n");
 
 static PyMethodDef Lz4Methods[] = {
   {"compress", (PyCFunction) py_lz4_compress, METH_VARARGS | METH_KEYWORDS,
-   COMPRESS_DOCSTRING},
-  {"decompress", py_lz4_decompress, METH_VARARGS, DECOMPRESS_DOCSTRING},
+   compress__doc},
+  {"decompress", py_lz4_decompress, METH_VARARGS, decompress__doc},
   {"lz4version", py_lz4_versionnumber, METH_VARARGS,
    "Returns the version number of the lz4 C library"},
   {NULL, NULL, 0, NULL}
 };
-
-#undef COMPRESS_DOCSTRING
-#undef DECOMPRESS_DOCSTRING
 
 #if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef moduledef = {
