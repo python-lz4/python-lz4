@@ -191,56 +191,64 @@ py_lz4_compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs
 }
 
 static PyObject *
-py_lz4_decompress (PyObject * Py_UNUSED (self), PyObject * args)
+py_lz4_decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 {
-  PyObject *result;
-  const char *source;
-  int source_size;
-  uint32_t dest_size;
+  const char *source, *source_start;
+  PyObject *py_dest;
+  char *dest;
+  int source_size, output_size;
+  size_t dest_size;
+  static char *argnames[] = {
+    "source",
+    NULL
+  };
 
-  if (!PyArg_ParseTuple (args, "s#", &source, &source_size))
+  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s#", argnames,
+                                    &source, &source_size))
     {
       return NULL;
     }
 
   if (source_size < hdr_size)
     {
-      PyErr_SetString (PyExc_ValueError, "Input too short");
+      PyErr_SetString (PyExc_ValueError, "Input source data size too small");
       return NULL;
     }
 
   dest_size = load_le32 (source);
 
-  if (dest_size > INT_MAX)
+  if (dest_size <= 0 || dest_size > INT_MAX)
     {
       PyErr_Format (PyExc_ValueError, "Invalid size in header: 0x%x",
-		    dest_size);
+                    dest_size);
       return NULL;
     }
 
-  result = PyBytes_FromStringAndSize (NULL, dest_size);
-
-  if (result != NULL && dest_size > 0)
+  py_dest = PyBytes_FromStringAndSize (NULL, dest_size);
+  if (py_dest == NULL)
     {
-      char *dest = PyBytes_AS_STRING (result);
-      int osize = -1;
-
-      Py_BEGIN_ALLOW_THREADS
-
-      osize =
-        LZ4_decompress_safe (source + hdr_size, dest, source_size - hdr_size,
-                             dest_size);
-
-      Py_END_ALLOW_THREADS
-
-      if (osize < 0)
-        {
-          PyErr_Format (PyExc_ValueError, "Corrupt input at byte %d", -osize);
-          Py_CLEAR (result);
-        }
+      return PyErr_NoMemory();
     }
 
-  return result;
+  dest = PyBytes_AS_STRING (py_dest);
+
+  Py_BEGIN_ALLOW_THREADS
+
+  source_start = source + hdr_size;
+  source_size -= hdr_size;
+
+  output_size =
+    LZ4_decompress_safe (source_start, dest, source_size, dest_size);
+
+  Py_END_ALLOW_THREADS
+
+  if (output_size < 0)
+    {
+      PyErr_Format (PyExc_ValueError, "Corrupt input at byte %d", -output_size);
+      Py_CLEAR (py_dest);
+    }
+
+  return py_dest;
 }
 
 static PyObject *
@@ -293,13 +301,13 @@ static PyMethodDef module_methods[] = {
   },
   {
     "decompress",
-    py_lz4_decompress,
-    METH_VARARGS,
+    (PyCFunction) py_lz4_decompress,
+    METH_VARARGS | METH_KEYWORDS,
     decompress__doc
   },
   {
     "lz4version",
-    py_lz4_versionnumber,
+    (PyCFunction) py_lz4_versionnumber,
     METH_VARARGS,
    "Returns the version number of the lz4 C library"
   },
