@@ -273,45 +273,53 @@ PyDoc_STRVAR(decompress__doc,
              "Returns:\n"                                               \
              "    str: decompressed data\n");
 
-static PyMethodDef Lz4Methods[] = {
-  {"compress", (PyCFunction) py_lz4_compress, METH_VARARGS | METH_KEYWORDS,
-   compress__doc},
-  {"decompress", py_lz4_decompress, METH_VARARGS, decompress__doc},
-  {"lz4version", py_lz4_versionnumber, METH_VARARGS,
-   "Returns the version number of the lz4 C library"},
-  {NULL, NULL, 0, NULL}
+PyDoc_STRVAR(lz4block__doc,
+             "A Python wrapper for the LZ4 block protocol"
+             );
+
+static PyMethodDef module_methods[] = {
+  {
+    "compress",
+    (PyCFunction) py_lz4_compress,
+    METH_VARARGS | METH_KEYWORDS,
+    compress__doc
+  },
+  {
+    "decompress",
+    py_lz4_decompress,
+    METH_VARARGS,
+    decompress__doc
+  },
+  {
+    "lz4version",
+    py_lz4_versionnumber,
+    METH_VARARGS,
+   "Returns the version number of the lz4 C library"
+  },
+  {
+    /* Sentinel */
+    NULL,
+    NULL,
+    0,
+    NULL
+  }
 };
 
-#if PY_MAJOR_VERSION >= 3
-static struct PyModuleDef moduledef = {
+static struct PyModuleDef moduledef =
+{
   PyModuleDef_HEAD_INIT,
   "_block",
-  NULL,
+  lz4block__doc,
   -1,
-  Lz4Methods,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
+  module_methods
 };
 
-PyObject *
-PyInit__block (void)
+MODULE_INIT_FUNC (_block)
 {
   PyObject *module = PyModule_Create (&moduledef);
 
   if (module == NULL)
-    {
-      return NULL;
-    }
+    return NULL;
 
   return module;
 }
-
-#else /* Python 2 */
-PyMODINIT_FUNC
-init_block (void)
-{
-  (void) Py_InitModule ("_block", Lz4Methods);
-}
-#endif /* PY_MAJOR_VERSION >= 3 */
