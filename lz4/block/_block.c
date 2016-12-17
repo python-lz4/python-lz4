@@ -148,22 +148,22 @@ py_lz4_compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwds)
       Py_BEGIN_ALLOW_THREADS
 
       switch (comp)
-	{
-	case DEFAULT:
-	  osize = LZ4_compress_default (source, dest + hdr_size, source_size,
-					LZ4_compressBound (source_size));
-	  break;
-	case FAST:
-	  osize = LZ4_compress_fast (source, dest + hdr_size, source_size,
-				     LZ4_compressBound (source_size),
-				     acceleration);
-	  break;
-	case HIGH_COMPRESSION:
-	  osize = LZ4_compress_HC (source, dest + hdr_size, source_size,
-				   LZ4_compressBound (source_size),
-				   compression);
-	  break;
-	}
+        {
+        case DEFAULT:
+          osize = LZ4_compress_default (source, dest + hdr_size, source_size,
+                                        LZ4_compressBound (source_size));
+          break;
+        case FAST:
+          osize = LZ4_compress_fast (source, dest + hdr_size, source_size,
+                                     LZ4_compressBound (source_size),
+                                     acceleration);
+          break;
+        case HIGH_COMPRESSION:
+          osize = LZ4_compress_HC (source, dest + hdr_size, source_size,
+                                   LZ4_compressBound (source_size),
+                                   compression);
+          break;
+        }
 
       actual_size = hdr_size + osize;
 
@@ -171,13 +171,13 @@ py_lz4_compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwds)
 
       /* Resizes are expensive; tolerate some slop to avoid. */
       if (actual_size < (dest_size / 4) * 3)
-	{
-	  _PyBytes_Resize (&result, actual_size);
-	}
+        {
+          _PyBytes_Resize (&result, actual_size);
+        }
       else
-	{
-	  Py_SIZE (result) = actual_size;
-	}
+        {
+          Py_SIZE (result) = actual_size;
+        }
     }
 
   return result;
@@ -221,16 +221,16 @@ py_lz4_decompress (PyObject * Py_UNUSED (self), PyObject * args)
       Py_BEGIN_ALLOW_THREADS
 
       osize =
-	LZ4_decompress_safe (source + hdr_size, dest, source_size - hdr_size,
-			     dest_size);
+        LZ4_decompress_safe (source + hdr_size, dest, source_size - hdr_size,
+                             dest_size);
 
       Py_END_ALLOW_THREADS
 
       if (osize < 0)
-	{
-	  PyErr_Format (PyExc_ValueError, "Corrupt input at byte %d", -osize);
-	  Py_CLEAR (result);
-	}
+        {
+          PyErr_Format (PyExc_ValueError, "Corrupt input at byte %d", -osize);
+          Py_CLEAR (result);
+        }
     }
 
   return result;
