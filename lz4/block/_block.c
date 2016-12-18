@@ -190,6 +190,14 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       break;
     }
 
+  if (output_size <= 0)
+    {
+      Py_BLOCK_THREADS
+      PyErr_SetString (PyExc_ValueError, "Compression failed");
+      Py_CLEAR (py_dest);
+      return NULL;
+    }
+
   if (store_size)
     {
       output_size += hdr_size;
