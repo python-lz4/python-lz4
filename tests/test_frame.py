@@ -43,13 +43,62 @@ class TestLZ4Frame(unittest.TestCase):
         decompressed = lz4frame.decompress(compressed)
         self.assertEqual(input_data, decompressed)
 
-
     def test_compress_begin_update_end_no_auto_flush_2(self):
         input_data = os.urandom(4 * 128 * 1024)  # Read 4 * 128kb
         context = lz4frame.create_compression_context()
         self.assertNotEqual(context, None)
         compressed = lz4frame.compress_begin(context, auto_flush=0)
         chunk_size = 32 * 1024 # 32 kb, half of default block size
+        start = 0
+        end = start + chunk_size
+
+        while start <= len(input_data):
+            compressed += lz4frame.compress_update(context, input_data[start:end])
+            start = end
+            end = start + chunk_size
+
+        compressed += lz4frame.compress_end(context)
+        lz4frame.free_compression_context(context)
+        decompressed = lz4frame.decompress(compressed)
+        self.assertEqual(input_data, decompressed)
+
+    def test_compress_begin_update_end_not_defaults(self):
+        input_data = os.urandom(10 * 128 * 1024)  # Read 10 * 128kb
+        context = lz4frame.create_compression_context()
+        self.assertNotEqual(context, None)
+        compressed = lz4frame.compress_begin(
+            context,
+            block_size=lz4frame.BLOCKSIZE_MAX256KB,
+            block_mode=lz4frame.BLOCKMODE_LINKED,
+            compression_level=lz4frame.COMPRESSIONLEVEL_MINHC,
+            auto_flush=1
+        )
+        chunk_size = 128 * 1024 # 128 kb, half of block size
+        start = 0
+        end = start + chunk_size
+
+        while start <= len(input_data):
+            compressed += lz4frame.compress_update(context, input_data[start:end])
+            start = end
+            end = start + chunk_size
+
+        compressed += lz4frame.compress_end(context)
+        lz4frame.free_compression_context(context)
+        decompressed = lz4frame.decompress(compressed)
+        self.assertEqual(input_data, decompressed)
+
+    def test_compress_begin_update_end_no_auto_flush_not_defaults(self):
+        input_data = os.urandom(10 * 128 * 1024)  # Read 10 * 128kb
+        context = lz4frame.create_compression_context()
+        self.assertNotEqual(context, None)
+        compressed = lz4frame.compress_begin(
+            context,
+            block_size=lz4frame.BLOCKSIZE_MAX256KB,
+            block_mode=lz4frame.BLOCKMODE_LINKED,
+            compression_level=lz4frame.COMPRESSIONLEVEL_MAX,
+            auto_flush=0
+        )
+        chunk_size = 128 * 1024 # 128 kb, half of block size
         start = 0
         end = start + chunk_size
 
@@ -94,8 +143,40 @@ class TestLZ4Frame(unittest.TestCase):
 
         pool = ThreadPool(8)
         out = pool.map(roundtrip, data)
-        assert data == out
         pool.close()
+        self.assertEqual(data, out)
+
+    def test_compress_begin_update_end_no_auto_flush_not_defaults_threaded(self):
+        data = [os.urandom(3 * 256 * 1024) for i in range(100)]
+
+        def roundtrip(x):
+            context = lz4frame.create_compression_context()
+            self.assertNotEqual(context, None)
+            compressed = lz4frame.compress_begin(
+                context,
+                block_size=lz4frame.BLOCKSIZE_MAX256KB,
+                block_mode=lz4frame.BLOCKMODE_LINKED,
+                compression_level=lz4frame.COMPRESSIONLEVEL_MAX,
+                auto_flush=0
+            )
+            chunk_size = 128 * 1024 # 128 kb, half of block size
+            start = 0
+            end = start + chunk_size
+
+            while start <= len(x):
+                compressed += lz4frame.compress_update(context, x[start:end])
+                start = end
+                end = start + chunk_size
+
+            compressed += lz4frame.compress_end(context)
+            lz4frame.free_compression_context(context)
+            decompressed = lz4frame.decompress(compressed)
+            return decompressed
+
+        pool = ThreadPool(8)
+        out = pool.map(roundtrip, data)
+        pool.close()
+        self.assertEqual(data, out)
 
 if __name__ == '__main__':
     unittest.main()
