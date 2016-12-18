@@ -16,9 +16,9 @@ Module contents
 
 .. automodule:: lz4.frame
    :members:
+      compress, decompress,
       create_compression_context, free_compression_context,
-      compress_frame, compress_begin, compress_update, compress_end,
-      create_decompression_context, free_decompression_context,
-      decompress_frame, get_frame_info
+      compress_begin, compress_update, compress_end,
+      get_frame_info
     :undoc-members:
     :show-inheritance:
