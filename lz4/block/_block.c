@@ -98,7 +98,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   const char *mode = "default";
   int source_size, dest_size;
   int acceleration = 1, compression = 0;
-  int store_size;
+  int store_size = 1;
   PyObject *py_dest;
   char *dest, *dest_start;
   compression_type comp;
