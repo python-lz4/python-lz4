@@ -1,6 +1,7 @@
 import lz4.frame as lz4frame
 import unittest
 import os
+from multiprocessing.pool import ThreadPool
 
 class TestLZ4Frame(unittest.TestCase):
     def test_create_and_free_compression_context(self):
@@ -86,6 +87,15 @@ class TestLZ4Frame(unittest.TestCase):
             }
         )
 
+    def test_threads(self):
+        data = [os.urandom(128 * 1024) for i in range(100)]
+        def roundtrip(x):
+            return lz4frame.decompress(lz4frame.compress(x))
+
+        pool = ThreadPool(8)
+        out = pool.map(roundtrip, data)
+        assert data == out
+        pool.close()
 
 if __name__ == '__main__':
     unittest.main()
