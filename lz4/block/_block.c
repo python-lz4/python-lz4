@@ -106,9 +106,9 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   static char *argnames[] = {
     "source",
     "mode",
+    "store_size",
     "acceleration",
     "compression",
-    "store_size",
     NULL
   };
 
@@ -231,27 +231,26 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       return NULL;
     }
 
-  if (source_size < hdr_size)
-    {
-      PyErr_SetString (PyExc_ValueError, "Input source data size too small");
-      return NULL;
-    }
-
-  if (uncompressed_size < 0)
-    {
-      dest_size = load_le32 (source);
-      source_start = source + hdr_size;
-      source_size -= hdr_size;
-    }
-  else
+  if (uncompressed_size > 0)
     {
       dest_size = uncompressed_size;
       source_start = source;
     }
+  else
+    {
+      if (source_size < hdr_size)
+        {
+          PyErr_SetString (PyExc_ValueError, "Input source data size too small");
+          return NULL;
+        }
+      dest_size = load_le32 (source);
+      source_start = source + hdr_size;
+      source_size -= hdr_size;
+    }
 
   if (dest_size <= 0 || dest_size > INT_MAX)
     {
-      PyErr_Format (PyExc_ValueError, "Invalid size in header: 0x%x",
+      PyErr_Format (PyExc_ValueError, "Invalid size in header: 0x%zu",
                     dest_size);
       return NULL;
     }
