@@ -240,10 +240,13 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   if (uncompressed_size < 0)
     {
       dest_size = load_le32 (source);
+      source_start = source + hdr_size;
+      source_size -= hdr_size;
     }
   else
     {
       dest_size = uncompressed_size;
+      source_start = source;
     }
 
   if (dest_size <= 0 || dest_size > INT_MAX)
@@ -262,9 +265,6 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   dest = PyBytes_AS_STRING (py_dest);
 
   Py_BEGIN_ALLOW_THREADS
-
-  source_start = source + hdr_size;
-  source_size -= hdr_size;
 
   output_size =
     LZ4_decompress_safe (source_start, dest, source_size, dest_size);
