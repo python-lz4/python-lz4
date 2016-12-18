@@ -186,7 +186,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       break;
     case HIGH_COMPRESSION:
       output_size = LZ4_compress_fast (source, dest_start, source_size,
-                                 dest_size, compression);
+                                       dest_size, compression);
       break;
     }
 
