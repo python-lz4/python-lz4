@@ -144,6 +144,32 @@ class TestLZ4Block(unittest.TestCase):
         assert data == out
         pool.close()
 
+    def test_threads_fast_no_store_size(self):
+        data = [os.urandom(128 * 1024) for i in range(100)]
+        def roundtripfast(x):
+            return lz4.decompress(
+                lz4.compress(x, mode='fast', acceleration=8, store_size=False),
+                uncompressed_size=128 * 1024
+            )
+
+        pool = ThreadPool(8)
+        out = pool.map(roundtripfast, data)
+        assert data == out
+        pool.close()
+
+    def test_threads_hc_no_store_size(self):
+        data = [os.urandom(128 * 1024) for i in range(100)]
+        def roundtriphc(x):
+            return lz4.decompress(
+                lz4.compress(x, mode='high_compression', store_size=False, compression=4),
+                uncompressed_size=128 * 1024
+            )
+
+        pool = ThreadPool(8)
+        out = pool.map(roundtriphc, data)
+        assert data == out
+        pool.close()
+
 if __name__ == '__main__':
     unittest.main()
 
