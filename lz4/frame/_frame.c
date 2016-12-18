@@ -205,8 +205,8 @@ free_compression_context (PyObject * Py_UNUSED (self), PyObject * args,
   "    source_size (int): This optionally specifies  the uncompressed size\n" \
   "        of the full frame content. This arument is optional, but can be\n" \
 
-PyDoc_STRVAR(compress_frame__doc,
-             "compress_frame(source)\n\n"                               \
+PyDoc_STRVAR(compress__doc,
+             "compress(source)\n\n"                               \
              "Accepts a string, and compresses the string in one go, returning the\n" \
              "compressed string as a string of bytes. The compressed string includes\n" \
              "a header and endmark and so is suitable for writing to a file.\n\n" \
@@ -220,8 +220,8 @@ PyDoc_STRVAR(compress_frame__doc,
              );
 
 static PyObject *
-compress_frame (PyObject * Py_UNUSED (self), PyObject * args,
-                PyObject * keywds)
+compress (PyObject * Py_UNUSED (self), PyObject * args,
+          PyObject * keywds)
 {
   const char *source;
   int source_size;
@@ -873,8 +873,8 @@ static PyMethodDef module_methods[] =
     METH_VARARGS | METH_KEYWORDS, free_compression_context__doc
   },
   {
-    "compress_frame", (PyCFunction) compress_frame,
-    METH_VARARGS | METH_KEYWORDS, compress_frame__doc
+    "compress", (PyCFunction) compress,
+    METH_VARARGS | METH_KEYWORDS, compress__doc
   },
   {
     "compress_begin", (PyCFunction) compress_begin,

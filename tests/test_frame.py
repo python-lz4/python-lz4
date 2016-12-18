@@ -8,9 +8,9 @@ class TestLZ4Frame(unittest.TestCase):
         self.assertNotEqual(context, None)
         lz4frame.free_compression_context(context)
 
-    def test_compress_frame(self):
+    def test_compress(self):
         input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
-        compressed = lz4frame.compress_frame(input_data)
+        compressed = lz4frame.compress(input_data)
         decompressed = lz4frame.decompress(compressed)
         self.assertEqual(input_data, decompressed)
 
@@ -64,7 +64,7 @@ class TestLZ4Frame(unittest.TestCase):
 
     def test_get_frame_info(self):
         input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
-        compressed = lz4frame.compress_frame(
+        compressed = lz4frame.compress(
             input_data,
             lz4frame.COMPRESSIONLEVEL_MAX,
             lz4frame.BLOCKSIZE_MAX64KB,
