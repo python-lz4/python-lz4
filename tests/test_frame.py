@@ -29,6 +29,53 @@ class TestLZ4Frame(unittest.TestCase):
         decompressed = lz4frame.decompress(compressed)
         self.assertEqual(input_data, decompressed)
 
+    def test_compress_not_defaults_1(self):
+        input_data = os.urandom(10 * 128 * 1024)  # Read 10 * 128kb
+        compressed = lz4frame.compress(
+            input_data,
+            block_size=lz4frame.BLOCKSIZE_MAX256KB,
+            block_mode=lz4frame.BLOCKMODE_LINKED,
+            compression_level=lz4frame.COMPRESSIONLEVEL_MAX,
+        )
+        decompressed = lz4frame.decompress(compressed)
+        self.assertEqual(input_data, decompressed)
+
+    def test_compress_not_defaults_2(self):
+        input_data = os.urandom(20 * 128 * 1024)  # Read 20 * 128kb
+        compressed = lz4frame.compress(
+            input_data,
+            block_size=lz4frame.BLOCKSIZE_MAX1MB,
+            block_mode=lz4frame.BLOCKMODE_INDEPENDENT,
+            compression_level=lz4frame.COMPRESSIONLEVEL_MIN,
+            content_checksum=lz4frame.CONTENTCHECKSUM_DISABLED
+        )
+        decompressed = lz4frame.decompress(compressed)
+        self.assertEqual(input_data, decompressed)
+
+    def test_compress_not_defaults_3(self):
+        input_data = os.urandom(20 * 128 * 1024)  # Read 20 * 128kb
+        compressed = lz4frame.compress(
+            input_data,
+            block_size=lz4frame.BLOCKSIZE_MAX64KB,
+            block_mode=lz4frame.BLOCKMODE_LINKED,
+            compression_level=lz4frame.COMPRESSIONLEVEL_MINHC,
+            content_checksum=lz4frame.CONTENTCHECKSUM_DISABLED
+        )
+        decompressed = lz4frame.decompress(compressed)
+        self.assertEqual(input_data, decompressed)
+
+    def test_compress_not_defaults_4(self):
+        input_data = os.urandom(20 * 128 * 1024)  # Read 20 * 128kb
+        compressed = lz4frame.compress(
+            input_data,
+            block_size=lz4frame.BLOCKSIZE_MAX64KB,
+            block_mode=lz4frame.BLOCKMODE_LINKED,
+            compression_level=lz4frame.COMPRESSIONLEVEL_MAX,
+            content_checksum=lz4frame.CONTENTCHECKSUM_ENABLED
+        )
+        decompressed = lz4frame.decompress(compressed)
+        self.assertEqual(input_data, decompressed)
+
     def test_compress_begin_update_end_no_auto_flush(self):
         context = lz4frame.create_compression_context()
         self.assertNotEqual(context, None)
