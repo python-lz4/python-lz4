@@ -177,7 +177,7 @@ free_compression_context (PyObject * Py_UNUSED (self), PyObject * args,
   "        - BLOCKSIZE_MAX64KB or 4: 64 kB\n"                           \
   "        - BLOCKSIZE_MAX256KB or 5: 256 kB\n"                         \
   "        - BLOCKSIZE_MAX1MB or 6: 1 MB\n"                             \
-  "        - BLOCKSIZE_MAX1MB or 7: 4 MB\n\n"                           \
+  "        - BLOCKSIZE_MAX4MB or 7: 4 MB\n\n"                           \
   "        If unspecified, will default to BLOCKSIZE_DEFAULT.\n"        \
   "    block_mode (int): Specifies whether to use block-linked\n"       \
   "        compression. Options:\n\n"                                   \
