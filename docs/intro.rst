@@ -1,11 +1,18 @@
 Introduction
 ============
-This package provides python bindings for the `lz4 compression library
-<https://cyan4973.github.io/lz4//>`_ by Yann Collet.
 
-At this time the project contains bindings for the LZ4 block format
-and the LZ4 frame format. Patches implementing bindings for the LZ4
-stream format would be readily accepted!
+This package provides a Python interface for the `LZ4 compression library
+<http://lz4.github.io/lz4/>`_ by Yann Collet. Support is provided for Python 2
+(from 2.6 onwards) and Pyton 3 (from 3.3 onwards).
 
+The LZ4 library provides support for three specifications:
 
+* The `frame <http://lz4.github.io/lz4/lz4_Frame_format.html>`_ format
+* The `block <http://lz4.github.io/lz4/lz4_Block_format.html>`_ format
+* The `stream <https://github.com/lz4/lz4/wiki/LZ4-Streaming-API-Basics>`_ format
 
+This Python interface currently supports the frame and block format. Support for
+the streaming format will be available in a future release.
+
+For most applications, the frame format is what you should use as this
+guarantees interoperability with other bindings.
