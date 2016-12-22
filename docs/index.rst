@@ -2,8 +2,8 @@
 LZ4 compression library bindings for Python
 ===========================================
 
-Contents:
-
+Contents
+--------
 .. toctree::
    :maxdepth: 2
 
@@ -14,6 +14,8 @@ Contents:
    contributors
    license
 
-   :ref:`genindex`
-   :ref:`modindex`
-   :ref:`search`
+Indices
+-------
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

@@ -1,15 +1,13 @@
-lz4.block package
-=================
+lz4.block sub-package
+=====================
 
-This subpackage provides wrappers around the LZ4 block format library
-functions. More detail can be found in the article `LZ4
-explained<http://fastcompression.blogspot.co.uk/2011/05/lz4-explained.html>`_
-by the author of the LZ4 library.
+This sub-package provides the capability to compress and decompress data using
+the _`LZ4 block specification <http://lz4.github.io/lz4/lz4_Block_format.html>`
 
-Because the LZ4 block format doesn't define a container format, the
-python bindings will insert the original data size as an integer at
-the start of the compressed payload, like most other bindings do
-(Java...)
+Because the LZ4 block format doesn't define a container format, the Python
+bindings will by default insert the original data size as an integer at the
+start of the compressed payload, like most other bindings do (Java...). However,
+it is possible to disable this functionality.
 
 Example usage
 -------------
@@ -21,8 +19,8 @@ To use the lz4 block format bindings is straightforward::
     True
     >>>
 
-Module contents
----------------
+Contents
+----------------
 
 .. automodule:: lz4.block
     :members: compress, decompress
