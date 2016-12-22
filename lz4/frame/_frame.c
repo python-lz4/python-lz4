@@ -318,13 +318,14 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
  * compress_begin *
  ******************/
 PyDoc_STRVAR(compress_begin__doc,
-             "compressBegin(cCtx)\n\n"                                  \
+             "compress_begin(cCtx, source_size=0, compression_level=0, block_size=0,\n" \
+             "    content_checksum=0, block_mode=0, frame_type=0, auto_flush=1)\n\n"\
              "Creates a frame header from a compression context.\n\n"   \
              "Args:\n"                                                  \
              "    context (cCtx): A compression context.\n\n"           \
              "Keyword Args:\n"                                          \
              __COMPRESS_KWARGS_DOCSTRING                                \
-             "    auto_flush (int): Enable () or disable (0) autoFlush in LZ4\n" \
+             "    auto_flush (int): Enable (1, default) or disable (0) autoFlush.\n" \
              "         When autoFlush is disabled, the LZ4 library may buffer data\n" \
              "         until a block is full\n\n"                       \
              "Returns:\n"                                               \
