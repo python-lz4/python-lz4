@@ -185,9 +185,10 @@ free_compression_context (PyObject * Py_UNUSED (self), PyObject * args,
   "        - BLOCKMODE_LINKED or 1: linked mode\n\n"                    \
   "        The default is BLOCKMODE_INDEPENDENT.\n"                     \
   "    compression_level (int): Specifies the level of compression used.\n" \
-  "        Values between 0-16 are valid, with 0 (default) being the\n" \
-  "        lowest compression, and 16 the highest. Values above 16 will\n" \
-  "        be treated as 16. Values betwee 3-6 are recommended.\n"      \
+  "        Values between 0-16 are valid, with 0 (default) being the\n"     \
+  "        lowest compression (0-2 are the same value), and 16 the highest.\n" \
+  "        Values above 16 will be treated as 16.\n"             \
+  "        Values between 4-9 are recommended.\n"      \
   "        The following module constants are provided as a convenience:\n\n" \
   "        - COMPRESSIONLEVEL_MIN: Minimum compression (0, the default)\n" \
   "        - COMPRESSIONLEVEL_MINHC: Minimum high-compression mode (3)\n" \
