@@ -4,7 +4,7 @@ Contributors
 
 - Jonathan Underwood combined the block and frame modules into a coherent single
   project with many fixes, cleanups and documentation
-- jonathan nUderwood added frame bindings based on the `lz4ex
+- Jonathan Underwood added frame bindings based on the `lz4ex
   <https://github.com/jerryryle/python-lz4ex>`_ by Jerry Ryle and the `lz4tools
   <https://github.com/darkdragn/lz4tools>`_ project by Christopher Jackson
 - Jonathan Underwood updated the block format support to use the tunable
