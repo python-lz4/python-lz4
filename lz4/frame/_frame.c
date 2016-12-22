@@ -173,35 +173,35 @@ free_compression_context (PyObject * Py_UNUSED (self), PyObject * args,
 #define __COMPRESS_KWARGS_DOCSTRING \
   "    block_size (int): Sepcifies the maximum blocksize to use.\n"     \
   "        Options:\n\n"                                                \
-  "        - BLOCKSIZE_DEFAULT or 0: the lz4 library default\n"         \
-  "        - BLOCKSIZE_MAX64KB or 4: 64 kB\n"                           \
-  "        - BLOCKSIZE_MAX256KB or 5: 256 kB\n"                         \
-  "        - BLOCKSIZE_MAX1MB or 6: 1 MB\n"                             \
-  "        - BLOCKSIZE_MAX4MB or 7: 4 MB\n\n"                           \
-  "        If unspecified, will default to BLOCKSIZE_DEFAULT.\n"        \
+  "        - lz4.frame.BLOCKSIZE_DEFAULT or 0: the lz4 library default\n" \
+  "        - lz4.frame.BLOCKSIZE_MAX64KB or 4: 64 kB\n"                 \
+  "        - lz4.frame.BLOCKSIZE_MAX256KB or 5: 256 kB\n"               \
+  "        - lz4.frame.BLOCKSIZE_MAX1MB or 6: 1 MB\n"                   \
+  "        - lz4.frame.BLOCKSIZE_MAX4MB or 7: 4 MB\n\n"                 \
+  "        If unspecified, will default to lz4.frame.BLOCKSIZE_DEFAULT.\n" \
   "    block_mode (int): Specifies whether to use block-linked\n"       \
   "        compression. Options:\n\n"                                   \
-  "        - BLOCKMODE_INDEPENDENT or 0: disable linked mode\n"         \
-  "        - BLOCKMODE_LINKED or 1: linked mode\n\n"                    \
-  "        The default is BLOCKMODE_INDEPENDENT.\n"                     \
+  "        - lz4.frame.BLOCKMODE_INDEPENDENT or 0: disable linked mode\n" \
+  "        - lz4.frame.BLOCKMODE_LINKED or 1: linked mode\n\n"          \
+  "        The default is lz4.frame.BLOCKMODE_INDEPENDENT.\n"           \
   "    compression_level (int): Specifies the level of compression used.\n" \
   "        Values between 0-16 are valid, with 0 (default) being the\n" \
   "        lowest compression, and 16 the highest. Values above 16 will\n" \
   "        be treated as 16. Values betwee 3-6 are recommended.\n"      \
   "        The following module constants are provided as a convenience:\n\n" \
-  "        - COMPRESSIONLEVEL_MIN: Minimum compression (0, the default)\n" \
-  "        - COMPRESSIONLEVEL_MINHC: Minimum high-compression mode (3)\n" \
-  "        - COMPRESSIONLEVEL_MAX: Maximum compression (16)\n\n"        \
+  "        - lz4.frame.COMPRESSIONLEVEL_MIN: Minimum compression (0, the default)\n" \
+  "        - lz4.frame.COMPRESSIONLEVEL_MINHC: Minimum high-compression mode (3)\n" \
+  "        - lz4.frame.COMPRESSIONLEVEL_MAX: Maximum compression (16)\n\n" \
   "    content_checksum (int): Specifies whether to enable checksumming of\n" \
   "        the payload content. Options:\n\n"                           \
-  "        - CONTENTCHECKSUM_DISABLED or 0: disables checksumming\n"    \
-  "        - CONTENTCHECKSUM_ENABLED or 1: enables checksumming\n\n"    \
+  "        - lz4.frame.CONTENTCHECKSUM_DISABLED or 0: disables checksumming\n" \
+  "        - lz4.frame.CONTENTCHECKSUM_ENABLED or 1: enables checksumming\n\n" \
   "        The default is CONTENTCHECKSUM_DISABLED.\n"                  \
   "    frame_type (int): Specifies whether user data can be injected between\n" \
   "        frames. Options:\n\n"                                        \
-  "        - FRAMETYPE_FRAME or 0: disables user data injection\n"      \
-  "        - FRAMETYPE_SKIPPABLEFRAME or 1: enables user data injection\n\n" \
-  "        The default is FRAMETYPE_FRAME.\n"                           \
+  "        - lz4.frame.FRAMETYPE_FRAME or 0: disables user data injection\n" \
+  "        - lz4.frame.FRAMETYPE_SKIPPABLEFRAME or 1: enables user data injection\n\n" \
+  "        The default is lz4.frame.FRAMETYPE_FRAME.\n"                 \
   "    source_size (int): This optionally specifies  the uncompressed size\n" \
   "        of the full frame content. This arument is optional, but can be\n" \
 
