@@ -813,11 +813,10 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
 
       if (destination_written == destination_size)
         {
-          /* Destination_buffer is full, so need to expand it. We'll expand
-             it by the approximate size needed from the return value - see
-             LZ4 docs. */
-          destination_size += result;
-          if (!PyMem_Realloc(destination_buffer, destination_size))
+          /* Destination_buffer is full, so need to expand it. */
+          destination_size *= 2;
+          char * nextgen = PyMem_Realloc(destination_buffer, destination_size);
+          if (!nextgen)
             {
               LZ4F_freeDecompressionContext (context);
               Py_BLOCK_THREADS
@@ -826,6 +825,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
               PyMem_Free (destination_buffer);
               return NULL;
             }
+          destination_buffer = nextgen;
         }
       /* Data still remaining to be decompressed, so increment the source and
          destination cursor locations, and reset source_read and

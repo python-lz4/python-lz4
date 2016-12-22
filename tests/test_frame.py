@@ -29,6 +29,30 @@ class TestLZ4Frame(unittest.TestCase):
         decompressed = lz4frame.decompress(compressed)
         self.assertEqual(input_data, decompressed)
 
+    def test_compress_huge_with_size(self):
+        context = lz4frame.create_compression_context()
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123" * 4096
+        chunk_size = int((len(input_data)/2)+1)
+        compressed = lz4frame.compress_begin(context, source_size=len(input_data))
+        compressed += lz4frame.compress_update(context, input_data[:chunk_size])
+        compressed += lz4frame.compress_update(context, input_data[chunk_size:])
+        compressed += lz4frame.compress_end(context)
+        lz4frame.free_compression_context(context)
+        decompressed = lz4frame.decompress(compressed)
+        self.assertEqual(input_data, decompressed)
+
+    def test_compress_huge_without_size(self):
+        context = lz4frame.create_compression_context()
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123" * 4096
+        chunk_size = int((len(input_data)/2)+1)
+        compressed = lz4frame.compress_begin(context)
+        compressed += lz4frame.compress_update(context, input_data[:chunk_size])
+        compressed += lz4frame.compress_update(context, input_data[chunk_size:])
+        compressed += lz4frame.compress_end(context)
+        lz4frame.free_compression_context(context)
+        decompressed = lz4frame.decompress(compressed)
+        self.assertEqual(input_data, decompressed)
+
     def test_compress_not_defaults_1(self):
         input_data = os.urandom(10 * 128 * 1024)  # Read 10 * 128kb
         compressed = lz4frame.compress(
