@@ -7,7 +7,6 @@ class TestLZ4Frame(unittest.TestCase):
     def test_create_and_free_compression_context(self):
         context = lz4frame.create_compression_context()
         self.assertNotEqual(context, None)
-        lz4frame.free_compression_context(context)
 
     def test_compress(self):
         input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
@@ -25,7 +24,6 @@ class TestLZ4Frame(unittest.TestCase):
         compressed += lz4frame.compress_update(context, input_data[:chunk_size])
         compressed += lz4frame.compress_update(context, input_data[chunk_size:])
         compressed += lz4frame.compress_end(context)
-        lz4frame.free_compression_context(context)
         decompressed = lz4frame.decompress(compressed)
         self.assertEqual(input_data, decompressed)
 
@@ -37,7 +35,6 @@ class TestLZ4Frame(unittest.TestCase):
         compressed += lz4frame.compress_update(context, input_data[:chunk_size])
         compressed += lz4frame.compress_update(context, input_data[chunk_size:])
         compressed += lz4frame.compress_end(context)
-        lz4frame.free_compression_context(context)
         decompressed = lz4frame.decompress(compressed)
         self.assertEqual(input_data, decompressed)
 
@@ -49,7 +46,6 @@ class TestLZ4Frame(unittest.TestCase):
         compressed += lz4frame.compress_update(context, input_data[:chunk_size])
         compressed += lz4frame.compress_update(context, input_data[chunk_size:])
         compressed += lz4frame.compress_end(context)
-        lz4frame.free_compression_context(context)
         decompressed = lz4frame.decompress(compressed)
         self.assertEqual(input_data, decompressed)
 
@@ -110,7 +106,6 @@ class TestLZ4Frame(unittest.TestCase):
         compressed += lz4frame.compress_update(context, input_data[:chunk_size])
         compressed += lz4frame.compress_update(context, input_data[chunk_size:])
         compressed += lz4frame.compress_end(context)
-        lz4frame.free_compression_context(context)
         decompressed = lz4frame.decompress(compressed)
         self.assertEqual(input_data, decompressed)
 
@@ -129,7 +124,6 @@ class TestLZ4Frame(unittest.TestCase):
             end = start + chunk_size
 
         compressed += lz4frame.compress_end(context)
-        lz4frame.free_compression_context(context)
         decompressed = lz4frame.decompress(compressed)
         self.assertEqual(input_data, decompressed)
 
@@ -154,7 +148,6 @@ class TestLZ4Frame(unittest.TestCase):
             end = start + chunk_size
 
         compressed += lz4frame.compress_end(context)
-        lz4frame.free_compression_context(context)
         decompressed = lz4frame.decompress(compressed)
         self.assertEqual(input_data, decompressed)
 
@@ -179,7 +172,6 @@ class TestLZ4Frame(unittest.TestCase):
             end = start + chunk_size
 
         compressed += lz4frame.compress_end(context)
-        lz4frame.free_compression_context(context)
         decompressed = lz4frame.decompress(compressed)
         self.assertEqual(input_data, decompressed)
 
@@ -240,7 +232,6 @@ class TestLZ4Frame(unittest.TestCase):
                 end = start + chunk_size
 
             compressed += lz4frame.compress_end(context)
-            lz4frame.free_compression_context(context)
             decompressed = lz4frame.decompress(compressed)
             return decompressed
 

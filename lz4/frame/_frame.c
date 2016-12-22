@@ -62,6 +62,8 @@ typedef unsigned int uint32_t;
 #define inline
 #endif
 
+static const char * capsule_name = "_frame.LZ4F_cctx";
+static void destruct_compression_context (PyObject * py_context);
 struct compression_context
 {
   LZ4F_compressionContext_t compression_context;
@@ -114,57 +116,21 @@ create_compression_context (PyObject * Py_UNUSED (self),
       return NULL;
     }
 
-  return PyCapsule_New (context, NULL, NULL);
+  return PyCapsule_New (context, capsule_name, destruct_compression_context);
 }
 
-/****************************
- * free_compression_context *
- ****************************/
-PyDoc_STRVAR(free_compression_context__doc,
-             "free_compression_context(context)\n\n"                                \
-             "Releases the resources held by a compression context previously\n" \
-             "created with create_compression_context.\n\n"             \
-             "Args:\n"                                                  \
-             "    context (cCtx): Compression context.\n"
-             );
-
-static PyObject *
-free_compression_context (PyObject * Py_UNUSED (self), PyObject * args,
-                          PyObject * keywds)
+static void
+destruct_compression_context (PyObject * py_context)
 {
-  PyObject *py_context = NULL;
-  static char *kwlist[] = { "context", NULL };
-  struct compression_context *context;
-  LZ4F_errorCode_t result;
-
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O", kwlist, &py_context))
-    {
-      return NULL;
-    }
-
-  context =
-    (struct compression_context *) PyCapsule_GetPointer (py_context, NULL);
-  if (!context)
-    {
-      PyErr_Format (PyExc_ValueError, "No compression context supplied");
-      return NULL;
-    }
+  struct compression_context *context = PyCapsule_GetPointer (py_context, capsule_name);
+  // That's always true as there is no PyCapsule_SetPointer calls.
 
   Py_BEGIN_ALLOW_THREADS
-  result =
-    LZ4F_freeCompressionContext (context->compression_context);
+  LZ4F_freeCompressionContext (context->compression_context);
+  // That's always LZ4F_OK_NoError as free() is `void free()` and it's just a wrapper.
   Py_END_ALLOW_THREADS
 
-  if (LZ4F_isError (result))
-    {
-      PyErr_Format (PyExc_RuntimeError,
-                    "LZ4F_freeCompressionContext failed with code: %s",
-                    LZ4F_getErrorName (result));
-      return NULL;
-    }
   PyMem_Free (context);
-
-  Py_RETURN_NONE;
 }
 
 /******************
@@ -382,7 +348,7 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
   preferences.frameInfo.contentSize = source_size;
 
   context =
-    (struct compression_context *) PyCapsule_GetPointer (py_context, NULL);
+    (struct compression_context *) PyCapsule_GetPointer (py_context, capsule_name);
 
   if (!context || !context->compression_context)
     {
@@ -449,7 +415,7 @@ compress_update (PyObject * Py_UNUSED (self), PyObject * args,
     }
 
   context =
-    (struct compression_context *) PyCapsule_GetPointer (py_context, NULL);
+    (struct compression_context *) PyCapsule_GetPointer (py_context, capsule_name);
   if (!context || !context->compression_context)
     {
       PyErr_Format (PyExc_ValueError, "No compression context supplied");
@@ -543,7 +509,7 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
     }
 
   context =
-    (struct compression_context *) PyCapsule_GetPointer (py_context, NULL);
+    (struct compression_context *) PyCapsule_GetPointer (py_context, capsule_name);
   if (!context || !context->compression_context)
     {
       PyErr_SetString (PyExc_ValueError, "No compression context supplied");
@@ -869,10 +835,6 @@ static PyMethodDef module_methods[] =
   {
     "create_compression_context", (PyCFunction) create_compression_context,
     METH_VARARGS | METH_KEYWORDS, create_compression_context__doc
-  },
-  {
-    "free_compression_context", (PyCFunction) free_compression_context,
-    METH_VARARGS | METH_KEYWORDS, free_compression_context__doc
   },
   {
     "compress", (PyCFunction) compress,
