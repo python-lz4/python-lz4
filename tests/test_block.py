@@ -170,6 +170,31 @@ class TestLZ4Block(unittest.TestCase):
         assert data == out
         pool.close()
 
+    def test_decompress_ui32_overflow(self):
+        data = lz4.compress(b'A' * 64)
+        self.assertEqual(data[:4], b'\x40\0\0\0')
+        self.assertEqual(lz4.decompress(data[4:], uncompressed_size=64), b'A' * 64)
+        with self.assertRaisesRegexp(OverflowError, r'^signed integer is greater than maximum$'):
+            lz4.decompress(data[4:], uncompressed_size=((1<<32) + 64))
+
+    def test_decompress_without_leak(self):
+        # Verify that hand-crafted packet does not leak uninitialized(?) memory.
+        data = lz4.compress(b'A' * 64)
+        with self.assertRaisesRegexp(ValueError, r'^Decompressor writes 64 bytes, but 79 are claimed$'):
+            lz4.decompress(b'\x4f' + data[1:])
+        with self.assertRaisesRegexp(ValueError, r'^Decompressor writes 64 bytes, but 79 are claimed$'):
+            lz4.decompress(data[4:], uncompressed_size=79)
+
+    def test_decompress_with_trailer(self):
+        data = b'A' * 64
+        comp = lz4.compress(data)
+        with self.assertRaisesRegexp(ValueError, r'^Corrupt input at byte'):
+            self.assertEqual(data, lz4.block.decompress(comp + 'A'))
+        with self.assertRaisesRegexp(ValueError, r'^Corrupt input at byte'):
+            self.assertEqual(data, lz4.block.decompress(comp + comp))
+        with self.assertRaisesRegexp(ValueError, r'^Corrupt input at byte'):
+            self.assertEqual(data, lz4.block.decompress(comp + comp[4:]))
+
 if __name__ == '__main__':
     unittest.main()
 
