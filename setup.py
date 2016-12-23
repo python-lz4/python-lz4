@@ -11,7 +11,7 @@ def version_scheme(version):
     version = guess_next_dev_version(version)
     return version.lstrip("v")
 
-LZ4_VERSION = "r131"
+LZ4_VERSION = "1.7.4.2"
 
 def library_is_installed(libname):
     # Check to see if we have a library called'libname' installed on the
