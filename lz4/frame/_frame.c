@@ -787,9 +787,10 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
       if (destination_written == destination_size)
         {
           /* Destination_buffer is full, so need to expand it. */
+          char * destination_buffer_new;
           destination_size *= 2;
-          char * nextgen = PyMem_Realloc(destination_buffer, destination_size);
-          if (!nextgen)
+          destination_buffer_new = PyMem_Realloc(destination_buffer, destination_size);
+          if (!destination_buffer_new)
             {
               LZ4F_freeDecompressionContext (context);
               Py_BLOCK_THREADS
@@ -798,7 +799,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
               PyMem_Free (destination_buffer);
               return NULL;
             }
-          destination_buffer = nextgen;
+          destination_buffer = destination_buffer_new;
         }
       /* Data still remaining to be decompressed, so increment the source and
          destination cursor locations, and reset source_read and
