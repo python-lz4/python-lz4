@@ -170,10 +170,14 @@ class TestLZ4Block(unittest.TestCase):
         assert data == out
         pool.close()
 
-    def test_decompress_ui32_overflow(self):
+    def test_block_format(self):
         data = lz4.compress(b'A' * 64)
         self.assertEqual(data[:4], b'\x40\0\0\0')
         self.assertEqual(lz4.decompress(data[4:], uncompressed_size=64), b'A' * 64)
+
+class TestLZ4BlockModern(unittest.TestCase):
+    def test_decompress_ui32_overflow(self):
+        data = lz4.compress(b'A' * 64)
         with self.assertRaisesRegexp(OverflowError, r'^signed integer is greater than maximum$'):
             lz4.decompress(data[4:], uncompressed_size=((1<<32) + 64))
 
@@ -189,11 +193,15 @@ class TestLZ4Block(unittest.TestCase):
         data = b'A' * 64
         comp = lz4.compress(data)
         with self.assertRaisesRegexp(ValueError, r'^Corrupt input at byte'):
-            self.assertEqual(data, lz4.block.decompress(comp + 'A'))
+            self.assertEqual(data, lz4.block.decompress(comp + b'A'))
         with self.assertRaisesRegexp(ValueError, r'^Corrupt input at byte'):
             self.assertEqual(data, lz4.block.decompress(comp + comp))
         with self.assertRaisesRegexp(ValueError, r'^Corrupt input at byte'):
             self.assertEqual(data, lz4.block.decompress(comp + comp[4:]))
+
+if sys.version_info < (2, 7):
+    # Poor-man unittest.TestCase.skip for Python 2.6
+    del TestLZ4BlockModern
 
 if __name__ == '__main__':
     unittest.main()
