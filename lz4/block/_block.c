@@ -283,6 +283,12 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       PyErr_Format (PyExc_ValueError, "Corrupt input at byte %d", -output_size);
       Py_CLEAR (py_dest);
     }
+  else if ((size_t)output_size != dest_size)
+    {
+      // IMHO, it's better to fail explicitly than to allow fishy data to pass through.
+      PyErr_Format (PyExc_ValueError, "Decompressor writes %d bytes, but %zu are claimed", output_size, dest_size);
+      Py_CLEAR (py_dest);
+    }
 
   return py_dest;
 }
