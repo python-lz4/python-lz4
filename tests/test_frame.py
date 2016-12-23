@@ -1,13 +1,13 @@
 import lz4.frame as lz4frame
 import unittest
 import os
+import sys
 from multiprocessing.pool import ThreadPool
 
 class TestLZ4Frame(unittest.TestCase):
     def test_create_and_free_compression_context(self):
         context = lz4frame.create_compression_context()
         self.assertNotEqual(context, None)
-        lz4frame.free_compression_context(context)
 
     def test_compress(self):
         input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
@@ -25,7 +25,28 @@ class TestLZ4Frame(unittest.TestCase):
         compressed += lz4frame.compress_update(context, input_data[:chunk_size])
         compressed += lz4frame.compress_update(context, input_data[chunk_size:])
         compressed += lz4frame.compress_end(context)
-        lz4frame.free_compression_context(context)
+        decompressed = lz4frame.decompress(compressed)
+        self.assertEqual(input_data, decompressed)
+
+    def test_compress_huge_with_size(self):
+        context = lz4frame.create_compression_context()
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123" * 4096
+        chunk_size = int((len(input_data)/2)+1)
+        compressed = lz4frame.compress_begin(context, source_size=len(input_data))
+        compressed += lz4frame.compress_update(context, input_data[:chunk_size])
+        compressed += lz4frame.compress_update(context, input_data[chunk_size:])
+        compressed += lz4frame.compress_end(context)
+        decompressed = lz4frame.decompress(compressed)
+        self.assertEqual(input_data, decompressed)
+
+    def test_compress_huge_without_size(self):
+        context = lz4frame.create_compression_context()
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123" * 4096
+        chunk_size = int((len(input_data)/2)+1)
+        compressed = lz4frame.compress_begin(context)
+        compressed += lz4frame.compress_update(context, input_data[:chunk_size])
+        compressed += lz4frame.compress_update(context, input_data[chunk_size:])
+        compressed += lz4frame.compress_end(context)
         decompressed = lz4frame.decompress(compressed)
         self.assertEqual(input_data, decompressed)
 
@@ -86,7 +107,6 @@ class TestLZ4Frame(unittest.TestCase):
         compressed += lz4frame.compress_update(context, input_data[:chunk_size])
         compressed += lz4frame.compress_update(context, input_data[chunk_size:])
         compressed += lz4frame.compress_end(context)
-        lz4frame.free_compression_context(context)
         decompressed = lz4frame.decompress(compressed)
         self.assertEqual(input_data, decompressed)
 
@@ -105,7 +125,6 @@ class TestLZ4Frame(unittest.TestCase):
             end = start + chunk_size
 
         compressed += lz4frame.compress_end(context)
-        lz4frame.free_compression_context(context)
         decompressed = lz4frame.decompress(compressed)
         self.assertEqual(input_data, decompressed)
 
@@ -130,7 +149,6 @@ class TestLZ4Frame(unittest.TestCase):
             end = start + chunk_size
 
         compressed += lz4frame.compress_end(context)
-        lz4frame.free_compression_context(context)
         decompressed = lz4frame.decompress(compressed)
         self.assertEqual(input_data, decompressed)
 
@@ -155,7 +173,6 @@ class TestLZ4Frame(unittest.TestCase):
             end = start + chunk_size
 
         compressed += lz4frame.compress_end(context)
-        lz4frame.free_compression_context(context)
         decompressed = lz4frame.decompress(compressed)
         self.assertEqual(input_data, decompressed)
 
@@ -216,7 +233,6 @@ class TestLZ4Frame(unittest.TestCase):
                 end = start + chunk_size
 
             compressed += lz4frame.compress_end(context)
-            lz4frame.free_compression_context(context)
             decompressed = lz4frame.decompress(compressed)
             return decompressed
 
@@ -224,6 +240,20 @@ class TestLZ4Frame(unittest.TestCase):
         out = pool.map(roundtrip, data)
         pool.close()
         self.assertEqual(data, out)
+
+class TestLZ4FrameModern(unittest.TestCase):
+    def test_decompress_trailer(self):
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
+        compressed = lz4frame.compress(input_data)
+        with self.assertRaisesRegexp(ValueError, r'^Extra data: 64 trailing bytes'):
+            lz4frame.decompress(compressed + b'A'*64)
+        # This API does not support frame concatenation!
+        with self.assertRaisesRegexp(ValueError, r'^Extra data: \d+ trailing bytes'):
+            lz4frame.decompress(compressed + compressed)
+
+if sys.version_info < (2, 7):
+    # Poor-man unittest.TestCase.skip for Python 2.6
+    del TestLZ4FrameModern
 
 if __name__ == '__main__':
     unittest.main()
