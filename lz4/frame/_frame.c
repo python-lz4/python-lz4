@@ -777,6 +777,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
         }
 
       destination_written += destination_write;
+      source_cursor += source_read;
 
       if (result == 0)
         {
@@ -805,7 +806,6 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
          re-initialize destination_cursor here (as opposed to simply
          incrementing it) so we're pointing to the realloc'd memory location. */
       destination_cursor = destination_buffer + destination_written;
-      source_cursor += source_read;
       destination_write = destination_size - destination_written;
       source_read = source_end - source_cursor;
     }
@@ -820,6 +820,13 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_freeDecompressionContext failed with code: %s",
                     LZ4F_getErrorName (result));
+      return NULL;
+    }
+  else if (source_cursor != source_end)
+    {
+      PyMem_Free (destination_buffer);
+      PyErr_Format (PyExc_ValueError,
+                    "Extra data: %zd trailing bytes", source_end - source_cursor);
       return NULL;
     }
 

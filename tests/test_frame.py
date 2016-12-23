@@ -1,6 +1,7 @@
 import lz4.frame as lz4frame
 import unittest
 import os
+import sys
 from multiprocessing.pool import ThreadPool
 
 class TestLZ4Frame(unittest.TestCase):
@@ -239,6 +240,20 @@ class TestLZ4Frame(unittest.TestCase):
         out = pool.map(roundtrip, data)
         pool.close()
         self.assertEqual(data, out)
+
+class TestLZ4FrameModern(unittest.TestCase):
+    def test_decompress_trailer(self):
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
+        compressed = lz4frame.compress(input_data)
+        with self.assertRaisesRegexp(ValueError, r'^Extra data: 64 trailing bytes'):
+            lz4frame.decompress(compressed + b'A'*64)
+        # This API does not support frame concatenation!
+        with self.assertRaisesRegexp(ValueError, r'^Extra data: \d+ trailing bytes'):
+            lz4frame.decompress(compressed + compressed)
+
+if sys.version_info < (2, 7):
+    # Poor-man unittest.TestCase.skip for Python 2.6
+    del TestLZ4FrameModern
 
 if __name__ == '__main__':
     unittest.main()
