@@ -109,17 +109,15 @@ create_compression_context (PyObject * Py_UNUSED (self),
 static void
 destruct_compression_context (PyObject * py_context)
 {
-  struct compression_context *context =
 #ifndef PyCapsule_Type
+  struct compression_context *context =
     PyCapsule_GetPointer (py_context, capsule_name);
-    // That's always true as there is no PyCapsule_SetPointer calls.
 #else
-    py_context; // compatibility with 2.6 via capsulethunk
+    /* Compatibility with 2.6 via capsulethunk. */
+    struct compression_context *context =  py_context;
 #endif
-
   Py_BEGIN_ALLOW_THREADS
   LZ4F_freeCompressionContext (context->compression_context);
-  // That's always LZ4F_OK_NoError as free() is `void free()` and it's just a wrapper.
   Py_END_ALLOW_THREADS
 
   PyMem_Free (context);
