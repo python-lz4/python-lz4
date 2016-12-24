@@ -4,7 +4,7 @@ python-lz4
 
 .. image:: https://secure.travis-ci.org/python-lz4/python-lz4.png?branch=master
 .. image:: https://readthedocs.org/projects/python-lz4/badge/?version=latest
-.. image:: https://ci.appveyor.com/api/projects/status/github/python-lz4?branch=master
+.. image:: https://ci.appveyor.com/api/projects/status/r2qvw9mlfo63lklo?svg=true
 
 Introduction
 ============
@@ -22,7 +22,7 @@ Documenation
 Full documentation is included with the project. The documentation is
 generated using Sphinx. Documentation is also hosted on readthedocs.
 
-:master: http://python-lz4.readthedocs.io/en/latest/?badge=latest
+:master: http://python-lz4.readthedocs.io/en/latest/
 
 Licensing
 =========
