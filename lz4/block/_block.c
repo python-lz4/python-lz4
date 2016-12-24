@@ -287,8 +287,10 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     }
   else if ((size_t)output_size != dest_size)
     {
-      // IMHO, it's better to fail explicitly than to allow fishy data to pass through.
-      PyErr_Format (PyExc_ValueError, "Decompressor writes %d bytes, but %zu are claimed", output_size, dest_size);
+      /* Better to fail explicitly than to allow fishy data to pass through. */
+      PyErr_Format (PyExc_ValueError,
+                    "Decompressor wrote %d bytes, but %zu are bytes expected from header",
+                    output_size, dest_size);
       Py_CLEAR (py_dest);
     }
 
