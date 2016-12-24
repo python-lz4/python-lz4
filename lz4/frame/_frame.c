@@ -86,9 +86,7 @@ destruct_compression_context (PyObject * py_context)
 }
 
 static PyObject *
-create_compression_context (PyObject * Py_UNUSED (self),
-                            PyObject * Py_UNUSED (args),
-                            PyObject * Py_UNUSED (keywds))
+create_compression_context (PyObject * Py_UNUSED (self))
 {
   struct compression_context * context;
   LZ4F_errorCode_t result;
@@ -834,7 +832,7 @@ static PyMethodDef module_methods[] =
 {
   {
     "create_compression_context", (PyCFunction) create_compression_context,
-    METH_VARARGS | METH_KEYWORDS, create_compression_context__doc
+    METH_NOARGS, create_compression_context__doc
   },
   {
     "compress", (PyCFunction) compress,
