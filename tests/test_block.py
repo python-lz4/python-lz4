@@ -178,7 +178,7 @@ class TestLZ4Block(unittest.TestCase):
 class TestLZ4BlockModern(unittest.TestCase):
     def test_decompress_ui32_overflow(self):
         data = lz4.compress(b'A' * 64)
-        with self.assertRaisesRegexp(OverflowError, r'^signed integer is greater than maximum$'):
+        with self.assertRaises(OverflowError):
             lz4.decompress(data[4:], uncompressed_size=((1<<32) + 64))
 
     def test_decompress_without_leak(self):
