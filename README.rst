@@ -4,7 +4,7 @@ python-lz4
 
 .. image:: https://secure.travis-ci.org/python-lz4/python-lz4.png?branch=master
 .. image:: https://readthedocs.org/projects/python-lz4/badge/?version=latest
-.. image:: https://ci.appveyor.com/api/projects/status/github/python-lz4
+.. image:: https://ci.appveyor.com/api/projects/status/github/python-lz4?branch=master
 
 Introduction
 ============
