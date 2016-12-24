@@ -771,9 +771,11 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
 
       if (destination_written == destination_size)
         {
-          /* Destination_buffer is full, so need to expand it. */
+          /* Destination_buffer is full, so need to expand it. result is an
+             indication of number of source bytes remaining, so we'll use this
+             to estimate the new size of the destination buffer. */
           char * destination_buffer_new;
-          destination_size *= 2;
+          destination_size += 3 * result;
           destination_buffer_new = PyMem_Realloc(destination_buffer, destination_size);
           if (!destination_buffer_new)
             {
