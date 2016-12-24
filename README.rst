@@ -5,12 +5,15 @@ python-lz4
 Status
 ======
 TravisCI:
+
 .. image:: https://img.shields.io/travis/rust-lang/rust.svg?style=plastic   :target: https://github.com/python-lz4/python-lz4/
 
 AppVeyor builds:
+
 .. image:: https://img.shields.io/appveyor/ci/gruntjs/grunt.svg?style=plastic   :target: https://github.com/python-lz4/python-lz4/
 
 ReadTheDocs:
+
 .. image:: https://readthedocs.org/projects/python-lz4/badge/?version=latest
 
 Introduction
