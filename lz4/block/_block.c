@@ -289,7 +289,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     {
       /* Better to fail explicitly than to allow fishy data to pass through. */
       PyErr_Format (PyExc_ValueError,
-                    "Decompressor wrote %d bytes, but %zu are bytes expected from header",
+                    "Decompressor wrote %d bytes, but %zu bytes expected from header",
                     output_size, dest_size);
       Py_CLEAR (py_dest);
     }
