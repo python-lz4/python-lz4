@@ -184,9 +184,9 @@ class TestLZ4BlockModern(unittest.TestCase):
     def test_decompress_without_leak(self):
         # Verify that hand-crafted packet does not leak uninitialized(?) memory.
         data = lz4.compress(b'A' * 64)
-        with self.assertRaisesRegexp(ValueError, r'^Decompressor writes 64 bytes, but 79 are claimed$'):
+        with self.assertRaisesRegexp(ValueError, r'^Decompressor wrote 64 bytes, but 79 bytes expected from header$'):
             lz4.decompress(b'\x4f' + data[1:])
-        with self.assertRaisesRegexp(ValueError, r'^Decompressor writes 64 bytes, but 79 are claimed$'):
+        with self.assertRaisesRegexp(ValueError, r'^Decompressor wrote 64 bytes, but 79 bytes expected from header$'):
             lz4.decompress(data[4:], uncompressed_size=79)
 
     def test_decompress_with_trailer(self):
