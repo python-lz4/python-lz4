@@ -50,7 +50,7 @@
 #endif
 
 static const char * capsule_name = "_frame.LZ4F_cctx";
-static void destruct_compression_context (PyObject * py_context);
+
 struct compression_context
 {
   LZ4F_compressionContext_t compression_context;
@@ -67,6 +67,23 @@ PyDoc_STRVAR(create_compression_context__doc,
              "Returns:\n"                                               \
              "    cCtx: A compression context\n"
             );
+
+static void
+destruct_compression_context (PyObject * py_context)
+{
+#ifndef PyCapsule_Type
+  struct compression_context *context =
+    PyCapsule_GetPointer (py_context, capsule_name);
+#else
+  /* Compatibility with 2.6 via capsulethunk. */
+  struct compression_context *context =  py_context;
+#endif
+  Py_BEGIN_ALLOW_THREADS
+    LZ4F_freeCompressionContext (context->compression_context);
+  Py_END_ALLOW_THREADS
+
+    PyMem_Free (context);
+}
 
 static PyObject *
 create_compression_context (PyObject * Py_UNUSED (self),
@@ -104,23 +121,6 @@ create_compression_context (PyObject * Py_UNUSED (self),
     }
 
   return PyCapsule_New (context, capsule_name, destruct_compression_context);
-}
-
-static void
-destruct_compression_context (PyObject * py_context)
-{
-#ifndef PyCapsule_Type
-  struct compression_context *context =
-    PyCapsule_GetPointer (py_context, capsule_name);
-#else
-    /* Compatibility with 2.6 via capsulethunk. */
-    struct compression_context *context =  py_context;
-#endif
-  Py_BEGIN_ALLOW_THREADS
-  LZ4F_freeCompressionContext (context->compression_context);
-  Py_END_ALLOW_THREADS
-
-  PyMem_Free (context);
 }
 
 /******************
