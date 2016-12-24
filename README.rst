@@ -4,6 +4,10 @@ python-lz4
 
 .. image:: https://secure.travis-ci.org/python-lz4/python-lz4.png?branch=master
 
+.. image:: https://readthedocs.org/projects/python-lz4/badge/?version=latest
+:target: http://python-lz4.readthedocs.io/en/latest/?badge=latest
+:alt: Documentation Status
+
 Introduction
 ============
 This package provides python bindings for the `lz4 compression library
