@@ -2,11 +2,16 @@
 python-lz4
 ==========
 
-.. image:: https://secure.travis-ci.org/python-lz4/python-lz4.png?branch=master
-.. image:: https://readthedocs.org/projects/python-lz4/badge/?version=latest
-.. image:: https://ci.appveyor.com/api/projects/status/r2qvw9mlfo63lklo?svg=true
-
+Status
+======
+TravisCI:
 .. image:: https://img.shields.io/travis/rust-lang/rust.svg?style=plastic   :target: https://github.com/python-lz4/python-lz4/
+
+AppVeyor builds:
+.. image:: https://img.shields.io/appveyor/ci/gruntjs/grunt.svg?style=plastic   :target: https://github.com/python-lz4/python-lz4/
+
+ReadTheDocs:
+.. image:: https://readthedocs.org/projects/python-lz4/badge/?version=latest
 
 Introduction
 ============
