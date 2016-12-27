@@ -6,11 +6,6 @@ import subprocess
 import os
 from distutils import ccompiler
 
-def version_scheme(version):
-    from setuptools_scm.version import guess_next_dev_version
-    version = guess_next_dev_version(version)
-    return version.lstrip("v")
-
 LZ4_VERSION = "1.7.4.2"
 
 def library_is_installed(libname):
@@ -106,7 +101,6 @@ setup(
     name='lz4',
     use_scm_version={
         'write_to': "lz4/version.py",
-        'version_scheme': version_scheme,
     },
     setup_requires=['setuptools_scm'],
     description="LZ4 Bindings for Python",
