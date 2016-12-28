@@ -871,7 +871,11 @@ static struct PyModuleDef moduledef =
   "_frame",
   lz4frame__doc,
   -1,
-  module_methods
+  module_methods,
+  NULL,
+  NULL,
+  NULL,
+  NULL
 };
 
 MODULE_INIT_FUNC (_frame)
