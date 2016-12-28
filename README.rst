@@ -5,15 +5,17 @@ python-lz4
 Status
 ======
 
-.. image:: https://img.shields.io/travis/rust-lang/rust.svg?style=plastic
-   :target: https://github.com/python-lz4/python-lz4/
+.. image:: https://travis-ci.org/python-lz4/python-lz4.svg?branch=master
+   :target: https://travis-ci.org/python-lz4/python-lz4
    :alt: Build Status
 
-.. image:: https://img.shields.io/appveyor/ci/gruntjs/grunt.svg?style=plastic
-   :target: https://github.com/python-lz4/python-lz4/
+.. image:: https://ci.appveyor.com/api/projects/status/github/python-lz4
+   :target: https://ci.appveyor.com/project/jonathanunderwood/python-lz4
    :alt: Build Status Windows
 
 .. image:: https://readthedocs.org/projects/python-lz4/badge/?version=latest
+   :target: https://readthedocs.org/projects/python-lz4/
+   :alt: Documentation
 
 Introduction
 ============
@@ -26,7 +28,10 @@ stream format would be readily accepted!
 
 Documenation
 ============
+
 .. image:: https://readthedocs.org/projects/python-lz4/badge/?version=latest
+   :target: https://readthedocs.org/projects/python-lz4/
+   :alt: Documentation
 
 Full documentation is included with the project. The documentation is
 generated using Sphinx. Documentation is also hosted on readthedocs.
