@@ -378,11 +378,15 @@ static struct PyModuleDef moduledef =
   "_block",
   lz4block__doc,
   -1,
+#if IS_PY3
   module_methods,
   NULL,
   NULL,
   NULL,
   NULL
+#else
+  module_methods
+#endif
 };
 
 MODULE_INIT_FUNC (_block)
