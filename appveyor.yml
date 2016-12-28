@@ -18,9 +18,9 @@ environment:
       DISTUTILS_USE_SDK: "1"
     - PYTHON: "C:\\Python35-x64"
 
-# matrix:
+matrix:
   # Immediately finish build once one of the jobs fails.
-  # fast_finish: true
+  fast_finish: true
 
 install:
   # If there is a newer build queued for the same PR, cancel this one.
@@ -39,8 +39,8 @@ install:
   - ps: "ls \"C:/Program Files/Microsoft SDKs/Windows\""
 
   # Prepend relevant Python installation to the PATH. Also prepend the location
-  # of the build.cmd file. - "SET
-  PATH=%CD%\\appveyor;%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  # of the build.cmd file.
+  - "SET PATH=%CD%\\appveyor;%PYTHON%;%PYTHON%\\Scripts;%PATH%"
 
   # Check that we have the expected version and architecture for Python
   - "build.cmd python --version"
@@ -51,7 +51,6 @@ install:
   - "build.cmd python -m pip install --disable-pip-version-check --user --upgrade pip"
 
   # We need wheel installed to build wheels
-  # - "%PYTHON%\\python.exe -m pip install wheel"
   - "build.cmd python -m pip install wheel"
 
   # Install the build dependencies of the project. If some dependencies contain
