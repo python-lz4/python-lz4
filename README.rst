@@ -9,7 +9,7 @@ Status
    :target: https://travis-ci.org/python-lz4/python-lz4
    :alt: Build Status
 
-.. image:: https://ci.appveyor.com/api/projects/status/github/python-lz4
+.. image:: https://ci.appveyor.com/api/projects/status/github/python-lz4/python-lz4?branch=master
    :target: https://ci.appveyor.com/project/jonathanunderwood/python-lz4
    :alt: Build Status Windows
 
