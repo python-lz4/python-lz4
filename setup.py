@@ -71,13 +71,22 @@ else:
 if py3c_found is False:
     include_dirs.append('py3c')
 
-if ccompiler.get_default_compiler() == "msvc":
-    extra_compile_args = ["/Ot", "/Wall"]
-else:
+compiler = ccompiler.get_default_compiler()
+
+if compiler == 'msvc':
+    extra_compile_args = ['/Ot', '/Wall']
+elif compiler == 'unix':
     if liblz4_found:
-        extra_compile_args = ["-std=c99",]
+        extra_compile_args = []
     else:
-        extra_compile_args = ["-std=c99","-O3","-Wall","-W","-Wundef"]
+        extra_compile_args = [
+            '-O3',
+            '-Wall',
+            '-Wundef'
+        ]
+else:
+    print('Unrecognized compiler: {0}'.format(compiler))
+    sys.exit(1)
 
 lz4block = Extension('lz4.block._block',
                      lz4block_sources,
