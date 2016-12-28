@@ -19,7 +19,8 @@ environment:
     - PYTHON: "C:\\Python35-x64"
 
 matrix:
-  fast_finish: true # immediately finish build once one of the jobs fails.
+  # Immediately finish build once one of the jobs fails.
+  fast_finish: true
 
 install:
   # If there is a newer build queued for the same PR, cancel this one.
