@@ -8,76 +8,87 @@ environment:
     CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\appveyor\\run_with_env.cmd"
 
   matrix:
-
-    # Python 2.7.10 is the latest version and is not pre-installed.
-
-    - PYTHON: "C:\\Python27.10"
-      PYTHON_VERSION: "2.7.10"
-      PYTHON_ARCH: "32"
-
-    - PYTHON: "C:\\Python27.10-x64"
-      PYTHON_VERSION: "2.7.10"
-      PYTHON_ARCH: "64"
-
-    # Pre-installed Python versions, which Appveyor may upgrade to
-    # a later point release.
-    # See: http://www.appveyor.com/docs/installed-software#python
-
+    # See: https://packaging.python.org/appveyor/
     - PYTHON: "C:\\Python27"
-      PYTHON_VERSION: "2.7.x" # currently 2.7.9
-      PYTHON_ARCH: "32"
-
-    - PYTHON: "C:\\Python27-x64"
-      PYTHON_VERSION: "2.7.x" # currently 2.7.9
-      PYTHON_ARCH: "64"
-
     - PYTHON: "C:\\Python33"
-      PYTHON_VERSION: "3.3.x" # currently 3.3.5
-      PYTHON_ARCH: "32"
-
-    - PYTHON: "C:\\Python33-x64"
-      PYTHON_VERSION: "3.3.x" # currently 3.3.5
-      PYTHON_ARCH: "64"
-
     - PYTHON: "C:\\Python34"
-      PYTHON_VERSION: "3.4.x" # currently 3.4.3
-      PYTHON_ARCH: "32"
-
-    - PYTHON: "C:\\Python34-x64"
-      PYTHON_VERSION: "3.4.x" # currently 3.4.3
-      PYTHON_ARCH: "64"
-
-    # Python versions not pre-installed
-
-    # Python 2.6.6 is the latest Python 2.6 with a Windows installer
-    # See: https://github.com/ogrisel/python-appveyor-demo/issues/10
-
-    - PYTHON: "C:\\Python266"
-      PYTHON_VERSION: "2.6.6"
-      PYTHON_ARCH: "32"
-
-    - PYTHON: "C:\\Python266-x64"
-      PYTHON_VERSION: "2.6.6"
-      PYTHON_ARCH: "64"
-
     - PYTHON: "C:\\Python35"
-      PYTHON_VERSION: "3.5.0"
-      PYTHON_ARCH: "32"
-
+    - PYTHON: "C:\\Python27-x64"
+    - PYTHON: "C:\\Python33-x64"
+      DISTUTILS_USE_SDK: "1"
+    - PYTHON: "C:\\Python34-x64"
+      DISTUTILS_USE_SDK: "1"
     - PYTHON: "C:\\Python35-x64"
-      PYTHON_VERSION: "3.5.0"
-      PYTHON_ARCH: "64"
 
-    # Major and minor releases (i.e x.0.0 and x.y.0) prior to 3.3.0 use
-    # a different naming scheme.
+    # # Python 2.7.10 is the latest version and is not pre-installed.
 
-    - PYTHON: "C:\\Python270"
-      PYTHON_VERSION: "2.7.0"
-      PYTHON_ARCH: "32"
+    # - PYTHON: "C:\\Python27.10"
+    #   PYTHON_VERSION: "2.7.10"
+    #   PYTHON_ARCH: "32"
 
-    - PYTHON: "C:\\Python270-x64"
-      PYTHON_VERSION: "2.7.0"
-      PYTHON_ARCH: "64"
+    # - PYTHON: "C:\\Python27.10-x64"
+    #   PYTHON_VERSION: "2.7.10"
+    #   PYTHON_ARCH: "64"
+
+    # # Pre-installed Python versions, which Appveyor may upgrade to
+    # # a later point release.
+    # # See: http://www.appveyor.com/docs/installed-software#python
+
+    # - PYTHON: "C:\\Python27"
+    #   PYTHON_VERSION: "2.7.x" # currently 2.7.9
+    #   PYTHON_ARCH: "32"
+
+    # - PYTHON: "C:\\Python27-x64"
+    #   PYTHON_VERSION: "2.7.x" # currently 2.7.9
+    #   PYTHON_ARCH: "64"
+
+    # - PYTHON: "C:\\Python33"
+    #   PYTHON_VERSION: "3.3.x" # currently 3.3.5
+    #   PYTHON_ARCH: "32"
+
+    # - PYTHON: "C:\\Python33-x64"
+    #   PYTHON_VERSION: "3.3.x" # currently 3.3.5
+    #   PYTHON_ARCH: "64"
+
+    # - PYTHON: "C:\\Python34"
+    #   PYTHON_VERSION: "3.4.x" # currently 3.4.3
+    #   PYTHON_ARCH: "32"
+
+    # - PYTHON: "C:\\Python34-x64"
+    #   PYTHON_VERSION: "3.4.x" # currently 3.4.3
+    #   PYTHON_ARCH: "64"
+
+    # # Python versions not pre-installed
+
+    # # Python 2.6.6 is the latest Python 2.6 with a Windows installer
+    # # See: https://github.com/ogrisel/python-appveyor-demo/issues/10
+
+    # - PYTHON: "C:\\Python266"
+    #   PYTHON_VERSION: "2.6.6"
+    #   PYTHON_ARCH: "32"
+
+    # - PYTHON: "C:\\Python266-x64"
+    #   PYTHON_VERSION: "2.6.6"
+    #   PYTHON_ARCH: "64"
+
+    # - PYTHON: "C:\\Python35"
+    #   PYTHON_VERSION: "3.5.0"
+    #   PYTHON_ARCH: "32"
+
+    # - PYTHON: "C:\\Python35-x64"
+    #   PYTHON_VERSION: "3.5.0"
+    #   PYTHON_ARCH: "64"
+
+    # # Major and minor releases (i.e x.0.0 and x.y.0) prior to 3.3.0 use
+    # # a different naming scheme.
+
+    # - PYTHON: "C:\\Python270"
+    #   PYTHON_VERSION: "2.7.0"
+    #   PYTHON_ARCH: "32"
+
+    # - PYTHON: "C:\\Python270-x64"
+    #   PYTHON_VERSION: "2.7.0"
+    #   PYTHON_ARCH: "64"
 
 install:
   # If there is a newer build queued for the same PR, cancel this one.
@@ -97,12 +108,12 @@ install:
 
   # Install Python (from the official .msi of http://python.org) and pip when
   # not already installed.
-  - ps: if (-not(Test-Path($env:PYTHON))) { & appveyor\install.ps1 }
+  # - ps: if (-not(Test-Path($env:PYTHON))) { & appveyor\install.ps1 }
 
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
   # the parent CMD process).
-  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  # - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
 
   # Check that we have the expected version and architecture for Python
   - "python --version"
@@ -111,6 +122,9 @@ install:
   # Upgrade to the latest version of pip to avoid it displaying warnings
   # about it being out of date.
   - "pip install --disable-pip-version-check --user --upgrade pip"
+
+  # We need wheel installed to build wheels
+  - "%PYTHON%\\python.exe -m pip install wheel"
 
   # Install the build dependencies of the project. If some dependencies contain
   # compiled extensions and are not provided as pre-built wheel packages,
