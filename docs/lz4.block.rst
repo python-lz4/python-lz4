@@ -1,3 +1,5 @@
+.. _lz4.block:
+
 lz4.block sub-package
 =====================
 

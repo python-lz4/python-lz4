@@ -1,3 +1,5 @@
+.. _lz4.frame:
+
 lz4.frame sub-package
 =====================
 
