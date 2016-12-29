@@ -29,20 +29,6 @@ Contents
     :undoc-members:
     :show-inheritance:
 
-Deprecated methods
-------------------
-The following methods are provided as wrappers around ``compress`` and
-``decompress`` for backwards compatibility, but will be removed in the
-near future. These methods are also imported into the lz4 top level
-namespace for backwards compatibility.
-
-- ``dumps``, and ``LZ4_compress`` are wrappers around ``compress``
-- ``loads``, ``uncompress``, ``LZ4_uncompress``are wrappers around
-  ``decompress``
-- ``compress_fast`` and ``LZ4_compress_fast`` are wrappers around
-  ``compress`` with ``mode=fast``
-- ``compressHC`` is a wrapper around ``compress`` with
-  ``mode=high_compression``
 
 Is it fast ?
 ------------
