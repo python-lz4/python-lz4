@@ -41,6 +41,10 @@ py3c_found = library_is_installed('py3c')
 include_dirs = []
 libraries = []
 
+lz4version_sources = [
+    'lz4/_version.c'
+]
+
 lz4block_sources = [
     'lz4/block/_block.c'
 ]
@@ -53,6 +57,11 @@ if liblz4_found is True:
     libraries.append('lz4')
 else:
     include_dirs.append('lz4libs')
+    lz4version_sources.extend(
+        [
+            'lz4libs/lz4.c',
+        ]
+    )
     lz4block_sources.extend(
         [
             'lz4libs/lz4.c',
@@ -87,6 +96,13 @@ elif compiler == 'unix':
 else:
     print('Unrecognized compiler: {0}'.format(compiler))
     sys.exit(1)
+
+lz4version = Extension('lz4._version',
+                       lz4version_sources,
+                       extra_compile_args=extra_compile_args,
+                       libraries=libraries,
+                       include_dirs=include_dirs,
+)
 
 lz4block = Extension('lz4.block._block',
                      lz4block_sources,
@@ -123,7 +139,11 @@ setup(
     author_email='jonathan.underwood@gmail.com',
     url='https://github.com/python-lz4/python-lz4',
     packages=find_packages(),
-    ext_modules=[lz4block, lz4frame],
+    ext_modules=[
+        lz4version,
+        lz4block,
+        lz4frame
+    ],
     tests_require=["nose>=1.0"],
     test_suite = "nose.collector",
     classifiers=[

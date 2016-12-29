@@ -297,12 +297,6 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   return py_dest;
 }
 
-static PyObject *
-versionnumber (PyObject * Py_UNUSED (self), PyObject * Py_UNUSED (args))
-{
-  return Py_BuildValue ("i", LZ4_versionNumber ());
-}
-
 PyDoc_STRVAR(compress__doc,
              "compress(source, mode='default', acceleration=1, compression=0)\n\n" \
              "Compress source, returning the compressed data as a string.\n" \
@@ -356,12 +350,6 @@ static PyMethodDef module_methods[] = {
     (PyCFunction) decompress,
     METH_VARARGS | METH_KEYWORDS,
     decompress__doc
-  },
-  {
-    "lz4version",
-    (PyCFunction) versionnumber,
-    METH_VARARGS,
-   "Returns the version number of the lz4 C library"
   },
   {
     /* Sentinel */

@@ -7,6 +7,8 @@ try:
 except ImportError:
     LZ4_VERSION = None
 
+from ._version import lz4version
+
 # Import these at top level for backwards compatibility, but will be
 # removed in the future
 from .block import *
