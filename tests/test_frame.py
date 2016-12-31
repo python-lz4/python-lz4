@@ -241,9 +241,20 @@ class TestLZ4Frame(unittest.TestCase):
         pool.close()
         self.assertEqual(data, out)
 
-    def test_LZ4Compressor(self):
+    def test_LZ4FrameCompressor(self):
         input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
-        with lz4frame.LZ4Compressor() as compressor:
+        with lz4frame.LZ4FrameCompressor() as compressor:
+            compressed = compressor.compress(input_data)
+            compressed += compressor.flush()
+        decompressed = lz4frame.decompress(compressed)
+        self.assertEqual(input_data, decompressed)
+
+    def test_LZ4FrameCompressor_reset(self):
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
+        with lz4frame.LZ4FrameCompressor() as compressor:
+            compressed = compressor.compress(input_data)
+            compressed += compressor.flush()
+            compressor.reset()
             compressed = compressor.compress(input_data)
             compressed += compressor.flush()
         decompressed = lz4frame.decompress(compressed)
@@ -258,6 +269,14 @@ class TestLZ4FrameModern(unittest.TestCase):
         # This API does not support frame concatenation!
         with self.assertRaisesRegexp(ValueError, r'^Extra data: \d+ trailing bytes'):
             lz4frame.decompress(compressed + compressed)
+
+    def test_LZ4FrameCompressor_fails(self):
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
+        with self.assertRaisesRegexp(RuntimeError, r'compress called after flush'):
+            with lz4frame.LZ4FrameCompressor() as compressor:
+                compressed = compressor.compress(input_data)
+                compressed += compressor.flush()
+                compressed = compressor.compress(input_data)
 
 if sys.version_info < (2, 7):
     # Poor-man unittest.TestCase.skip for Python 2.6
