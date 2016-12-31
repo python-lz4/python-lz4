@@ -112,7 +112,7 @@ class LZ4FrameCompressor(object):
 
     def flush(self):
         """Finish the compression process, returning a bytes object containing any data
-        stored in the compressor’s internal buffers and a frame footer.
+        stored in the compressor's internal buffers and a frame footer.
 
         To use the LZ4FrameCompressor instance after this has been called, it
         is necessary to first call the ``reset()`` method.
