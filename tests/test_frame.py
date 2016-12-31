@@ -241,6 +241,14 @@ class TestLZ4Frame(unittest.TestCase):
         pool.close()
         self.assertEqual(data, out)
 
+    def test_LZ4Compressor(self):
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
+        with lz4frame.LZ4Compressor() as compressor:
+            compressed = compressor.compress(input_data)
+            compressed += compressor.flush()
+        decompressed = lz4frame.decompress(compressed)
+        self.assertEqual(input_data, decompressed)
+
 class TestLZ4FrameModern(unittest.TestCase):
     def test_decompress_trailer(self):
         input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
