@@ -157,9 +157,6 @@ create_compression_context (PyObject * Py_UNUSED (self))
   "        - lz4.frame.FRAMETYPE_FRAME or 0: disables user data injection\n" \
   "        - lz4.frame.FRAMETYPE_SKIPPABLEFRAME or 1: enables user data injection\n\n" \
   "        The default is lz4.frame.FRAMETYPE_FRAME.\n"                 \
-  "    source_size (int): This optionally specifies the uncompressed size\n" \
-  "        of the source content. This arument is optional, but can if specified\n" \
-  "        will be stored in the frame header for use during decompression.\n"
 
 PyDoc_STRVAR(compress__doc,
              "compress(source)\n\n"                               \
@@ -284,6 +281,9 @@ PyDoc_STRVAR(compress_begin__doc,
              "    auto_flush (int): Enable (1, default) or disable (0) autoFlush.\n" \
              "         When autoFlush is disabled, the LZ4 library may buffer data\n" \
              "         until a block is full\n\n"                       \
+             "    source_size (int): This optionally specifies the uncompressed size\n" \
+             "        of the source content. This arument is optional, but can if specified\n" \
+             "        will be stored in the frame header for use during decompression.\n"
              "Returns:\n"                                               \
              "    str (str): Frame header.\n"
              );
