@@ -40,6 +40,9 @@ class LZ4FrameCompressor(object):
             - lz4.frame.FRAMETYPE_FRAME or 0: disables user data injection
             - lz4.frame.FRAMETYPE_SKIPPABLEFRAME or 1: enables user data
               injection
+        content_size (int): Optionally specified the total size of the
+            uncompressed data. If specified, will be stored in the compressed
+            frame header for later use in decompression.
         auto_flush (bool): When False, the LZ4 library may buffer data until a
             block is full. When True no buffering occurs, and partially full
             blocks may be returned. The default is True.
@@ -51,13 +54,15 @@ class LZ4FrameCompressor(object):
                  compression_level=COMPRESSIONLEVEL_MIN,
                  content_checksum=CONTENTCHECKSUM_DISABLED,
                  frame_type=FRAMETYPE_FRAME,
-                 auto_flush=True):
+                 auto_flush=True,
+                 content_size=0):
         self.block_size = block_size
         self.block_mode = block_mode
         self.compression_level = compression_level
         self.content_checksum = content_checksum
         self.frame_type = frame_type
         self.auto_flush = auto_flush
+        self.content_size = content_size
         self._context = create_compression_context()
         self._started = False
 
@@ -97,7 +102,8 @@ class LZ4FrameCompressor(object):
                                     frame_type=self.frame_type,
                                     compression_level=self.compression_level,
                                     content_checksum=self.content_checksum,
-                                    auto_flush=self.auto_flush)
+                                    auto_flush=self.auto_flush,
+                                    source_size=self.content_size)
             self._started = True
         elif self._started is True:
             result = bytes()
