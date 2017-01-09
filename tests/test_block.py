@@ -189,6 +189,13 @@ class TestLZ4BlockModern(unittest.TestCase):
         with self.assertRaisesRegexp(ValueError, r'^Decompressor wrote 64 bytes, but 79 bytes expected from header$'):
             lz4.decompress(data[4:], uncompressed_size=79)
 
+    def test_decompress_truncated(self):
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123" * 24
+        compressed = lz4.compress(input_data)
+        for i in range(len(compressed)):
+            with self.assertRaisesRegexp(ValueError, '^(Input source data size too small|Corrupt input at byte \d+|Decompressor wrote \d+ bytes, but \d+ bytes expected from header)'):
+                lz4.decompress(compressed[:i])
+
     def test_decompress_with_trailer(self):
         data = b'A' * 64
         comp = lz4.compress(data)
