@@ -3,7 +3,7 @@ Introduction
 
 This package provides a Python interface for the `LZ4 compression library
 <http://lz4.github.io/lz4/>`_ by Yann Collet. Support is provided for Python 2
-(from 2.6 onwards) and Pyton 3 (from 3.3 onwards).
+(from 2.6 onwards) and Python 3 (from 3.3 onwards).
 
 The LZ4 library provides support for three specifications:
 
