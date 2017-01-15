@@ -729,7 +729,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   destination_cursor = destination_buffer;
   destination_written = 0;
 
-  while (1)
+  while (source_cursor < source_end)
     {
       /* Decompress from the source string and write to the destination_buffer
          until there's no more source string to read.
@@ -737,7 +737,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
          On calling LZ4F_decompress, source_read is set to the remaining length
          of source available to read. On return, source_read is set to the
          actual number of bytes read from source, which may be less than
-         available.
+         available. NB: LZ4F_decompress does not explicitly fail on empty input.
 
          On calling LZ4F_decompres, destination_write is the number of bytes in
          destination available for writing. On exit, destination_write is set to
@@ -807,6 +807,13 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_freeDecompressionContext failed with code: %s",
                     LZ4F_getErrorName (result));
+      return NULL;
+    }
+  else if (result != 0)
+    {
+      PyMem_Free (destination_buffer);
+      PyErr_Format (PyExc_RuntimeError,
+                    "LZ4F_freeDecompressionContext reported unclean decompressor state (truncated frame?): %zu", result);
       return NULL;
     }
   else if (source_cursor != source_end)

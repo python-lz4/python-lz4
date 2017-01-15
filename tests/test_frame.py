@@ -2,6 +2,7 @@ import lz4.frame as lz4frame
 import unittest
 import os
 import sys
+import struct
 from multiprocessing.pool import ThreadPool
 
 class TestLZ4Frame(unittest.TestCase):
@@ -261,6 +262,28 @@ class TestLZ4Frame(unittest.TestCase):
         self.assertEqual(input_data, decompressed)
 
 class TestLZ4FrameModern(unittest.TestCase):
+    def test_decompress_truncated(self):
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
+        for chksum in (lz4frame.CONTENTCHECKSUM_DISABLED, lz4frame.CONTENTCHECKSUM_ENABLED):
+            for conlen in (0, len(input_data)):
+                context = lz4frame.create_compression_context()
+                compressed = lz4frame.compress_begin(context, content_checksum=chksum, source_size=conlen)
+                compressed += lz4frame.compress_update(context, input_data)
+                compressed += lz4frame.compress_end(context)
+                for i in range(len(compressed)):
+                    with self.assertRaisesRegexp(RuntimeError, r'^(LZ4F_getFrameInfo failed with code: ERROR_frameHeader_incomplete|LZ4F_freeDecompressionContext reported unclean decompressor state \(truncated frame\?\): \d+)$'):
+                        lz4frame.decompress(compressed[:i])
+
+    def test_checksum_failure(self):
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
+        compressed = lz4frame.compress(input_data, content_checksum=lz4frame.CONTENTCHECKSUM_ENABLED)
+        with self.assertRaisesRegexp(RuntimeError, r'^LZ4F_decompress failed with code: ERROR_contentChecksum_invalid'):
+            last = struct.unpack('B', compressed[-1:])[0]
+            lz4frame.decompress(compressed[:-1] + struct.pack('B', last ^ 0x42))
+        # NB: blockChecksumFlag is not supported by lz4 at the moment, so some
+        # random 1-bit modifications of input may actually trigger valid output
+        # without errors. And content checksum remains the same!
+
     def test_decompress_trailer(self):
         input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
         compressed = lz4frame.compress(input_data)
