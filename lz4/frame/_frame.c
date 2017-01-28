@@ -159,7 +159,7 @@ create_compression_context (PyObject * Py_UNUSED (self))
   "        The default is lz4.frame.FRAMETYPE_FRAME.\n"                 \
 
 PyDoc_STRVAR(compress__doc,
-             "compress(source)\n\n"                               \
+             "compress(source, compression_level=0, block_size=0, content_checksum=0, block_mode=0, frame_type=0)\n\n" \
              "Accepts a string, and compresses the string in one go, returning the\n" \
              "compressed string as a string of bytes. The compressed string includes\n" \
              "a header and endmark and so is suitable for writing to a file.\n\n" \
@@ -630,7 +630,7 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
  * decompress *
  **************/
 PyDoc_STRVAR(decompress__doc,
-             "decompress(source, uncompressed_size=0)\n\n"                                \
+             "decompress(source)\n\n"                                   \
              "Decompressed a frame of data and returns it as a string of bytes.\n" \
              "Args:\n"                                                  \
              "    source (str): LZ4 frame as a string\n\n"              \
