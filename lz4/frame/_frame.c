@@ -135,9 +135,9 @@ create_compression_context (PyObject * Py_UNUSED (self))
   "        If unspecified, will default to lz4.frame.BLOCKSIZE_DEFAULT.\n" \
   "    block_mode (int): Specifies whether to use block-linked\n"       \
   "        compression. Options:\n\n"                                   \
-  "        - lz4.frame.BLOCKMODE_INDEPENDENT or 0: disable linked mode\n" \
-  "        - lz4.frame.BLOCKMODE_LINKED or 1: linked mode\n\n"          \
-  "        The default is lz4.frame.BLOCKMODE_INDEPENDENT.\n"           \
+  "        - lz4.frame.BLOCKMODE_LINKED or 0: linked mode\n"          \
+  "        - lz4.frame.BLOCKMODE_INDEPENDENT or 1: disable linked mode\n\n" \
+  "        The default is lz4.frame.BLOCKMODE_LINKED.\n"           \
   "    compression_level (int): Specifies the level of compression used.\n" \
   "        Values between 0-16 are valid, with 0 (default) being the\n"     \
   "        lowest compression (0-2 are the same value), and 16 the highest.\n" \
