@@ -118,7 +118,7 @@ lz4frame = Extension('lz4.frame._frame',
                      include_dirs=include_dirs,
 )
 
-# If we're building against the bundled lz4 libs, we can set LZ$_VERSION. This
+# If we're building against the bundled lz4 libs, we can set LZ4_VERSION. This
 # is present for backward compatibility, but should be removed before 10.
 if liblz4_found is False:
     with open('lz4/lz4version.py', 'w+') as f:

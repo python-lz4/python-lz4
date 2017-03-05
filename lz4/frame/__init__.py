@@ -18,9 +18,9 @@ class LZ4FrameCompressor(object):
             If unspecified, will default to lz4.frame.BLOCKSIZE_DEFAULT.
         block_mode (int): Specifies whether to use block-linked
             compression. Options:
-            - lz4.frame.BLOCKMODE_INDEPENDENT or 0: disable linked mode
-            - lz4.frame.BLOCKMODE_LINKED or 1: linked mode
-            The default is lz4.frame.BLOCKMODE_INDEPENDENT.
+            - lz4.frame.BLOCKMODE_LINKED or 0: linked mode
+            - lz4.frame.BLOCKMODE_INDEPENDENT or 1: disable linked mode
+            The default is lz4.frame.BLOCKMODE_LINKED.
         compression_level (int): Specifies the level of compression used.
             Values between 0-16 are valid, with 0 (default) being the
             lowest compression (0-2 are the same value), and 16 the highest.
@@ -50,7 +50,7 @@ class LZ4FrameCompressor(object):
 
     def __init__(self,
                  block_size=BLOCKSIZE_DEFAULT,
-                 block_mode=BLOCKMODE_INDEPENDENT,
+                 block_mode=BLOCKMODE_LINKED,
                  compression_level=COMPRESSIONLEVEL_MIN,
                  content_checksum=CONTENTCHECKSUM_DISABLED,
                  frame_type=FRAMETYPE_FRAME,

@@ -135,9 +135,9 @@ create_compression_context (PyObject * Py_UNUSED (self))
   "        If unspecified, will default to lz4.frame.BLOCKSIZE_DEFAULT.\n" \
   "    block_mode (int): Specifies whether to use block-linked\n"       \
   "        compression. Options:\n\n"                                   \
-  "        - lz4.frame.BLOCKMODE_INDEPENDENT or 0: disable linked mode\n" \
-  "        - lz4.frame.BLOCKMODE_LINKED or 1: linked mode\n\n"          \
-  "        The default is lz4.frame.BLOCKMODE_INDEPENDENT.\n"           \
+  "        - lz4.frame.BLOCKMODE_LINKED or 0: linked mode\n"          \
+  "        - lz4.frame.BLOCKMODE_INDEPENDENT or 1: disable linked mode\n\n" \
+  "        The default is lz4.frame.BLOCKMODE_LINKED.\n"           \
   "    compression_level (int): Specifies the level of compression used.\n" \
   "        Values between 0-16 are valid, with 0 (default) being the\n"     \
   "        lowest compression (0-2 are the same value), and 16 the highest.\n" \
@@ -159,7 +159,7 @@ create_compression_context (PyObject * Py_UNUSED (self))
   "        The default is lz4.frame.FRAMETYPE_FRAME.\n"                 \
 
 PyDoc_STRVAR(compress__doc,
-             "compress(source)\n\n"                               \
+             "compress(source, compression_level=0, block_size=0, content_checksum=0, block_mode=0, frame_type=0)\n\n" \
              "Accepts a string, and compresses the string in one go, returning the\n" \
              "compressed string as a string of bytes. The compressed string includes\n" \
              "a header and endmark and so is suitable for writing to a file.\n\n" \
@@ -630,7 +630,7 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
  * decompress *
  **************/
 PyDoc_STRVAR(decompress__doc,
-             "decompress(source, uncompressed_size=0)\n\n"                                \
+             "decompress(source)\n\n"                                   \
              "Decompressed a frame of data and returns it as a string of bytes.\n" \
              "Args:\n"                                                  \
              "    source (str): LZ4 frame as a string\n\n"              \
