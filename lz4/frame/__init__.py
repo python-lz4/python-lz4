@@ -58,7 +58,6 @@ class LZ4FrameCompressor(object):
         self.content_checksum = content_checksum
         self.frame_type = frame_type
         self.auto_flush = auto_flush
-        self.content_size = content_size
         self._context = create_compression_context()
         self._started = False
 
