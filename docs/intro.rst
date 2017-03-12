@@ -11,8 +11,10 @@ The LZ4 library provides support for three specifications:
 * The `block <http://lz4.github.io/lz4/lz4_Block_format.html>`_ format
 * The `stream <https://github.com/lz4/lz4/wiki/LZ4-Streaming-API-Basics>`_ format
 
-This Python interface currently supports the frame and block format. Support for
-the streaming format will be available in a future release.
+This Python interface currently supports the block format. Support for the frame
+format is also included as an unstable technology preview. Support for the
+streaming format will be available in a future release.
 
-For most applications, the frame format is what you should use as this
-guarantees interoperability with other bindings.
+..
+   For most applications, the frame format is what you should use as this
+   guarantees interoperability with other bindings.
