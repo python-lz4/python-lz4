@@ -1,4 +1,4 @@
-import lz4.block
+import lz4.block as lz4
 import sys
 
 
