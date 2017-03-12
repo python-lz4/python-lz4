@@ -40,9 +40,6 @@ class LZ4FrameCompressor(object):
             - lz4.frame.FRAMETYPE_FRAME or 0: disables user data injection
             - lz4.frame.FRAMETYPE_SKIPPABLEFRAME or 1: enables user data
               injection
-        content_size (int): Optionally specified the total size of the
-            uncompressed data. If specified, will be stored in the compressed
-            frame header for later use in decompression.
         auto_flush (bool): When False, the LZ4 library may buffer data until a
             block is full. When True no buffering occurs, and partially full
             blocks may be returned. The default is True.
@@ -54,8 +51,7 @@ class LZ4FrameCompressor(object):
                  compression_level=COMPRESSIONLEVEL_MIN,
                  content_checksum=CONTENTCHECKSUM_DISABLED,
                  frame_type=FRAMETYPE_FRAME,
-                 auto_flush=True,
-                 content_size=0):
+                 auto_flush=True):
         self.block_size = block_size
         self.block_mode = block_mode
         self.compression_level = compression_level
@@ -75,25 +71,20 @@ class LZ4FrameCompressor(object):
         # no need to del it here
         pass
 
-    def compress(self, data):
-        """Compress ``data`` (a ``bytes`` object), returning a bytes object containing
-        compressed data the input.
-
-        If ``auto_flush`` has been set to ``False``, some of ``data`` may be
-        buffered internally, for use in later calls to compress() and flush().
-
-        The returned data should be concatenated with the output of any
-        previous calls to compress().
+    def compress_begin(self, source_size=0):
+        """Begin a compression frame. The returned data contains frame header
+        information. The data returned from subsequent calls to ``compress()``
+        should be concatenated with this header.
 
         Args:
             data (bytes): data to compress
+            source_size (int): Optionally specified the total size of the
+                uncompressed data. If specified, will be stored in the
+                compressed frame header for later use in decompression.
 
         Returns:
-            bytes: compressed data
-
+            bytes: frame header data
         """
-        if self._context is None:
-            raise RuntimeError('compress called after flush')
 
         if self._started is False:
             result = compress_begin(self._context,
@@ -103,16 +94,40 @@ class LZ4FrameCompressor(object):
                                     compression_level=self.compression_level,
                                     content_checksum=self.content_checksum,
                                     auto_flush=self.auto_flush,
-                                    source_size=self.content_size)
-            self._started = True
-        elif self._started is True:
-            result = bytes()
-        else:
-            raise RuntimeError(
-                'Indeterminate state of {0}'.format(self.__class__.__name__)
-            )
+                                    source_size=source_size)
 
-        result += compress_update(self._context, data)
+            self._started = True
+            return result
+        else:
+            raise RuntimeError('compress_begin called when not already initialized')
+
+
+
+    def compress(self, data):
+        """Compress ``data`` (a ``bytes`` object), returning a bytes object
+        containing compressed data the input.
+
+        If ``auto_flush`` has been set to ``False``, some of ``data`` may be
+        buffered internally, for use in later calls to compress() and flush().
+
+        The returned data should be concatenated with the output of any
+        previous calls to ``compress()`` and a single call to
+        ``compress_begin()``.
+
+        Args:
+            data (bytes): data to compress
+
+        Returns:
+            bytes: compressed data
+
+        """
+        if self._context is None:
+            raise RuntimeError('compress called after flush()')
+
+        if self._started is False:
+            raise RuntimeError('compress called before compress_begin()')
+
+        result = compress_update(self._context, data)
 
         return result
 
@@ -129,6 +144,7 @@ class LZ4FrameCompressor(object):
         """
         result = compress_end(self._context)
         self._context = None
+        self._started = False
         return result
 
     def reset(self):
