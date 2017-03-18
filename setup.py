@@ -2,6 +2,7 @@
 from setuptools import setup, find_packages, Extension
 import subprocess
 import os
+import sys
 from distutils import ccompiler
 
 # This is the version of the bundled LZ4 library files. This variable was
@@ -84,7 +85,7 @@ compiler = ccompiler.get_default_compiler()
 
 if compiler == 'msvc':
     extra_compile_args = ['/Ot', '/Wall']
-elif compiler == 'unix':
+elif compiler in ('unix', 'mingw32'):
     if liblz4_found:
         extra_compile_args = []
     else:
