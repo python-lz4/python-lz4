@@ -138,6 +138,7 @@ class TestLZ4Frame(unittest.TestCase):
             block_size=lz4frame.BLOCKSIZE_MAX256KB,
             block_mode=lz4frame.BLOCKMODE_LINKED,
             compression_level=lz4frame.COMPRESSIONLEVEL_MINHC,
+            content_size=False,
             auto_flush=1
         )
         chunk_size = 128 * 1024 # 128 kb, half of block size
@@ -304,6 +305,15 @@ class TestLZ4FrameModern(unittest.TestCase):
                 compressed += compressor.compress(input_data)
                 compressed += compressor.flush()
                 compressed = compressor.compress(input_data)
+
+    def test_compress_without_content_size(self):
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
+        compressed = lz4frame.compress(input_data, content_size=False)
+        frame = lz4frame.get_frame_info(compressed)
+        self.assertEqual(frame['contentSize'], 0)
+        decompressed = lz4frame.decompress(compressed)
+        self.assertEqual(input_data, decompressed)
+
 
 if sys.version_info < (2, 7):
     # Poor-man unittest.TestCase.skip for Python 2.6
