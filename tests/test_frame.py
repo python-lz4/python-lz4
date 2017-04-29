@@ -264,6 +264,14 @@ class TestLZ4Frame(unittest.TestCase):
         decompressed = lz4frame.decompress(compressed)
         self.assertEqual(input_data, decompressed)
 
+    def test_compress_without_content_size(self):
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
+        compressed = lz4frame.compress(input_data, content_size_header=False)
+        frame = lz4frame.get_frame_info(compressed)
+        self.assertEqual(frame['contentSize'], 0)
+        decompressed = lz4frame.decompress(compressed)
+        self.assertEqual(input_data, decompressed)
+
 class TestLZ4FrameModern(unittest.TestCase):
     def test_decompress_truncated(self):
         input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
@@ -304,14 +312,6 @@ class TestLZ4FrameModern(unittest.TestCase):
                 compressed += compressor.compress(input_data)
                 compressed += compressor.flush()
                 compressed = compressor.compress(input_data)
-
-    def test_compress_without_content_size(self):
-        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
-        compressed = lz4frame.compress(input_data, content_size_header=False)
-        frame = lz4frame.get_frame_info(compressed)
-        self.assertEqual(frame['contentSize'], 0)
-        decompressed = lz4frame.decompress(compressed)
-        self.assertEqual(input_data, decompressed)
 
 
 if sys.version_info < (2, 7):
