@@ -35,9 +35,6 @@ class LZ4FrameCompressor(object):
             - lz4.frame.CONTENTCHECKSUM_DISABLED or 0: disables checksumming
             - lz4.frame.CONTENTCHECKSUM_ENABLED or 1: enables checksumming
             The default is CONTENTCHECKSUM_DISABLED.
-        content_size (bool): Specifies whether to include an optional 8-byte header
-            field that is the uncompressed size of data included within the frame.
-            Including the content-size header is optional, and is enabled by default.
         frame_type (int): Specifies whether user data can be injected between
             frames. Options:
             - lz4.frame.FRAMETYPE_FRAME or 0: disables user data injection
@@ -53,14 +50,12 @@ class LZ4FrameCompressor(object):
                  block_mode=BLOCKMODE_LINKED,
                  compression_level=COMPRESSIONLEVEL_MIN,
                  content_checksum=CONTENTCHECKSUM_DISABLED,
-                 content_size=True,
                  frame_type=FRAMETYPE_FRAME,
                  auto_flush=True):
         self.block_size = block_size
         self.block_mode = block_mode
         self.compression_level = compression_level
         self.content_checksum = content_checksum
-        self.content_size = content_size
         self.frame_type = frame_type
         self.auto_flush = auto_flush
         self._context = create_compression_context()
@@ -82,9 +77,10 @@ class LZ4FrameCompressor(object):
 
         Args:
             data (bytes): data to compress
-            source_size (int): Optionally specified the total size of the
+            source_size (int): Optionally specify the total size of the
                 uncompressed data. If specified, will be stored in the
-                compressed frame header for later use in decompression.
+                compressed frame header as an 8-byte field for later use
+                during decompression.
 
         Returns:
             bytes: frame header data
@@ -97,7 +93,6 @@ class LZ4FrameCompressor(object):
                                     frame_type=self.frame_type,
                                     compression_level=self.compression_level,
                                     content_checksum=self.content_checksum,
-                                    content_size=self.content_size,
                                     auto_flush=self.auto_flush,
                                     source_size=source_size)
 
