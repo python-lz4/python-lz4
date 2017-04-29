@@ -294,7 +294,7 @@ PyDoc_STRVAR(compress_begin__doc,
              "         When autoFlush is disabled, the LZ4 library may buffer data\n" \
              "         until a block is full\n\n"                       \
              "    source_size (int): This optionally specifies the uncompressed size\n" \
-             "        of the source content. This arument is optional, but can if specified\n" \
+             "        of the source content. This arument is optional, but if specified\n" \
              "        will be stored in the frame header for use during decompression.\n"
              "Returns:\n"                                               \
              "    str (str): Frame header.\n"
