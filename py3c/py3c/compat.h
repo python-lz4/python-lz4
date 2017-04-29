@@ -73,7 +73,7 @@
 #define PyStr_InternFromString PyString_InternFromString
 #define PyStr_Decode PyString_Decode
 
-static inline PyObject *PyStr_Concat(PyObject *left, PyObject *right) {
+static PyObject *PyStr_Concat(PyObject *left, PyObject *right) {
     PyObject *str = left;
     Py_INCREF(left);  // reference to old left will be stolen
     PyString_Concat(&str, right);

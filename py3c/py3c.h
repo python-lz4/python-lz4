@@ -29,6 +29,6 @@ SOFTWARE.
 
 #include <py3c/comparison.h>
 #include <py3c/compat.h>
-
+#include <py3c/py3shims.h>
 
 #endif
