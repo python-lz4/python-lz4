@@ -205,8 +205,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
                                     &source, &source_size,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
-                                    &preferences.
-                                    frameInfo.contentChecksumFlag,
+                                    &preferences.frameInfo.contentChecksumFlag,
                                     &content_size_header,
                                     &preferences.frameInfo.blockMode,
                                     &preferences.frameInfo.frameType))
