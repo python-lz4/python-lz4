@@ -949,7 +949,7 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
   const char * source_end;
   PyObject * py_dest;
   size_t result = 0;
-  size_t block_size;
+  int block_size;
   LZ4F_frameInfo_t frame_info;
   static char *kwlist[] = { "context",
                             "source",
