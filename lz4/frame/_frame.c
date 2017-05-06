@@ -1092,6 +1092,7 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
 
       if (result == 0)
         {
+          /* We've reached the end of the frame. */
           break;
         }
 
