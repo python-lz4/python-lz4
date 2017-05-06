@@ -63,6 +63,7 @@ struct decompression_context
   LZ4F_decompressionContext_t decompression_context;
   char * destination_buffer;
   size_t destination_buffer_size;
+  int status;
 };
 
 /*****************************
@@ -1115,6 +1116,8 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
       source_read = source_end - source_cursor;
     }
 
+  context->status = result;
+
   Py_END_ALLOW_THREADS
 
   if (LZ4F_isError (result))
@@ -1122,14 +1125,6 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_freeDecompressionContext failed with code: %s",
                     LZ4F_getErrorName (result));
-      return NULL;
-    }
-  else if (result != 0)
-    {
-      PyErr_Format (PyExc_RuntimeError,
-                    "LZ4F_freeDecompressionContext reported unclean decompressor \
-                    state (truncated frame?): %zu",
-                    result);
       return NULL;
     }
   else if (source_cursor != source_end)
