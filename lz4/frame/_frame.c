@@ -941,6 +941,7 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
   struct decompression_context *context;
   char const * source;
   int source_size;
+  int source_remain;
   size_t source_read;
   LZ4F_decompressOptions_t options;
   size_t destination_write;
@@ -948,7 +949,6 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
   size_t destination_written;
   const char * source_cursor;
   const char * source_end;
-  PyObject * py_dest;
   size_t result = 0;
   int block_size;
   LZ4F_frameInfo_t frame_info;
@@ -975,6 +975,12 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
+  Py_BEGIN_ALLOW_THREADS
+
+  source_cursor = source;
+  source_end = source + source_size;
+  source_remain = source_size;
+
   if (context->destination_buffer == NULL)
     {
       /* First call, so we haven't read the frame header yet, or allocated
@@ -982,21 +988,23 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
       source_read = source_size;
 
       result =
-        LZ4F_getFrameInfo (context->decompression_context, &frame_info, source, &source_read);
+        LZ4F_getFrameInfo (context->decompression_context, &frame_info,
+                           source_cursor, &source_read);
 
       if (LZ4F_isError (result))
         {
+          Py_BLOCK_THREADS
           PyErr_Format (PyExc_RuntimeError,
                         "LZ4F_getFrameInfo failed with code: %s",
                         LZ4F_getErrorName (result));
           return NULL;
         }
 
-      /* Advance the source pointer past the header - the call to getFrameInfo
-         above replaces the passed source_read value with the number of bytes
-         read. Also reduce source_size accordingly. */
-      source += source_read;
-      source_size -= source_read;
+      /* Advance the source_cursor pointer past the header - the call to
+         getFrameInfo above replaces the passed source_read value with the
+         number of bytes read. Also reduce source_size accordingly. */
+      source_cursor += source_read;
+      source_remain -= source_read;
 
       switch (frame_info.blockSizeID)
         {
@@ -1014,6 +1022,7 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
           block_size = 1 << 22;
           break;
         default:
+          Py_BLOCK_THREADS
           PyErr_Format (PyExc_RuntimeError,
                         "Failed to resolve block size from blockSizeID: %d",
                         frame_info.blockSizeID);
@@ -1022,30 +1031,28 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
 
       /* Choose an initial destination size as either twice the source size, or
          a single block, and we'll grow the allocation as needed. */
-      if (source_size > block_size)
+      if (source_remain > block_size)
         {
-          context->destination_buffer_size = 2 * source_size;
+          context->destination_buffer_size = 2 * source_remain;
         }
       else
         {
           context->destination_buffer_size = block_size;
         }
 
+      Py_BLOCK_THREADS
       context->destination_buffer =
         (char *) PyMem_Malloc (context->destination_buffer_size);
       if (!context->destination_buffer)
         {
           return PyErr_NoMemory ();
         }
+      Py_UNBLOCK_THREADS
     }
-
-  Py_BEGIN_ALLOW_THREADS
 
   options.stableDst = 0;
 
-  source_read = source_size;
-  source_cursor = source;
-  source_end = source + source_size;
+  source_read = source_remain;
 
   destination_write = context->destination_buffer_size;
   destination_cursor = context->destination_buffer;
@@ -1127,22 +1134,14 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
                     LZ4F_getErrorName (result));
       return NULL;
     }
-  else if (source_cursor != source_end)
-    {
-      PyErr_Format (PyExc_ValueError,
-                    "Extra data: %zd trailing bytes", source_end - source_cursor);
-      return NULL;
-    }
 
-  py_dest = PyBytes_FromStringAndSize (context->destination_buffer, destination_written);
-
-  if (py_dest == NULL)
-    {
-      PyErr_SetString (PyExc_RuntimeError,
-                       "Failed to create Python object from destination_buffer");
-    }
-
-  return py_dest;
+#if IS_PY3
+  return Py_BuildValue("y#i", context->destination_buffer,
+                       destination_written, source_cursor - source);
+#else
+  return Py_BuildValue("s#i", context->destination_buffer,
+                       destination_written, source_cursor - source);
+#endif
 }
 
 static PyMethodDef module_methods[] =
