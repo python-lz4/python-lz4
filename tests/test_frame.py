@@ -272,6 +272,31 @@ class TestLZ4Frame(unittest.TestCase):
         decompressed = lz4frame.decompress(compressed)
         self.assertEqual(input_data, decompressed)
 
+    def test_LZ4FrameCompressor2(self):
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
+        with lz4frame.LZ4FrameCompressor() as compressor:
+            compressed = compressor.compress_begin()
+            compressed += compressor.compress(input_data)
+            compressed += compressor.flush()
+        dctx = lz4frame.create_decompression_context()
+        decompressed, read = lz4frame.decompress2(dctx, compressed)
+        self.assertEqual(input_data, decompressed)
+        self.assertEqual(read, len(compressed))
+
+    def test_LZ4FrameCompressor2b(self):
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
+        with lz4frame.LZ4FrameCompressor() as compressor:
+            compressed = compressor.compress_begin()
+            compressed += compressor.compress(input_data)
+            compressed += compressor.flush()
+        mid = int(len(compressed) / 2)
+        dctx = lz4frame.create_decompression_context()
+        decompressed, read = lz4frame.decompress2(dctx, compressed[0:mid])
+        decompressed, r = lz4frame.decompress2(dctx, compressed[mid:])
+        read += r
+        self.assertEqual(input_data, decompressed)
+        self.assertEqual(read, len(compressed))
+
 class TestLZ4FrameModern(unittest.TestCase):
     def test_decompress_truncated(self):
         input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
