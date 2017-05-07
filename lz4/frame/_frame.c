@@ -825,9 +825,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
     {
       PyMem_Free (destination_buffer);
       PyErr_Format (PyExc_RuntimeError,
-                    "LZ4F_freeDecompressionContext reported unclean decompressor \
-                    state (truncated frame?): %zu",
-                    result);
+                    "LZ4F_freeDecompressionContext reported unclean decompressor state (truncated frame?): %zu", result);
       return NULL;
     }
   else if (source_cursor != source_end)
