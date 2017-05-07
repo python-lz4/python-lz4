@@ -882,7 +882,7 @@ destruct_decompression_context (PyObject * py_context)
   Py_BEGIN_ALLOW_THREADS
     LZ4F_freeDecompressionContext (context->decompression_context);
   Py_END_ALLOW_THREADS
-  if (context->destination_buffer == NULL)
+  if (context->destination_buffer != NULL)
     {
       PyMem_Free(context->destination_buffer);
     }
