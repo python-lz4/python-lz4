@@ -1058,10 +1058,11 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
   destination_cursor = context->destination_buffer;
   destination_written = 0;
 
-  while (source_cursor < source_end)
+  while (1)
     {
       /* Decompress from the source string and write to the destination_buffer
-         until there's no more source string to read.
+         until there's no more source string to read, or until we've reached the
+         frame end.
 
          On calling LZ4F_decompress, source_read is set to the remaining length
          of source available to read. On return, source_read is set to the
@@ -1089,39 +1090,46 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
 
       destination_written += destination_write;
       source_cursor += source_read;
+      source_read = source_end - source_cursor;
 
       if (result == 0)
         {
           /* We've reached the end of the frame. */
           break;
         }
-
-      if (destination_written == context->destination_buffer_size)
+      else if (source_cursor == source_end)
+        {
+          /* We've reached end of input. */
+          break;
+        }
+      else if (destination_written == context->destination_buffer_size)
         {
           /* Destination_buffer is full, so need to expand it. result is an
              indication of number of source bytes remaining, so we'll use this
              to estimate the new size of the destination buffer. */
           char * destination_buffer_new;
           context->destination_buffer_size += 3 * result;
+
+          Py_BLOCK_THREADS
           destination_buffer_new =
             PyMem_Realloc(context->destination_buffer, context->destination_buffer_size);
           if (!destination_buffer_new)
             {
-              Py_BLOCK_THREADS
               PyErr_SetString (PyExc_RuntimeError,
                                "Failed to increase destination buffer size");
               return NULL;
             }
+          Py_UNBLOCK_THREADS
           context->destination_buffer = destination_buffer_new;
         }
-      /* Data still remaining to be decompressed, so increment the source and
-         destination cursor locations, and reset source_read and
-         destination_write ready for the next iteration. Important to
-         re-initialize destination_cursor here (as opposed to simply
-         incrementing it) so we're pointing to the realloc'd memory location. */
+
+      /* Data still remaining to be decompressed, so increment the destination
+         cursor location, and reset destination_write ready for the next
+         iteration. Important to re-initialize destination_cursor here (as
+         opposed to simply incrementing it) so we're pointing to the realloc'd
+         memory location. */
       destination_cursor = context->destination_buffer + destination_written;
       destination_write = context->destination_buffer_size - destination_written;
-      source_read = source_end - source_cursor;
     }
 
   context->status = result;
