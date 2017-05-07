@@ -279,7 +279,7 @@ class TestLZ4Frame(unittest.TestCase):
             compressed += compressor.compress(input_data)
             compressed += compressor.flush()
         dctx = lz4frame.create_decompression_context()
-        decompressed, read = lz4frame.decompress2(dctx, compressed)
+        decompressed, read = lz4frame.decompress2(dctx, compressed, full_frame=True)
         self.assertEqual(input_data, decompressed)
         self.assertEqual(read, len(compressed))
 

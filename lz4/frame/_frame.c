@@ -932,11 +932,13 @@ create_decompression_context (PyObject * Py_UNUSED (self))
  * decompress2 *
  ***************/
 PyDoc_STRVAR(decompress2__doc,
-             "decompress2(context, source)\n\n"                          \
+             "decompress2(context, source, full_frame=False)\n\n"                          \
              "Decompresses part of a frame of data and returns it as a string of bytes.\n" \
              "Args:\n"                                                  \
              "    context (dCtx): decompression context\n"              \
-             "    source (str): LZ4 frame as a string\n\n"              \
+             "    source (str): LZ4 frame as a string\n"                \
+             "    full_frame (bool): True if source contains a full frame.\n"
+             "        Default is False\n\n" \
              "Returns:\n"                                               \
              "    str: Uncompressed data as a string\n"                 \
              "    int: Number of bytes consumed from source\n"
@@ -955,6 +957,7 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
   char const * source;
   int source_size;
   int source_remain;
+  int full_frame = 0;
   size_t source_read;
   LZ4F_decompressOptions_t options;
   size_t destination_write;
@@ -967,13 +970,15 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
   LZ4F_frameInfo_t frame_info;
   static char *kwlist[] = { "context",
                             "source",
+                            "full_frame",
                             NULL
                           };
 
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os#", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os#|i", kwlist,
                                     &py_context,
                                     &source,
-                                    &source_size
+                                    &source_size,
+                                    &full_frame
                                     ))
     {
       return NULL;
@@ -1019,38 +1024,45 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
       source_cursor += source_read;
       source_remain -= source_read;
 
-      switch (frame_info.blockSizeID)
-        {
-        case LZ4F_default:
-        case LZ4F_max64KB:
-          block_size = 1 << 16;
-          break;
-        case LZ4F_max256KB:
-          block_size = 1 << 18;
-          break;
-        case LZ4F_max1MB:
-          block_size = 1 << 20;
-          break;
-        case LZ4F_max4MB:
-          block_size = 1 << 22;
-          break;
-        default:
-          Py_BLOCK_THREADS
-          PyErr_Format (PyExc_RuntimeError,
-                        "Failed to resolve block size from blockSizeID: %d",
-                        frame_info.blockSizeID);
-          return NULL;
-        }
-
-      /* Choose an initial destination size as either twice the source size, or
-         a single block, and we'll grow the allocation as needed. */
-      if (source_remain > block_size)
+      if (full_frame)
         {
           context->destination_buffer_size = 2 * source_remain;
         }
       else
         {
-          context->destination_buffer_size = block_size;
+          switch (frame_info.blockSizeID)
+            {
+            case LZ4F_default:
+            case LZ4F_max64KB:
+              block_size = 1 << 16;
+              break;
+            case LZ4F_max256KB:
+              block_size = 1 << 18;
+              break;
+            case LZ4F_max1MB:
+              block_size = 1 << 20;
+              break;
+            case LZ4F_max4MB:
+              block_size = 1 << 22;
+              break;
+            default:
+              Py_BLOCK_THREADS
+                PyErr_Format (PyExc_RuntimeError,
+                              "Failed to resolve block size from blockSizeID: %d",
+                              frame_info.blockSizeID);
+              return NULL;
+            }
+
+          /* Choose an initial destination size as either twice the source size, or
+             a single block, and we'll grow the allocation as needed. */
+          if (source_remain > block_size)
+            {
+              context->destination_buffer_size = 2 * source_remain;
+            }
+          else
+            {
+              context->destination_buffer_size = block_size;
+            }
         }
 
       Py_BLOCK_THREADS
@@ -1063,7 +1075,14 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
       Py_UNBLOCK_THREADS
     }
 
-  options.stableDst = 0;
+  if (full_frame)
+    {
+      options.stableDst = 1;
+    }
+  else
+    {
+      options.stableDst = 0;
+    }
 
   source_read = source_remain;
 
@@ -1143,6 +1162,13 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
          memory location. */
       destination_cursor = context->destination_buffer + destination_written;
       destination_write = context->destination_buffer_size - destination_written;
+    }
+
+  if (result != 0 && full_frame)
+    {
+      PyErr_Format (PyExc_RuntimeError,
+                    "full_frame=True specified, but data did not contain complete frame. LZ4F_decompress returned: %zu", result);
+      return NULL;
     }
 
   context->status = result;
