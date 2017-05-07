@@ -884,7 +884,7 @@ destruct_decompression_context (PyObject * py_context)
   Py_END_ALLOW_THREADS
   if (context->destination_buffer != NULL)
     {
-      PyMem_Free(context->destination_buffer);
+      PyMem_Free (context->destination_buffer);
     }
   PyMem_Free (context);
 }
@@ -928,6 +928,19 @@ create_decompression_context (PyObject * Py_UNUSED (self))
                         destruct_decompression_context);
 }
 
+/***************
+ * decompress2 *
+ ***************/
+PyDoc_STRVAR(decompress2__doc,
+             "decompress2(context, source)\n\n"                          \
+             "Decompresses part of a frame of data and returns it as a string of bytes.\n" \
+             "Args:\n"                                                  \
+             "    context (dCtx): decompression context\n"              \
+             "    source (str): LZ4 frame as a string\n\n"              \
+             "Returns:\n"                                               \
+             "    str: Uncompressed data as a string\n"                 \
+             "    int: Number of bytes consumed from source\n"
+             );
 
 static PyObject *
 decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
@@ -1189,7 +1202,7 @@ static PyMethodDef module_methods[] =
   },
   {
     "decompress2", (PyCFunction) decompress2,
-    METH_VARARGS | METH_KEYWORDS, decompress__doc
+    METH_VARARGS | METH_KEYWORDS, decompress2__doc
   },
   {NULL, NULL, 0, NULL}		/* Sentinel */
 };
