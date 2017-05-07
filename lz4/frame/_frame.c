@@ -858,9 +858,9 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   return py_dest;
 }
 
-/*****************************
+/*******************************
 * create_decompression_context *
-******************************/
+********************************/
 PyDoc_STRVAR(create_decompression_context__doc,
              "create_decompression_context()\n\n"                       \
              "Creates a Decompression Context object, which will be used for\n" \
