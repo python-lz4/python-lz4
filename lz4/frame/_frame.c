@@ -787,16 +787,17 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
              to estimate the new size of the destination buffer. */
           char * destination_buffer_new;
           destination_size += 3 * result;
+          Py_BLOCK_THREADS
           destination_buffer_new = PyMem_Realloc(destination_buffer, destination_size);
           if (!destination_buffer_new)
             {
               LZ4F_freeDecompressionContext (context);
-              Py_BLOCK_THREADS
               PyErr_SetString (PyExc_RuntimeError,
                                "Failed to increase destination buffer size");
               PyMem_Free (destination_buffer);
               return NULL;
             }
+          Py_UNBLOCK_THREADS
           destination_buffer = destination_buffer_new;
         }
       /* Data still remaining to be decompressed, so increment the source and
