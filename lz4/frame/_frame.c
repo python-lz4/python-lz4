@@ -121,9 +121,9 @@ create_compression_context (PyObject * Py_UNUSED (self))
   return PyCapsule_New (context, capsule_name, destruct_compression_context);
 }
 
-/******************
- * compress_frame *
- ******************/
+/************
+ * compress *
+ ************/
 #define __COMPRESS_KWARGS_DOCSTRING \
   "    block_size (int): Sepcifies the maximum blocksize to use.\n"     \
   "        Options:\n\n"                                                \
@@ -152,9 +152,6 @@ create_compression_context (PyObject * Py_UNUSED (self))
   "        - lz4.frame.CONTENTCHECKSUM_DISABLED or 0: disables checksumming\n" \
   "        - lz4.frame.CONTENTCHECKSUM_ENABLED or 1: enables checksumming\n\n" \
   "        The default is CONTENTCHECKSUM_DISABLED.\n"                  \
-  "    content_size (bool): Specifies whether to include an optional 8-byte header\n" \
-  "        field that is the uncompressed size of data included within the frame.\n" \
-  "        Including the content-size header is optional, and is enabled by default.\n" \
   "    frame_type (int): Specifies whether user data can be injected between\n" \
   "        frames. Options:\n\n"                                        \
   "        - lz4.frame.FRAMETYPE_FRAME or 0: disables user data injection\n" \
@@ -162,7 +159,7 @@ create_compression_context (PyObject * Py_UNUSED (self))
   "        The default is lz4.frame.FRAMETYPE_FRAME.\n"                 \
 
 PyDoc_STRVAR(compress__doc,
-             "compress(source, compression_level=0, block_size=0, content_checksum=0, content_size=1, block_mode=0, frame_type=0)\n\n" \
+             "compress(source, compression_level=0, block_size=0, content_checksum=0, block_mode=0, frame_type=0,  content_size_header=1)\n\n" \
              "Accepts a string, and compresses the string in one go, returning the\n" \
              "compressed string as a string of bytes. The compressed string includes\n" \
              "a header and endmark and so is suitable for writing to a file.\n\n" \
@@ -170,7 +167,10 @@ PyDoc_STRVAR(compress__doc,
              "    source (str): String to compress\n\n"                 \
              "Keyword Args:\n"                                          \
              __COMPRESS_KWARGS_DOCSTRING                                \
-             "\n"                                                       \
+             "    content_size_header (bool): Specifies whether to include an optional\n" \
+             "        8-byte header field that is the uncompressed size of data included\n" \
+             "        within the frame. Including the content-size header is optional\n" \
+             "        and is enabled by default.\n\n"                   \
              "Returns:\n"                                               \
              "    str: Compressed data as a string\n"
              );
@@ -192,9 +192,9 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
                             "compression_level",
                             "block_size",
                             "content_checksum",
-                            "content_size",
                             "block_mode",
                             "frame_type",
+                            "content_size_header",
                             NULL
                           };
 
@@ -205,11 +205,10 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
                                     &source, &source_size,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
-                                    &preferences.
-                                    frameInfo.contentChecksumFlag,
-                                    &content_size_header,
+                                    &preferences.frameInfo.contentChecksumFlag,
                                     &preferences.frameInfo.blockMode,
-                                    &preferences.frameInfo.frameType))
+                                    &preferences.frameInfo.frameType,
+                                    &content_size_header))
     {
       return NULL;
     }
@@ -295,7 +294,7 @@ PyDoc_STRVAR(compress_begin__doc,
              "         When autoFlush is disabled, the LZ4 library may buffer data\n" \
              "         until a block is full\n\n"                       \
              "    source_size (int): This optionally specifies the uncompressed size\n" \
-             "        of the source content. This arument is optional, but can if specified\n" \
+             "        of the source content. This arument is optional, but if specified\n" \
              "        will be stored in the frame header for use during decompression.\n"
              "Returns:\n"                                               \
              "    str (str): Frame header.\n"
@@ -309,7 +308,6 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
 {
   PyObject *py_context = NULL;
   unsigned long source_size = 0;
-  int content_size_header = 1;
   LZ4F_preferences_t preferences;
   /* Only needs to be large enough for a header, which is 15 bytes.
    * Unfortunately, the lz4 library doesn't provide a #define for this.
@@ -322,7 +320,6 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
                             "compression_level",
                             "block_size",
                             "content_checksum",
-                            "content_size",
                             "block_mode",
                             "frame_type",
                             "auto_flush",
@@ -335,13 +332,12 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
      argument */
   preferences.autoFlush = 1;
 
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiiiiiii", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiiiiii", kwlist,
                                     &py_context,
                                     &source_size,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
                                     &preferences.frameInfo.contentChecksumFlag,
-                                    &content_size_header,
                                     &preferences.frameInfo.blockMode,
                                     &preferences.frameInfo.frameType,
                                     &preferences.autoFlush
@@ -350,14 +346,7 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  if (content_size_header)
-    {
-      preferences.frameInfo.contentSize = source_size;
-    }
-  else
-    {
-      preferences.frameInfo.contentSize = 0;
-    }
+  preferences.frameInfo.contentSize = source_size;
 
   context =
     (struct compression_context *) PyCapsule_GetPointer (py_context, capsule_name);
@@ -798,16 +787,17 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
              to estimate the new size of the destination buffer. */
           char * destination_buffer_new;
           destination_size += 3 * result;
+          Py_BLOCK_THREADS
           destination_buffer_new = PyMem_Realloc(destination_buffer, destination_size);
           if (!destination_buffer_new)
             {
               LZ4F_freeDecompressionContext (context);
-              Py_BLOCK_THREADS
               PyErr_SetString (PyExc_RuntimeError,
                                "Failed to increase destination buffer size");
               PyMem_Free (destination_buffer);
               return NULL;
             }
+          Py_UNBLOCK_THREADS
           destination_buffer = destination_buffer_new;
         }
       /* Data still remaining to be decompressed, so increment the source and
