@@ -121,11 +121,6 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       return NULL;
     }
 
-  if (source_size <= 0) {
-    PyErr_Format(PyExc_ValueError, "Input source data size invalid: %d bytes", source_size);
-    return NULL;
-  }
-
   if (!strncmp (mode, "default", sizeof ("default")))
     {
       comp = DEFAULT;
@@ -258,7 +253,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       source_size -= hdr_size;
     }
 
-  if (dest_size <= 0 || dest_size > PY_SSIZE_T_MAX)
+  if (dest_size < 0 || dest_size > PY_SSIZE_T_MAX)
     {
       PyErr_Format (PyExc_ValueError, "Invalid size in header: 0x%zu",
                     dest_size);

@@ -8,6 +8,10 @@ import os
 
 class TestLZ4Block(unittest.TestCase):
 
+    def test_empty_string(self):
+      DATA = b''
+      self.assertEqual(DATA, lz4.block.decompress(lz4.block.compress(DATA)))
+
     def test_random(self):
       DATA = os.urandom(128 * 1024)  # Read 128kb
       self.assertEqual(DATA, lz4.block.decompress(lz4.block.compress(DATA)))
