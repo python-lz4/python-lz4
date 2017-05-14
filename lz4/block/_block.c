@@ -96,9 +96,8 @@ typedef enum
 static PyObject *
 compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 {
-  const char *source;
   const char *mode = "default";
-  int source_size, dest_size;
+  int dest_size;
   int acceleration = 1, compression = 0;
   int store_size = 1;
   PyObject *py_dest;
@@ -114,12 +113,51 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     NULL
   };
 
+#if IS_PY3
+  PyObject * py_source;
+  Py_ssize_t source_size;
+  char * source;
+  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "O|siii", argnames,
+                                    &py_source,
+                                    &mode, &store_size, &acceleration, &compression))
+    {
+      return NULL;
+    }
+  if (PyBytes_Check(py_source))
+    {
+      source = PyBytes_AsString(py_source);
+      if (source == NULL)
+        {
+          PyErr_SetString (PyExc_ValueError, "Failed to access source bytes object");
+          return NULL;
+        }
+      source_size = PyBytes_Size(py_source);
+    }
+  else if (PyByteArray_Check(py_source))
+    {
+      source = PyByteArray_AsString(py_source);
+      if (source == NULL)
+        {
+          PyErr_SetString (PyExc_ValueError, "Failed to access source bytearray object");
+          return NULL;
+        }
+      source_size = PyByteArray_Size(py_source);
+    }
+  else
+    {
+      PyErr_SetString (PyExc_ValueError, "Incorrect type for source object");
+      return NULL;
+    }
+#else
+  const char *source;
+  int source_size;
   if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s#|siii", argnames,
                                     &source, &source_size,
                                     &mode, &store_size, &acceleration, &compression))
     {
       return NULL;
     }
+#endif
 
   if (!strncmp (mode, "default", sizeof ("default")))
     {
@@ -190,7 +228,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   if (output_size <= 0)
     {
       Py_BLOCK_THREADS
-      PyErr_SetString (PyExc_ValueError, "Compression failed");
+        PyErr_SetString (PyExc_ValueError, "Compression failed");
       Py_CLEAR (py_dest);
       return NULL;
     }
@@ -218,10 +256,10 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 static PyObject *
 decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 {
-  const char *source, *source_start;
+  const char * source_start;
   PyObject *py_dest;
   char *dest;
-  int source_size, output_size;
+  int output_size;
   size_t dest_size;
   int uncompressed_size = -1;
   static char *argnames[] = {
@@ -230,12 +268,49 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     NULL
   };
 
+#if IS_PY3
+  PyObject * py_source;
+  Py_ssize_t source_size;
+  char * source;
+  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "O|i", argnames,
+                                    &py_source, &uncompressed_size))
+    {
+      return NULL;
+    }
+  if (PyBytes_Check(py_source))
+    {
+      source = PyBytes_AsString(py_source);
+      if (source == NULL)
+        {
+          PyErr_SetString (PyExc_ValueError, "Failed to access source bytes object");
+          return NULL;
+        }
+      source_size = PyBytes_Size(py_source);
+    }
+  else if (PyByteArray_Check(py_source))
+    {
+      source = PyByteArray_AsString(py_source);
+      if (source == NULL)
+        {
+          PyErr_SetString (PyExc_ValueError, "Failed to access source bytearray object");
+          return NULL;
+        }
+      source_size = PyByteArray_Size(py_source);
+    }
+  else
+    {
+      PyErr_SetString (PyExc_ValueError, "Incorrect type for source object");
+      return NULL;
+    }
+#else
+  const char *source;
+  int source_size = 0;
   if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s#|i", argnames,
                                     &source, &source_size, &uncompressed_size))
     {
       return NULL;
     }
-
+#endif
   if (uncompressed_size > 0)
     {
       dest_size = uncompressed_size;
@@ -297,7 +372,7 @@ PyDoc_STRVAR(compress__doc,
              "Compress source, returning the compressed data as a string.\n" \
              "Raises an exception if any error occurs.\n\n"             \
              "Args:\n"                                                  \
-             "    source (str): Data to compress\n"                     \
+             "    source (str, bytes or bytearray): Data to compress\n"                     \
              "    mode (str): If 'default' or unspecified use the default LZ4\n" \
              "        compression mode. Set to 'fast' to use the fast compression\n" \
              "        LZ4 mode at the expense of compression. Set to\n" \
@@ -322,7 +397,7 @@ PyDoc_STRVAR(decompress__doc,
              "Decompress source, returning the uncompressed data as a string.\n" \
              "Raises an exception if any error occurs.\n\n"             \
              "Args:\n"                                                  \
-             "    source (str): Data to decompress\n\n"                 \
+             "    source (str, bytes or bytearray): Data to decompress\n\n"                 \
              "    uncompressed_size (int): If not specified, the uncompressed data" \
              "        size is read from the start of the source block. If specified," \
              "        it is assumed that the full source data is compressed data."
