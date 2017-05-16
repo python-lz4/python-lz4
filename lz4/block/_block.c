@@ -131,7 +131,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
           PyErr_SetString (PyExc_ValueError, "Failed to access source bytes object");
           return NULL;
         }
-      source_size = PyBytes_Size(py_source);
+      source_size = PyBytes_GET_SIZE(py_source);
     }
   else if (PyByteArray_Check(py_source))
     {
@@ -141,7 +141,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
           PyErr_SetString (PyExc_ValueError, "Failed to access source bytearray object");
           return NULL;
         }
-      source_size = PyByteArray_Size(py_source);
+      source_size = PyByteArray_GET_SIZE(py_source);
     }
   else
     {
