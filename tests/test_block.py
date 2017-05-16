@@ -214,6 +214,16 @@ if sys.version_info < (2, 7):
     # Poor-man unittest.TestCase.skip for Python 2.6
     del TestLZ4BlockModern
 
+class TestLZ4BlockPy3ByteArray(unittest.TestCase):
+    def test_random(self):
+      DATA = bytearray(os.urandom(128 * 1024))  # Read 128kb
+      self.assertEqual(DATA, lz4.block.decompress(lz4.block.compress(DATA)))
+
+
+if sys.version_info < (3, 3):
+    # Poor-man unittest.TestCase.skip for Python < 3.3
+    del TestLZ4BlockPy3ByteArray
+
 if __name__ == '__main__':
     unittest.main()
 
