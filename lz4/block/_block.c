@@ -97,7 +97,7 @@ static PyObject *
 compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 {
   const char *mode = "default";
-  int dest_size;
+  int dest_size, total_size;
   int acceleration = 1, compression = 0;
   int store_size = 1;
   PyObject *py_dest;
@@ -183,19 +183,29 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 
   if (store_size)
     {
-      py_dest = PyBytes_FromStringAndSize (NULL, dest_size + hdr_size);
+      total_size = dest_size + hdr_size;
     }
   else
     {
-      py_dest = PyBytes_FromStringAndSize (NULL, dest_size);
+      total_size = dest_size + hdr_size;
     }
+
+#if IS_PY3
+  py_dest = PyByteArray_FromStringAndSize (NULL, total_size);
+#else
+  py_dest = PyBytes_FromStringAndSize (NULL, total_size);
+#endif
 
   if (py_dest == NULL)
     {
       return PyErr_NoMemory();
     }
 
+#if IS_PY3
+  dest = PyByteArray_AS_STRING (py_dest);
+#else
   dest = PyBytes_AS_STRING (py_dest);
+#endif
 
   Py_BEGIN_ALLOW_THREADS
 
@@ -243,7 +253,11 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   /* Resizes are expensive; tolerate some slop to avoid. */
   if (output_size < (dest_size / 4) * 3)
     {
+#if IS_PY3
+      PyByteArray_Resize (py_dest, output_size);
+#else
       _PyBytes_Resize (&py_dest, output_size);
+#endif
     }
   else
     {
@@ -335,13 +349,21 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       return NULL;
     }
 
+#if IS_PY3
+  py_dest = PyByteArray_FromStringAndSize (NULL, dest_size);
+#else
   py_dest = PyBytes_FromStringAndSize (NULL, dest_size);
+#endif
   if (py_dest == NULL)
     {
       return PyErr_NoMemory();
     }
 
+#if IS_PY3
+  dest = PyByteArray_AS_STRING (py_dest);
+#else
   dest = PyBytes_AS_STRING (py_dest);
+#endif
 
   Py_BEGIN_ALLOW_THREADS
 
@@ -386,23 +408,25 @@ PyDoc_STRVAR(compress__doc,
              "        argument specifies the compression. Valid values are between\n" \
              "        0 and 16. Values between 4-9 are recommended, and 0 is the\n" \
              "        default.\n\n"                                     \
-             "    store_size (bool): If True (the default) then the size of the" \
-             "        uncompressed data is stored at the start of the compressed" \
-             "        block."                                            \
+             "    store_size (bool): If True (the default) then the size of the\n" \
+             "        uncompressed data is stored at the start of the compressed\n" \
+             "        block.\n\n"                                       \
              "Returns:\n"                                               \
-             "    str: Compressed data\n");
+             "    str or bytearray: Compressed data. For Python 2 a str is returned\n" \
+             "        and for Python 3 a bytearray is returned\n");
 
 PyDoc_STRVAR(decompress__doc,
-             "decompress(source)\n\n"                                   \
+             "decompress(source, uncompressed_size=-1)\n\n"                                 \
              "Decompress source, returning the uncompressed data as a string.\n" \
              "Raises an exception if any error occurs.\n\n"             \
              "Args:\n"                                                  \
              "    source (str, bytes or bytearray): Data to decompress\n\n"                 \
-             "    uncompressed_size (int): If not specified, the uncompressed data" \
-             "        size is read from the start of the source block. If specified," \
-             "        it is assumed that the full source data is compressed data."
-             "Returns:\n"                                               \
-             "    str: decompressed data\n");
+             "    uncompressed_size (int): If not specified or < 0, the uncompressed data\n" \
+             "        size is read from the start of the source block. If specified,\n" \
+             "        it is assumed that the full source data is compressed data.\n\n" \
+             "Returns:\n"                                             \
+             "    str or bytearray: Decompressed data. For Python 2 a str is returned\n" \
+             "        and for Python 3 a bytearray is returned\n");
 
 PyDoc_STRVAR(lz4block__doc,
              "A Python wrapper for the LZ4 block protocol"
