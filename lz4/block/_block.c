@@ -123,17 +123,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     {
       return NULL;
     }
-  if (PyBytes_Check(py_source))
-    {
-      source = PyBytes_AsString(py_source);
-      if (source == NULL)
-        {
-          PyErr_SetString (PyExc_ValueError, "Failed to access source bytes object");
-          return NULL;
-        }
-      source_size = PyBytes_GET_SIZE(py_source);
-    }
-  else if (PyByteArray_Check(py_source))
+  if (PyByteArray_Check(py_source))
     {
       source = PyByteArray_AsString(py_source);
       if (source == NULL)
@@ -145,8 +135,13 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     }
   else
     {
-      PyErr_SetString (PyExc_ValueError, "Incorrect type for source object");
-      return NULL;
+      source = PyBytes_AsString(py_source);
+      if (source == NULL)
+        {
+          PyErr_SetString (PyExc_ValueError, "Failed to access source object");
+          return NULL;
+        }
+      source_size = PyBytes_GET_SIZE(py_source);
     }
 #else
   const char *source;
@@ -291,17 +286,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     {
       return NULL;
     }
-  if (PyBytes_Check(py_source))
-    {
-      source = PyBytes_AsString(py_source);
-      if (source == NULL)
-        {
-          PyErr_SetString (PyExc_ValueError, "Failed to access source bytes object");
-          return NULL;
-        }
-      source_size = PyBytes_Size(py_source);
-    }
-  else if (PyByteArray_Check(py_source))
+  if (PyByteArray_Check(py_source))
     {
       source = PyByteArray_AsString(py_source);
       if (source == NULL)
@@ -313,8 +298,13 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     }
   else
     {
-      PyErr_SetString (PyExc_ValueError, "Incorrect type for source object");
-      return NULL;
+      source = PyBytes_AsString(py_source);
+      if (source == NULL)
+        {
+          PyErr_SetString (PyExc_ValueError, "Failed to access source object");
+          return NULL;
+        }
+      source_size = PyBytes_Size(py_source);
     }
 #else
   const char *source;
