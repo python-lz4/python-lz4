@@ -185,22 +185,14 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       total_size = dest_size + hdr_size;
     }
 
-#if IS_PY3
-  py_dest = PyByteArray_FromStringAndSize (NULL, total_size);
-#else
   py_dest = PyBytes_FromStringAndSize (NULL, total_size);
-#endif
 
   if (py_dest == NULL)
     {
       return PyErr_NoMemory();
     }
 
-#if IS_PY3
-  dest = PyByteArray_AS_STRING (py_dest);
-#else
   dest = PyBytes_AS_STRING (py_dest);
-#endif
 
   Py_BEGIN_ALLOW_THREADS
 
@@ -248,11 +240,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   /* Resizes are expensive; tolerate some slop to avoid. */
   if (output_size < (dest_size / 4) * 3)
     {
-#if IS_PY3
-      PyByteArray_Resize (py_dest, output_size);
-#else
       _PyBytes_Resize (&py_dest, output_size);
-#endif
     }
   else
     {
@@ -339,21 +327,14 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       return NULL;
     }
 
-#if IS_PY3
-  py_dest = PyByteArray_FromStringAndSize (NULL, dest_size);
-#else
   py_dest = PyBytes_FromStringAndSize (NULL, dest_size);
-#endif
+
   if (py_dest == NULL)
     {
       return PyErr_NoMemory();
     }
 
-#if IS_PY3
-  dest = PyByteArray_AS_STRING (py_dest);
-#else
   dest = PyBytes_AS_STRING (py_dest);
-#endif
 
   Py_BEGIN_ALLOW_THREADS
 
@@ -402,8 +383,7 @@ PyDoc_STRVAR(compress__doc,
              "        uncompressed data is stored at the start of the compressed\n" \
              "        block.\n\n"                                       \
              "Returns:\n"                                               \
-             "    str or bytearray: Compressed data. For Python 2 a str is returned\n" \
-             "        and for Python 3 a bytearray is returned\n");
+             "    bytes: Compressed data.\n");
 
 PyDoc_STRVAR(decompress__doc,
              "decompress(source, uncompressed_size=-1)\n\n"                                 \
@@ -415,8 +395,7 @@ PyDoc_STRVAR(decompress__doc,
              "        size is read from the start of the source block. If specified,\n" \
              "        it is assumed that the full source data is compressed data.\n\n" \
              "Returns:\n"                                             \
-             "    str or bytearray: Decompressed data. For Python 2 a str is returned\n" \
-             "        and for Python 3 a bytearray is returned\n");
+             "    bytes: Decompressed data.\n");
 
 PyDoc_STRVAR(lz4block__doc,
              "A Python wrapper for the LZ4 block protocol"
