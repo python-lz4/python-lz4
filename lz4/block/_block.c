@@ -98,7 +98,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 {
   const char *mode = "default";
   int dest_size, total_size;
-  int acceleration = 1, compression = 0;
+  int acceleration = 1, compression = 9;
   int store_size = 1;
   PyObject *py_dest;
   char *dest, *dest_start;
@@ -445,7 +445,7 @@ PyDoc_STRVAR(compress__doc,
              "        compression corresponds to a value of 1.\n"       \
              "    compression (int): When mode is set to `high_compression` this\n" \
              "        argument specifies the compression. Valid values are between\n" \
-             "        0 and 16. Values between 4-9 are recommended, and 0 is the\n" \
+             "        1 and 12. Values between 4-9 are recommended, and 9 is the\n" \
              "        default.\n\n"                                     \
              "    store_size (bool): If True (the default) then the size of the\n" \
              "        uncompressed data is stored at the start of the compressed\n" \
