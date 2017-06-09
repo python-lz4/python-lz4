@@ -104,6 +104,8 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   char *dest, *dest_start;
   compression_type comp;
   int output_size;
+  Py_buffer source;
+  int source_size;
   static char *argnames[] = {
     "source",
     "mode",
@@ -114,45 +116,28 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   };
 
 #if IS_PY3
-  PyObject * py_source;
-  Py_ssize_t source_size;
-  char * source;
-  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "O|siii", argnames,
-                                    &py_source,
+  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "y*|siii", argnames,
+                                    &source,
                                     &mode, &store_size, &acceleration, &compression))
     {
       return NULL;
     }
-  if (PyByteArray_Check(py_source))
-    {
-      source = PyByteArray_AsString(py_source);
-      if (source == NULL)
-        {
-          PyErr_SetString (PyExc_ValueError, "Failed to access source bytearray object");
-          return NULL;
-        }
-      source_size = PyByteArray_GET_SIZE(py_source);
-    }
-  else
-    {
-      source = PyBytes_AsString(py_source);
-      if (source == NULL)
-        {
-          PyErr_SetString (PyExc_ValueError, "Failed to access source object");
-          return NULL;
-        }
-      source_size = PyBytes_GET_SIZE(py_source);
-    }
 #else
-  const char *source;
-  int source_size;
-  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s#|siii", argnames,
-                                    &source, &source_size,
+  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s*|siii", argnames,
+                                    &source,
                                     &mode, &store_size, &acceleration, &compression))
     {
       return NULL;
     }
 #endif
+
+  source_size = (int) source.len;
+  if (source.len != (Py_ssize_t) source_size)
+    {
+      PyBuffer_Release(&source);
+      PyErr_Format(PyExc_OverflowError, "input too large for C 'int'");
+      return NULL;
+    }
 
   if (!strncmp (mode, "default", sizeof ("default")))
     {
@@ -168,6 +153,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     }
   else
     {
+      PyBuffer_Release(&source);
       PyErr_Format (PyExc_ValueError,
 		    "Invalid mode argument: %s. Must be one of: standard, fast, high_compression",
 		    mode);
@@ -189,6 +175,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 
   if (py_dest == NULL)
     {
+      PyBuffer_Release(&source);
       return PyErr_NoMemory();
     }
 
@@ -209,23 +196,26 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   switch (comp)
     {
     case DEFAULT:
-      output_size = LZ4_compress_default (source, dest_start, source_size,
+      output_size = LZ4_compress_default (source.buf, dest_start, source_size,
                                           dest_size);
       break;
     case FAST:
-      output_size = LZ4_compress_fast (source, dest_start, source_size,
+      output_size = LZ4_compress_fast (source.buf, dest_start, source_size,
                                        dest_size, acceleration);
       break;
     case HIGH_COMPRESSION:
-      output_size = LZ4_compress_HC (source, dest_start, source_size,
+      output_size = LZ4_compress_HC (source.buf, dest_start, source_size,
                                      dest_size, compression);
       break;
     }
 
+  Py_END_ALLOW_THREADS
+
+  PyBuffer_Release(&source);
+
   if (output_size <= 0)
     {
-      Py_BLOCK_THREADS
-        PyErr_SetString (PyExc_ValueError, "Compression failed");
+      PyErr_SetString (PyExc_ValueError, "Compression failed");
       Py_CLEAR (py_dest);
       return NULL;
     }
@@ -234,8 +224,6 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     {
       output_size += hdr_size;
     }
-
-  Py_END_ALLOW_THREADS
 
   /* Resizes are expensive; tolerate some slop to avoid. */
   if (output_size < (dest_size / 4) * 3)
@@ -253,7 +241,9 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 static PyObject *
 decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 {
+  Py_buffer source;
   const char * source_start;
+  int source_size;
   PyObject *py_dest;
   char *dest;
   int output_size;
@@ -266,62 +256,47 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   };
 
 #if IS_PY3
-  PyObject * py_source;
-  Py_ssize_t source_size;
-  char * source;
-  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "O|i", argnames,
-                                    &py_source, &uncompressed_size))
+  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "y*|i", argnames,
+                                    &source, &uncompressed_size))
     {
       return NULL;
     }
-  if (PyByteArray_Check(py_source))
-    {
-      source = PyByteArray_AsString(py_source);
-      if (source == NULL)
-        {
-          PyErr_SetString (PyExc_ValueError, "Failed to access source bytearray object");
-          return NULL;
-        }
-      source_size = PyByteArray_Size(py_source);
-    }
-  else
-    {
-      source = PyBytes_AsString(py_source);
-      if (source == NULL)
-        {
-          PyErr_SetString (PyExc_ValueError, "Failed to access source object");
-          return NULL;
-        }
-      source_size = PyBytes_Size(py_source);
-    }
 #else
-  const char *source;
-  int source_size = 0;
-  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s#|i", argnames,
-                                    &source, &source_size, &uncompressed_size))
+  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s*|i", argnames,
+                                    &source, &uncompressed_size))
     {
       return NULL;
     }
 #endif
+  source_start = (const char *) source.buf;
+  source_size = (int) source.len;
+  if (source.len != (Py_ssize_t) source_size)
+    {
+      PyBuffer_Release(&source);
+      PyErr_Format(PyExc_OverflowError, "input too large for C 'int'");
+      return NULL;
+    }
+
   if (uncompressed_size > 0)
     {
       dest_size = uncompressed_size;
-      source_start = source;
     }
   else
     {
       if (source_size < hdr_size)
         {
+          PyBuffer_Release(&source);
           PyErr_SetString (PyExc_ValueError, "Input source data size too small");
           return NULL;
         }
-      dest_size = load_le32 (source);
-      source_start = source + hdr_size;
+      dest_size = load_le32 (source_start);
+      source_start += hdr_size;
       source_size -= hdr_size;
     }
 
   if (dest_size < 0 || dest_size > PY_SSIZE_T_MAX)
     {
+      PyBuffer_Release(&source);
       PyErr_Format (PyExc_ValueError, "Invalid size in header: 0x%zu",
                     dest_size);
       return NULL;
@@ -331,6 +306,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 
   if (py_dest == NULL)
     {
+      PyBuffer_Release(&source);
       return PyErr_NoMemory();
     }
 
@@ -342,6 +318,8 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     LZ4_decompress_safe (source_start, dest, source_size, dest_size);
 
   Py_END_ALLOW_THREADS
+
+  PyBuffer_Release(&source);
 
   if (output_size < 0)
     {

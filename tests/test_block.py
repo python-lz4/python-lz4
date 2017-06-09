@@ -214,16 +214,31 @@ if sys.version_info < (2, 7):
     # Poor-man unittest.TestCase.skip for Python 2.6
     del TestLZ4BlockModern
 
-class TestLZ4BlockPy3ByteArray(unittest.TestCase):
-    def test_random(self):
-      DATA = bytearray(os.urandom(128 * 1024))  # Read 128kb
-      self.assertEqual(DATA, lz4.block.decompress(lz4.block.compress(DATA)))
 
+class TestLZ4BlockBufferObjects(unittest.TestCase):
 
-if sys.version_info < (3, 3):
-    # Poor-man unittest.TestCase.skip for Python < 3.3
-    del TestLZ4BlockPy3ByteArray
+    def test_bytearray(self):
+        DATA = os.urandom(128 * 1024)  # Read 128kb
+        compressed = lz4.block.compress(DATA)
+        self.assertEqual(lz4.block.compress(bytearray(DATA)), compressed)
+        self.assertEqual(lz4.block.decompress(bytearray(compressed)), DATA)
+
+    def test_memoryview(self):
+        if sys.version_info < (2, 7):
+            return  # skip
+        DATA = os.urandom(128 * 1024)  # Read 128kb
+        compressed = lz4.block.compress(DATA)
+        self.assertEqual(lz4.block.compress(memoryview(DATA)), compressed)
+        self.assertEqual(lz4.block.decompress(memoryview(compressed)), DATA)
+
+    def test_unicode(self):
+        if sys.version_info < (3,):
+            return  # skip
+        DATA = b'x'
+        self.assertRaises(TypeError, lz4.block.compress, DATA.decode('latin1'))
+        self.assertRaises(TypeError, lz4.block.decompress,
+                          lz4.block.compress(DATA).decode('latin1'))
+
 
 if __name__ == '__main__':
     unittest.main()
-
