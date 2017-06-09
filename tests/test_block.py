@@ -223,6 +223,18 @@ class TestLZ4BlockBufferObjects(unittest.TestCase):
         self.assertEqual(lz4.block.compress(bytearray(DATA)), compressed)
         self.assertEqual(lz4.block.decompress(bytearray(compressed)), DATA)
 
+    def test_return_bytearray(self):
+        if sys.version_info < (3,):
+            return  # skip
+        DATA = os.urandom(128 * 1024)  # Read 128kb
+        compressed = lz4.block.compress(DATA)
+        b = lz4.block.compress(DATA, return_bytearray=True)
+        self.assertEqual(type(b), bytearray)
+        self.assertEqual(bytes(b), compressed)
+        b = lz4.block.decompress(compressed, return_bytearray=True)
+        self.assertEqual(type(b), bytearray)
+        self.assertEqual(bytes(b), DATA)
+
     def test_memoryview(self):
         if sys.version_info < (2, 7):
             return  # skip
