@@ -214,26 +214,43 @@ if sys.version_info < (2, 7):
     # Poor-man unittest.TestCase.skip for Python 2.6
     del TestLZ4BlockModern
 
-class TestLZ4BlockPy3ByteArray(unittest.TestCase):
-    def test_random_bytearray(self):
-      DATA = bytearray(os.urandom(128 * 1024))  # Read 128kb
-      compressed = lz4.block.compress(DATA, return_bytearray=True)
-      self.assertEqual(type(compressed), bytearray)
-      decompressed = lz4.block.decompress(compressed, return_bytearray=True)
-      self.assertEqual(type(decompressed), bytearray)
-      self.assertEqual(decompressed, DATA)
-    def test_random_bytes(self):
-      DATA = bytearray(os.urandom(128 * 1024))  # Read 128kb
-      compressed = lz4.block.compress(DATA)
-      self.assertEqual(type(compressed), bytes)
-      decompressed = lz4.block.decompress(compressed)
-      self.assertEqual(type(decompressed), bytes)
-      self.assertEqual(decompressed, DATA)
 
-if sys.version_info < (3, 3):
-    # Poor-man unittest.TestCase.skip for Python < 3.3
-    del TestLZ4BlockPy3ByteArray
+class TestLZ4BlockBufferObjects(unittest.TestCase):
+
+    def test_bytearray(self):
+        DATA = os.urandom(128 * 1024)  # Read 128kb
+        compressed = lz4.block.compress(DATA)
+        self.assertEqual(lz4.block.compress(bytearray(DATA)), compressed)
+        self.assertEqual(lz4.block.decompress(bytearray(compressed)), DATA)
+
+    def test_return_bytearray(self):
+        if sys.version_info < (3,):
+            return  # skip
+        DATA = os.urandom(128 * 1024)  # Read 128kb
+        compressed = lz4.block.compress(DATA)
+        b = lz4.block.compress(DATA, return_bytearray=True)
+        self.assertEqual(type(b), bytearray)
+        self.assertEqual(bytes(b), compressed)
+        b = lz4.block.decompress(compressed, return_bytearray=True)
+        self.assertEqual(type(b), bytearray)
+        self.assertEqual(bytes(b), DATA)
+
+    def test_memoryview(self):
+        if sys.version_info < (2, 7):
+            return  # skip
+        DATA = os.urandom(128 * 1024)  # Read 128kb
+        compressed = lz4.block.compress(DATA)
+        self.assertEqual(lz4.block.compress(memoryview(DATA)), compressed)
+        self.assertEqual(lz4.block.decompress(memoryview(compressed)), DATA)
+
+    def test_unicode(self):
+        if sys.version_info < (3,):
+            return  # skip
+        DATA = b'x'
+        self.assertRaises(TypeError, lz4.block.compress, DATA.decode('latin1'))
+        self.assertRaises(TypeError, lz4.block.decompress,
+                          lz4.block.compress(DATA).decode('latin1'))
+
 
 if __name__ == '__main__':
     unittest.main()
-
