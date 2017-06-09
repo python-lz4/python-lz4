@@ -135,7 +135,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   if (source.len != (Py_ssize_t) source_size)
     {
       PyBuffer_Release(&source);
-      PyErr_Format(PyExc_OverflowError, "input too large for C 'int'");
+      PyErr_Format(PyExc_OverflowError, "Input too large for C 'int'");
       return NULL;
     }
 
@@ -273,7 +273,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   if (source.len != (Py_ssize_t) source_size)
     {
       PyBuffer_Release(&source);
-      PyErr_Format(PyExc_OverflowError, "input too large for C 'int'");
+      PyErr_Format(PyExc_OverflowError, "Input too large for C 'int'");
       return NULL;
     }
 
@@ -343,7 +343,7 @@ PyDoc_STRVAR(compress__doc,
              "Compress source, returning the compressed data as a string.\n" \
              "Raises an exception if any error occurs.\n\n"             \
              "Args:\n"                                                  \
-             "    source (str, bytes or bytearray): Data to compress\n"                     \
+             "    source (str, bytes or buffer-compatible object): Data to compress\n" \
              "    mode (str): If 'default' or unspecified use the default LZ4\n" \
              "        compression mode. Set to 'fast' to use the fast compression\n" \
              "        LZ4 mode at the expense of compression. Set to\n" \
@@ -368,7 +368,7 @@ PyDoc_STRVAR(decompress__doc,
              "Decompress source, returning the uncompressed data as a string.\n" \
              "Raises an exception if any error occurs.\n\n"             \
              "Args:\n"                                                  \
-             "    source (str, bytes or bytearray): Data to decompress\n\n"                 \
+             "    source (str, bytes or buffer-compatible object): Data to decompress\n\n" \
              "    uncompressed_size (int): If not specified or < 0, the uncompressed data\n" \
              "        size is read from the start of the source block. If specified,\n" \
              "        it is assumed that the full source data is compressed data.\n\n" \
