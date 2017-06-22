@@ -10,18 +10,29 @@ from distutils import ccompiler
 # for now. This neds removing before 1.0 release.
 LZ4_VERSION = "1.7.4.2"
 
-def library_is_installed(libname):
+def pkgconfig_cmd(cmd, libname):
     # Check to see if we have a library called'libname' installed on the
     # system. This uses pkg-config to check for existence of the library, and
     # returns True if it's found, False otherwise. If pkg-config isn't found,
     # Flase is returned.
     try:
         pkg_config_exe = os.environ.get('PKG_CONFIG', None) or 'pkg-config'
-        cmd = '{0} --exists {1}'.format(pkg_config_exe, libname).split()
-        return subprocess.call(cmd) == 0
+        try:
+            return subprocess.check_output([pkg_config_exe, cmd, libname]).decode('utf-8')
+        except subprocess.CalledProcessError:
+            return None
     except OSError:
         # pkg-config not present
         return False
+
+def library_is_installed(libname):
+    return pkgconfig_cmd('--exists', libname) is not None
+
+def get_cflags(libname):
+    return pkgconfig_cmd('--cflags', libname).split() # Note! This breaks if there are spaces in the cmd
+
+def get_ldflags(libname):
+    return pkgconfig_cmd('--libs', libname).split() # Note! This breaks if there are spaces in the cmd
 
 # Check to see if we have a lz4 library installed on the system and
 # use it if so. If not, we'll use the bundled library.
@@ -55,9 +66,10 @@ lz4frame_sources = [
 ]
 
 if liblz4_found is True:
-    libraries.append('lz4')
+    extra_link_args = get_ldflags('liblz4')
 else:
     include_dirs.append('lz4libs')
+    extra_link_args = []
     lz4version_sources.extend(
         [
             'lz4libs/lz4.c',
@@ -87,7 +99,7 @@ if compiler == 'msvc':
     extra_compile_args = ['/Ot', '/Wall']
 elif compiler in ('unix', 'mingw32'):
     if liblz4_found:
-        extra_compile_args = []
+        extra_compile_args = get_cflags('liblz4')
     else:
         extra_compile_args = [
             '-O3',
@@ -101,6 +113,7 @@ else:
 lz4version = Extension('lz4._version',
                        lz4version_sources,
                        extra_compile_args=extra_compile_args,
+                       extra_link_args=extra_link_args,
                        libraries=libraries,
                        include_dirs=include_dirs,
 )
@@ -108,6 +121,7 @@ lz4version = Extension('lz4._version',
 lz4block = Extension('lz4.block._block',
                      lz4block_sources,
                      extra_compile_args=extra_compile_args,
+                     extra_link_args=extra_link_args,
                      libraries=libraries,
                      include_dirs=include_dirs,
 )
@@ -115,6 +129,7 @@ lz4block = Extension('lz4.block._block',
 lz4frame = Extension('lz4.frame._frame',
                      lz4frame_sources,
                      extra_compile_args=extra_compile_args,
+                     extra_link_args=extra_link_args,
                      libraries=libraries,
                      include_dirs=include_dirs,
 )
