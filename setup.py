@@ -11,10 +11,6 @@ from distutils import ccompiler
 LZ4_VERSION = "1.7.4.2"
 
 def pkgconfig_cmd(cmd, libname):
-    # Check to see if we have a library called'libname' installed on the
-    # system. This uses pkg-config to check for existence of the library, and
-    # returns True if it's found, False otherwise. If pkg-config isn't found,
-    # Flase is returned.
     try:
         pkg_config_exe = os.environ.get('PKG_CONFIG', None) or 'pkg-config'
         try:
@@ -23,16 +19,21 @@ def pkgconfig_cmd(cmd, libname):
             return None
     except OSError:
         # pkg-config not present
-        return False
+        return None
 
 def library_is_installed(libname):
+    ''' Check to see if we have a library called 'libname' installed.
+    
+    This uses pkg-config to check for existence of the library, and
+    returns True if it's found, False otherwise. If pkg-config isn't found,
+    False is returned. '''
     return pkgconfig_cmd('--exists', libname) is not None
 
 def get_cflags(libname):
-    return pkgconfig_cmd('--cflags', libname).split() # Note! This breaks if there are spaces in the cmd
+    return pkgconfig_cmd('--cflags', libname).split()
 
 def get_ldflags(libname):
-    return pkgconfig_cmd('--libs', libname).split() # Note! This breaks if there are spaces in the cmd
+    return pkgconfig_cmd('--libs', libname).split()
 
 # Check to see if we have a lz4 library installed on the system and
 # use it if so. If not, we'll use the bundled library.
