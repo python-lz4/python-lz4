@@ -13,10 +13,14 @@ LZ4_VERSION = "1.7.4.2"
 def pkgconfig_cmd(cmd, libname):
     try:
         pkg_config_exe = os.environ.get('PKG_CONFIG', None) or 'pkg-config'
-        try:
-            return subprocess.check_output([pkg_config_exe, cmd, libname]).decode('utf-8')
-        except subprocess.CalledProcessError:
+        # poor-man's check_output (for Python 2.6 compat)
+        p = subprocess.Popen([pkg_config_exe, cmd, libname], stdout=subprocess.PIPE)
+        stdout, _ = p.communicate()
+        res = p.wait() # communicate already waits for us so this shouldn't block
+        if res != 0:
+            # pkg-config failed
             return None
+        return stdout.decode('utf-8')
     except OSError:
         # pkg-config not present
         return None
