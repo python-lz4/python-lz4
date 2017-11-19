@@ -153,7 +153,10 @@ setup(
     use_scm_version={
         'write_to': "lz4/version.py",
     },
-    setup_requires=['setuptools_scm'],
+    setup_requires=[
+        'setuptools_scm',
+        'pytest-runner',
+    ],
     description="LZ4 Bindings for Python",
     long_description=open('README.rst', 'r').read(),
     author='Jonathan Underwood',
@@ -165,8 +168,9 @@ setup(
         lz4block,
         lz4frame
     ],
-    tests_require=["nose>=1.0"],
-    test_suite = "nose.collector",
+    tests_require=[
+        'pytest',
+    ],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: BSD License',
