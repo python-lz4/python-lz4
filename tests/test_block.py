@@ -1,80 +1,106 @@
 import lz4.block
 import sys
-
-
 from multiprocessing.pool import ThreadPool
 import unittest
 import os
+import pytest
+
+
+@pytest.fixture(
+    params=[
+        (b''),
+        (os.urandom(128 * 1024)),
+    ]
+)
+def data(request):
+    return request.param
+
+@pytest.fixture(
+    params=[
+        (True),
+        (False),
+    ]
+)
+def store_size(request):
+    return request.param
+
+@pytest.fixture(
+    params=[
+        ('fast'),
+        ('high_compression')
+    ]
+)
+def mode(request):
+    return request.param
+
+@pytest.fixture(
+    params=[
+        (i) for i in range(17)
+    ]
+)
+def compression(request):
+    return request.param
+
+@pytest.fixture(
+    params=[
+        (i) for i in range(10)
+    ]
+)
+def acceleration(request):
+    return request.param
+
+@pytest.fixture(
+    params=[
+        (i) for i in range(17)
+    ]
+)
+def compression(request):
+    return request.param
+
+# Test defaults
+def test_default(data):
+    c = lz4.block.compress(data)
+    d = lz4.block.decompress(c)
+    assert(d == data)
+
+# With and without store_size
+def test_store_size(data, store_size):
+    c = lz4.block.compress(data, store_size=store_size)
+    if store_size:
+        d = lz4.block.decompress(c)
+    else:
+        d = lz4.block.decompress(c, uncompressed_size=len(data))
+    assert(d == data)
+
+# Specify mode only
+def test_mode_defaults(data, mode, store_size):
+    c = lz4.block.compress(data, mode=mode, store_size=store_size)
+    if store_size:
+        d = lz4.block.decompress(c)
+    else:
+        d = lz4.block.decompress(c, uncompressed_size=len(data))
+    assert(d == data)
+
+# Test high compression mode
+def test_high_compression(data, compression, store_size):
+    c = lz4.block.compress(data, mode='high_compression', store_size=store_size)
+    if store_size:
+        d = lz4.block.decompress(c)
+    else:
+        d = lz4.block.decompress(c, uncompressed_size=len(data))
+    assert(d == data)
+
+# Test fast compression mode
+def test_fast(data, acceleration, store_size):
+    c = lz4.block.compress(data, mode='fast', store_size=store_size)
+    if store_size:
+        d = lz4.block.decompress(c)
+    else:
+        d = lz4.block.decompress(c, uncompressed_size=len(data))
+    assert(d == data)
+
 
 class TestLZ4Block(unittest.TestCase):
-
-    def test_empty_string(self):
-      DATA = b''
-      self.assertEqual(DATA, lz4.block.decompress(lz4.block.compress(DATA)))
-
-    def test_random(self):
-      DATA = os.urandom(128 * 1024)  # Read 128kb
-      self.assertEqual(DATA, lz4.block.decompress(lz4.block.compress(DATA)))
-
-    def test_random_hc1(self):
-      DATA = os.urandom(128 * 1024)  # Read 128kb
-      self.assertEqual(DATA, lz4.block.decompress(
-          lz4.block.compress(DATA, mode='high_compression')))
-
-    def test_random_hc2(self):
-      DATA = os.urandom(128 * 1024)  # Read 128kb
-      self.assertEqual(DATA, lz4.block.decompress(
-          lz4.block.compress(DATA, mode='high_compression', compression=7)))
-
-    def test_random_hc3(self):
-      DATA = os.urandom(128 * 1024)  # Read 128kb
-      self.assertEqual(DATA, lz4.block.decompress(
-          lz4.block.compress(DATA, mode='high_compression', compression=16)))
-
-    def test_random_fast1(self):
-      DATA = os.urandom(128 * 1024)  # Read 128kb
-      self.assertEqual(DATA, lz4.block.decompress(
-          lz4.block.compress(DATA, mode='fast')))
-
-    def test_random_fast2(self):
-      DATA = os.urandom(128 * 1024)  # Read 128kb
-      self.assertEqual(DATA, lz4.block.decompress(
-          lz4.block.compress(DATA, mode='fast', acceleration=5)))
-
-    def test_random_fast3(self):
-      DATA = os.urandom(128 * 1024)  # Read 128kb
-      self.assertEqual(DATA, lz4.block.decompress(
-          lz4.block.compress(DATA, mode='fast', acceleration=9)))
-
-    def test_random_no_store_size(self):
-      DATA = os.urandom(128 * 1024)  # Read 128kb
-
-      self.assertEqual(
-          DATA, lz4.block.decompress(
-              lz4.block.compress(DATA, store_size=False),
-              uncompressed_size=128 * 1024
-          )
-      )
-
-    def test_random_hc_no_store_size(self):
-      DATA = os.urandom(128 * 1024)  # Read 128kb
-
-      self.assertEqual(
-          DATA, lz4.block.decompress(
-              lz4.block.compress(DATA, mode='high_compression', compression=9, store_size=False),
-              uncompressed_size=128 * 1024
-          )
-      )
-
-    def test_random_fast_no_store_size(self):
-      DATA = os.urandom(128 * 1024)  # Read 128kb
-
-      self.assertEqual(
-          DATA, lz4.block.decompress(
-              lz4.block.compress(DATA, mode='fast', acceleration=9, store_size=False),
-              uncompressed_size=128 * 1024
-          )
-      )
 
     def test_threads(self):
         data = [os.urandom(128 * 1024) for i in range(100)]
