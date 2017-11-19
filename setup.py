@@ -27,7 +27,7 @@ def pkgconfig_cmd(cmd, libname):
 
 def library_is_installed(libname):
     ''' Check to see if we have a library called 'libname' installed.
-    
+
     This uses pkg-config to check for existence of the library, and
     returns True if it's found, False otherwise. If pkg-config isn't found,
     False is returned. '''
