@@ -10,6 +10,7 @@ import pytest
     params=[
         (b''),
         (os.urandom(128 * 1024)),
+        (b'0' * 128 * 1024),
     ]
 )
 def data(request):
@@ -17,8 +18,16 @@ def data(request):
 
 @pytest.fixture(
     params=[
-        (True),
-        (False),
+        (
+            {
+                'store_size': True
+            }
+        ),
+        (
+            {
+                'store_size': False
+            }
+        ),
     ]
 )
 def store_size(request):
@@ -26,179 +35,67 @@ def store_size(request):
 
 @pytest.fixture(
     params=[
-        ('fast'),
-        ('high_compression')
+        ('fast', None)
+    ] + [
+        ('fast', {'acceleration': s}) for s in range(10)
+    ] + [
+        ('high_compression', None)
+    ] + [
+        ('high_compression', {'compression': s}) for s in range(17)
+    ] + [
+        (None, None)
     ]
 )
 def mode(request):
     return request.param
 
-@pytest.fixture(
-    params=[
-        (i) for i in range(17)
-    ]
-)
-def compression(request):
-    return request.param
+# Test single threaded usage with all valid variations of input
+def test_1(data, mode, store_size):
+    kwargs = {}
 
-@pytest.fixture(
-    params=[
-        (i) for i in range(10)
-    ]
-)
-def acceleration(request):
-    return request.param
+    if mode[0] != None:
+        kwargs['mode'] = mode[0]
+    if mode[1] != None:
+        kwargs.update(mode[1])
 
-@pytest.fixture(
-    params=[
-        (i) for i in range(17)
-    ]
-)
-def compression(request):
-    return request.param
+    kwargs.update(store_size)
 
-# Test defaults
-def test_default(data):
-    c = lz4.block.compress(data)
-    d = lz4.block.decompress(c)
-    assert(d == data)
-
-# With and without store_size
-def test_store_size(data, store_size):
-    c = lz4.block.compress(data, store_size=store_size)
-    if store_size:
+    c = lz4.block.compress(data, **kwargs)
+    if store_size['store_size']:
         d = lz4.block.decompress(c)
     else:
         d = lz4.block.decompress(c, uncompressed_size=len(data))
     assert(d == data)
 
-# Specify mode only
-def test_mode_defaults(data, mode, store_size):
-    c = lz4.block.compress(data, mode=mode, store_size=store_size)
-    if store_size:
-        d = lz4.block.decompress(c)
-    else:
-        d = lz4.block.decompress(c, uncompressed_size=len(data))
-    assert(d == data)
+# Test multi threaded usage with all valid variations of input
+def test_threads2(data, mode, store_size):
+    kwargs = {}
+    if mode[0] != None:
+        kwargs['mode'] = mode[0]
+    if mode[1] != None:
+        kwargs.update(mode[1])
 
-# Test high compression mode
-def test_high_compression(data, compression, store_size):
-    c = lz4.block.compress(data, mode='high_compression', store_size=store_size)
-    if store_size:
-        d = lz4.block.decompress(c)
-    else:
-        d = lz4.block.decompress(c, uncompressed_size=len(data))
-    assert(d == data)
+    kwargs.update(store_size)
 
-# Test fast compression mode
-def test_fast(data, acceleration, store_size):
-    c = lz4.block.compress(data, mode='fast', store_size=store_size)
-    if store_size:
-        d = lz4.block.decompress(c)
-    else:
-        d = lz4.block.decompress(c, uncompressed_size=len(data))
-    assert(d == data)
+    def roundtrip(x):
+        c = lz4.block.compress(x, **kwargs)
+        if store_size['store_size']:
+            d = lz4.block.decompress(c)
+        else:
+            d = lz4.block.decompress(c, uncompressed_size=len(x))
+        return d
+
+    data_in = [data for i in range(32)]
+
+    pool = ThreadPool(8)
+    data_out = pool.map(roundtrip, data_in)
+    pool.close()
+    assert data_in == data_out
+
+
 
 
 class TestLZ4Block(unittest.TestCase):
-
-    def test_threads(self):
-        data = [os.urandom(128 * 1024) for i in range(100)]
-        def roundtrip(x):
-            return lz4.block.decompress(lz4.block.compress(x))
-
-        pool = ThreadPool(8)
-        out = pool.map(roundtrip, data)
-        assert data == out
-        pool.close()
-
-    def test_threads_hc1(self):
-        data = [os.urandom(128 * 1024) for i in range(100)]
-        def roundtriphc(x):
-            return lz4.block.decompress(lz4.block.compress(x, mode='high_compression'))
-
-        pool = ThreadPool(8)
-        out = pool.map(roundtriphc, data)
-        assert data == out
-        pool.close()
-
-    def test_threads_hc2(self):
-        data = [os.urandom(128 * 1024) for i in range(100)]
-        def roundtriphc(x):
-            return lz4.block.decompress(
-                lz4.block.compress(x, mode='high_compression', compression=4))
-
-        pool = ThreadPool(8)
-        out = pool.map(roundtriphc, data)
-        assert data == out
-        pool.close()
-
-    def test_threads_hc3(self):
-        data = [os.urandom(128 * 1024) for i in range(100)]
-        def roundtriphc(x):
-            return lz4.block.decompress(
-                lz4.block.compress(x, mode='high_compression', compression=9))
-
-        pool = ThreadPool(8)
-        out = pool.map(roundtriphc, data)
-        assert data == out
-        pool.close()
-
-    def test_threads_fast1(self):
-        data = [os.urandom(128 * 1024) for i in range(100)]
-        def roundtripfast(x):
-            return lz4.block.decompress(lz4.block.compress(x, mode='fast', acceleration=1))
-
-        pool = ThreadPool(8)
-        out = pool.map(roundtripfast, data)
-        assert data == out
-        pool.close()
-
-    def test_threads_fast2(self):
-        data = [os.urandom(128 * 1024) for i in range(100)]
-        def roundtripfast(x):
-            return lz4.block.decompress(lz4.block.compress(x, mode='fast', acceleration=4))
-
-        pool = ThreadPool(8)
-        out = pool.map(roundtripfast, data)
-        assert data == out
-        pool.close()
-
-    def test_threads_fast3(self):
-        data = [os.urandom(128 * 1024) for i in range(100)]
-        def roundtripfast(x):
-            return lz4.block.decompress(lz4.block.compress(x, mode='fast', acceleration=8))
-
-        pool = ThreadPool(8)
-        out = pool.map(roundtripfast, data)
-        assert data == out
-        pool.close()
-
-    def test_threads_fast_no_store_size(self):
-        data = [os.urandom(128 * 1024) for i in range(100)]
-        def roundtripfast(x):
-            return lz4.block.decompress(
-                lz4.block.compress(x, mode='fast', acceleration=8, store_size=False),
-                uncompressed_size=128 * 1024
-            )
-
-        pool = ThreadPool(8)
-        out = pool.map(roundtripfast, data)
-        assert data == out
-        pool.close()
-
-    def test_threads_hc_no_store_size(self):
-        data = [os.urandom(128 * 1024) for i in range(100)]
-        def roundtriphc(x):
-            return lz4.block.decompress(
-                lz4.block.compress(x, mode='high_compression', store_size=False, compression=4),
-                uncompressed_size=128 * 1024
-            )
-
-        pool = ThreadPool(8)
-        out = pool.map(roundtriphc, data)
-        assert data == out
-        pool.close()
 
     def test_block_format(self):
         data = lz4.block.compress(b'A' * 64)
