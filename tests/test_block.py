@@ -92,15 +92,11 @@ def test_threads2(data, mode, store_size):
     pool.close()
     assert data_in == data_out
 
+# Test that uncompressed size is being stored correctly
+def test_block_format():
+    data = lz4.block.compress(b'A' * 64)
+    assert(data[:4] == b'\x40\0\0\0')
 
-
-
-class TestLZ4Block(unittest.TestCase):
-
-    def test_block_format(self):
-        data = lz4.block.compress(b'A' * 64)
-        self.assertEqual(data[:4], b'\x40\0\0\0')
-        self.assertEqual(lz4.block.decompress(data[4:], uncompressed_size=64), b'A' * 64)
 
 class TestLZ4BlockModern(unittest.TestCase):
     def test_decompress_ui32_overflow(self):
