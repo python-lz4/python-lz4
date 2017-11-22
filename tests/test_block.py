@@ -49,6 +49,14 @@ def store_size(request):
 def mode(request):
     return request.param
 
+def get_stored_size(buff):
+    if sys.version_info > (3, 2):
+        return int.from_bytes(buff[:4], 'little')
+    else:
+        import struct
+        return struct.unpack('<I', bytes(buff[:4]))[0]
+
+
 # Test single threaded usage with all valid variations of input
 def test_1(data, mode, store_size):
     kwargs = {}
@@ -62,6 +70,7 @@ def test_1(data, mode, store_size):
 
     c = lz4.block.compress(data, **kwargs)
     if store_size['store_size']:
+        assert(get_stored_size(c) == len(data))
         d = lz4.block.decompress(c)
     else:
         d = lz4.block.decompress(c, uncompressed_size=len(data))
@@ -80,6 +89,7 @@ def test_threads2(data, mode, store_size):
     def roundtrip(x):
         c = lz4.block.compress(x, **kwargs)
         if store_size['store_size']:
+            assert(get_stored_size(c) == len(data))
             d = lz4.block.decompress(c)
         else:
             d = lz4.block.decompress(c, uncompressed_size=len(x))
@@ -91,12 +101,6 @@ def test_threads2(data, mode, store_size):
     data_out = pool.map(roundtrip, data_in)
     pool.close()
     assert data_in == data_out
-
-# Test that uncompressed size is being stored correctly
-def test_block_format():
-    data = lz4.block.compress(b'A' * 64)
-    assert(data[:4] == b'\x40\0\0\0')
-
 
 class TestLZ4BlockModern(unittest.TestCase):
     def test_decompress_ui32_overflow(self):
