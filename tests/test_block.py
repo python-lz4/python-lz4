@@ -4,12 +4,15 @@ from multiprocessing.pool import ThreadPool
 import os
 import pytest
 
-
+test_data=[
+    (b''),
+    (os.urandom(128 * 1024)),
+    (b'0' * 128 * 1024),
+]
 @pytest.fixture(
-    params=[
-        (b''),
-        (os.urandom(128 * 1024)),
-        (b'0' * 128 * 1024),
+    params=test_data,
+    ids=[
+        'data' + str(i) for i in range(len(test_data))
     ]
 )
 def data(request):
