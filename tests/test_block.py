@@ -103,6 +103,8 @@ def test_1(data, mode, store_size, c_return_bytearray, d_return_bytearray):
     c += [bytearray(c[0])] # should be redundant but belt and braces
     assert (c.count(c[0]) == len(c)) # Check all list members equal
     for cc in c:
+        if c_return_bytearray['return_bytearray']:
+            assert(type(cc) == bytearray)
         if store_size['store_size']:
             assert(get_stored_size(cc) == len(data))
             d = lz4.block.decompress(cc, **d_return_bytearray)
@@ -110,6 +112,8 @@ def test_1(data, mode, store_size, c_return_bytearray, d_return_bytearray):
             d = lz4.block.decompress(cc, uncompressed_size=len(data),
                                       **d_return_bytearray)
         assert(d == data)
+        if d_return_bytearray['return_bytearray']:
+            assert(type(d) == bytearray)
 
 
 # Test multi threaded usage with all valid variations of input
@@ -196,7 +200,8 @@ def test_unicode():
         lz4.block.compress (DATA.decode('latin1'))
         lz4.block.decompress(lz4.block.compress(DATA).decode('latin1'))
 
-
+# These next two are probably redundant given test_1 above but we'll keep them
+# for now
 def test_return_bytearray():
     if sys.version_info < (3,):
         return  # skip
