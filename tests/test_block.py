@@ -37,6 +37,31 @@ def store_size(request):
 
 @pytest.fixture(
     params=[
+        (
+            {
+                'return_bytearray': True
+            }
+        ),
+        (
+            {
+                'return_bytearray': False
+            }
+        ),
+    ]
+)
+def return_bytearray(request):
+    return request.param
+
+@pytest.fixture
+def c_return_bytearray(return_bytearray):
+    return return_bytearray
+
+@pytest.fixture
+def d_return_bytearray(return_bytearray):
+    return return_bytearray
+
+@pytest.fixture(
+    params=[
         ('fast', None)
     ] + [
         ('fast', {'acceleration': s}) for s in range(10)
@@ -60,7 +85,7 @@ def get_stored_size(buff):
 
 
 # Test single threaded usage with all valid variations of input
-def test_1(data, mode, store_size):
+def test_1(data, mode, store_size, c_return_bytearray, d_return_bytearray):
     kwargs = {}
 
     if mode[0] != None:
@@ -69,18 +94,21 @@ def test_1(data, mode, store_size):
         kwargs.update(mode[1])
 
     kwargs.update(store_size)
+    kwargs.update(c_return_bytearray)
 
     c = []
     c += [lz4.block.compress(data, **kwargs)]
     c += [lz4.block.compress(bytearray(data), **kwargs)]
-    c += [bytearray(c[0])]
+    c += [lz4.block.compress(memoryview(data), **kwargs)]
+    c += [bytearray(c[0])] # should be redundant but belt and braces
     assert (c.count(c[0]) == len(c)) # Check all list members equal
     for cc in c:
         if store_size['store_size']:
             assert(get_stored_size(cc) == len(data))
-            d = lz4.block.decompress(cc)
+            d = lz4.block.decompress(cc, **d_return_bytearray)
         else:
-            d = lz4.block.decompress(cc, uncompressed_size=len(data))
+            d = lz4.block.decompress(cc, uncompressed_size=len(data),
+                                      **d_return_bytearray)
         assert(d == data)
 
 
