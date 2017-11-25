@@ -124,7 +124,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 
 
 #if IS_PY3
-  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "y*|siiip", argnames,
+  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "y*|spiip", argnames,
                                     &source,
                                     &mode, &store_size, &acceleration, &compression,
                                     &return_bytearray))
