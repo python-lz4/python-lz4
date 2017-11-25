@@ -111,8 +111,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   int output_size;
   Py_buffer source;
   int source_size;
-
-#if IS_PY3
+  int return_bytearray = 0;
   static char *argnames[] = {
     "source",
     "mode",
@@ -122,9 +121,10 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     "return_bytearray",
     NULL
   };
-  int return_bytearray = 0;
 
-  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "y*|siiip", argnames,
+
+#if IS_PY3
+  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "y*|spiip", argnames,
                                     &source,
                                     &mode, &store_size, &acceleration, &compression,
                                     &return_bytearray))
@@ -132,17 +132,10 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       return NULL;
     }
 #else
-  static char *argnames[] = {
-    "source",
-    "mode",
-    "store_size",
-    "acceleration",
-    "compression",
-    NULL
-  };
-  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s*|siii", argnames,
+  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s*|siiii", argnames,
                                     &source,
-                                    &mode, &store_size, &acceleration, &compression))
+                                    &mode, &store_size, &acceleration, &compression,
+                                    &return_bytearray))
     {
       return NULL;
     }
@@ -188,7 +181,6 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       total_size = dest_size;
     }
 
-#if IS_PY3
   if (return_bytearray)
     {
       py_dest = PyByteArray_FromStringAndSize (NULL, total_size);
@@ -209,15 +201,6 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
         }
       dest = PyBytes_AS_STRING (py_dest);
     }
-#else
-  py_dest = PyBytes_FromStringAndSize (NULL, total_size);
-  if (py_dest == NULL)
-    {
-      PyBuffer_Release(&source);
-      return PyErr_NoMemory();
-    }
-  dest = PyBytes_AS_STRING (py_dest);
-#endif
 
   Py_BEGIN_ALLOW_THREADS
 
@@ -266,7 +249,6 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   /* Resizes are expensive; tolerate some slop to avoid. */
   if (output_size < (dest_size / 4) * 3)
     {
-#if IS_PY3
       if (return_bytearray)
         {
           PyByteArray_Resize (py_dest, output_size);
@@ -275,9 +257,6 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
         {
           _PyBytes_Resize (&py_dest, output_size);
         }
-#else
-      _PyBytes_Resize (&py_dest, output_size);
-#endif
     }
   else
     {
@@ -298,15 +277,15 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   int output_size;
   size_t dest_size;
   int uncompressed_size = -1;
-
-#if IS_PY3
+  int return_bytearray = 0;
   static char *argnames[] = {
     "source",
     "uncompressed_size",
     "return_bytearray",
     NULL
   };
-  int return_bytearray = 0;
+
+#if IS_PY3
   if (!PyArg_ParseTupleAndKeywords (args, kwargs, "y*|ip", argnames,
                                     &source, &uncompressed_size,
                                     &return_bytearray))
@@ -314,13 +293,9 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       return NULL;
     }
 #else
-  static char *argnames[] = {
-    "source",
-    "uncompressed_size",
-    NULL
-  };
-  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s*|i", argnames,
-                                    &source, &uncompressed_size))
+  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s*|ii", argnames,
+                                    &source, &uncompressed_size,
+                                    &return_bytearray))
     {
       return NULL;
     }
@@ -359,7 +334,6 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       return NULL;
     }
 
-#if IS_PY3
   if (return_bytearray)
     {
       py_dest = PyByteArray_FromStringAndSize (NULL, dest_size);
@@ -380,15 +354,6 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
         }
       dest = PyBytes_AS_STRING (py_dest);
     }
-#else
-  py_dest = PyBytes_FromStringAndSize (NULL, dest_size);
-  if (py_dest == NULL)
-    {
-      PyBuffer_Release(&source);
-      return PyErr_NoMemory();
-    }
-  dest = PyBytes_AS_STRING (py_dest);
-#endif
 
   Py_BEGIN_ALLOW_THREADS
 
@@ -448,9 +413,9 @@ PyDoc_STRVAR(compress__doc,
              "    store_size (bool): If True (the default) then the size of the\n" \
              "        uncompressed data is stored at the start of the compressed\n" \
              "        block.\n"                                         \
-             "    return_bytearray (bool): Python 3 only. If False (the default)\n" \
-             "        then the function will return a bytes object. If True, then\n" \
-             "        the function will return a bytearray object.\n\n" \
+             "    return_bytearray (bool): If False (the default) then the function\n" \
+             "        will return a bytes object. If True, then the function will\n" \
+             "        return a bytearray object.\n\n" \
              "Returns:\n"                                               \
              "    bytes or bytearray: Compressed data.\n");
 
@@ -463,9 +428,9 @@ PyDoc_STRVAR(decompress__doc,
              "    uncompressed_size (int): If not specified or < 0, the uncompressed data\n" \
              "        size is read from the start of the source block. If specified,\n" \
              "        it is assumed that the full source data is compressed data.\n" \
-             "    return_bytearray (bool): Python 3 only. If False (the default)\n" \
-             "        then the function will return a bytes object. If True, then\n" \
-             "        the function will return a bytearray object.\n\n" \
+             "    return_bytearray (bool): If False (the default) then the function\n" \
+             "        will return a bytes object. If True, then the function will\n" \
+             "        return a bytearray object.\n\n" \
              "Returns:\n"                                               \
              "    bytes or bytearray: Decompressed data.\n");
 
