@@ -1,4 +1,0 @@
-pytest
-pytest-runner
-coverage
-wheel

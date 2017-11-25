@@ -49,14 +49,8 @@ install:
   # about it being out of date.
   - "build.cmd python -m pip install --disable-pip-version-check --user --upgrade pip"
 
-  # We need wheel installed to build wheels
+  # We need wheel installed to build wheels, and this isn't pulled in by setup.py
   - "build.cmd python -m pip install wheel"
-
-  # Install the build dependencies of the project. If some dependencies contain
-  # compiled extensions and are not provided as pre-built wheel packages,
-  # pip will build them from source using the MSVC compiler matching the
-  # target Python version and architecture
-  - "build.cmd python -m pip install -r dev-requirements.txt"
 
 build_script:
   # Build the compiled extension
