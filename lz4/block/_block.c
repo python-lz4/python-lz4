@@ -413,9 +413,9 @@ PyDoc_STRVAR(compress__doc,
              "    store_size (bool): If True (the default) then the size of the\n" \
              "        uncompressed data is stored at the start of the compressed\n" \
              "        block.\n"                                         \
-             "    return_bytearray (bool): Python 3 only. If False (the default)\n" \
-             "        then the function will return a bytes object. If True, then\n" \
-             "        the function will return a bytearray object.\n\n" \
+             "    return_bytearray (bool): If False (the default) then the function\n" \
+             "        will return a bytes object. If True, then the function will\n" \
+             "        return a bytearray object.\n\n" \
              "Returns:\n"                                               \
              "    bytes or bytearray: Compressed data.\n");
 
@@ -428,9 +428,9 @@ PyDoc_STRVAR(decompress__doc,
              "    uncompressed_size (int): If not specified or < 0, the uncompressed data\n" \
              "        size is read from the start of the source block. If specified,\n" \
              "        it is assumed that the full source data is compressed data.\n" \
-             "    return_bytearray (bool): Python 3 only. If False (the default)\n" \
-             "        then the function will return a bytes object. If True, then\n" \
-             "        the function will return a bytearray object.\n\n" \
+             "    return_bytearray (bool): If False (the default) then the function\n" \
+             "        will return a bytes object. If True, then the function will\n" \
+             "        return a bytearray object.\n\n" \
              "Returns:\n"                                               \
              "    bytes or bytearray: Decompressed data.\n");
 
