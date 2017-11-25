@@ -99,6 +99,8 @@ def test_1(data, mode, store_size, c_return_bytearray, d_return_bytearray):
     c = []
     c += [lz4.block.compress(data, **kwargs)]
     c += [lz4.block.compress(bytearray(data), **kwargs)]
+    c += [lz4.block.compress(memoryview(data), **kwargs)]
+    c += [bytearray(c[0])] # should be redundant but belt and braces
     assert (c.count(c[0]) == len(c)) # Check all list members equal
     for cc in c:
         if store_size['store_size']:
