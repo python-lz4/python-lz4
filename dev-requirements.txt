@@ -1,3 +1,4 @@
-nose
+pytest
+pytest-runner
 coverage
 wheel
