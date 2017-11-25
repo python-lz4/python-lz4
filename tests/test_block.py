@@ -1,256 +1,190 @@
 import lz4.block
 import sys
-
-
 from multiprocessing.pool import ThreadPool
-import unittest
 import os
+import pytest
 
-class TestLZ4Block(unittest.TestCase):
+test_data=[
+    (b''),
+    (os.urandom(128 * 1024)),
+    (b'0' * 128 * 1024),
+]
+@pytest.fixture(
+    params=test_data,
+    ids=[
+        'data' + str(i) for i in range(len(test_data))
+    ]
+)
+def data(request):
+    return request.param
 
-    def test_empty_string(self):
-      DATA = b''
-      self.assertEqual(DATA, lz4.block.decompress(lz4.block.compress(DATA)))
+@pytest.fixture(
+    params=[
+        (
+            {
+                'store_size': True
+            }
+        ),
+        (
+            {
+                'store_size': False
+            }
+        ),
+    ]
+)
+def store_size(request):
+    return request.param
 
-    def test_random(self):
-      DATA = os.urandom(128 * 1024)  # Read 128kb
-      self.assertEqual(DATA, lz4.block.decompress(lz4.block.compress(DATA)))
+@pytest.fixture(
+    params=[
+        ('fast', None)
+    ] + [
+        ('fast', {'acceleration': s}) for s in range(10)
+    ] + [
+        ('high_compression', None)
+    ] + [
+        ('high_compression', {'compression': s}) for s in range(17)
+    ] + [
+        (None, None)
+    ]
+)
+def mode(request):
+    return request.param
 
-    def test_random_hc1(self):
-      DATA = os.urandom(128 * 1024)  # Read 128kb
-      self.assertEqual(DATA, lz4.block.decompress(
-          lz4.block.compress(DATA, mode='high_compression')))
-
-    def test_random_hc2(self):
-      DATA = os.urandom(128 * 1024)  # Read 128kb
-      self.assertEqual(DATA, lz4.block.decompress(
-          lz4.block.compress(DATA, mode='high_compression', compression=7)))
-
-    def test_random_hc3(self):
-      DATA = os.urandom(128 * 1024)  # Read 128kb
-      self.assertEqual(DATA, lz4.block.decompress(
-          lz4.block.compress(DATA, mode='high_compression', compression=16)))
-
-    def test_random_fast1(self):
-      DATA = os.urandom(128 * 1024)  # Read 128kb
-      self.assertEqual(DATA, lz4.block.decompress(
-          lz4.block.compress(DATA, mode='fast')))
-
-    def test_random_fast2(self):
-      DATA = os.urandom(128 * 1024)  # Read 128kb
-      self.assertEqual(DATA, lz4.block.decompress(
-          lz4.block.compress(DATA, mode='fast', acceleration=5)))
-
-    def test_random_fast3(self):
-      DATA = os.urandom(128 * 1024)  # Read 128kb
-      self.assertEqual(DATA, lz4.block.decompress(
-          lz4.block.compress(DATA, mode='fast', acceleration=9)))
-
-    def test_random_no_store_size(self):
-      DATA = os.urandom(128 * 1024)  # Read 128kb
-
-      self.assertEqual(
-          DATA, lz4.block.decompress(
-              lz4.block.compress(DATA, store_size=False),
-              uncompressed_size=128 * 1024
-          )
-      )
-
-    def test_random_hc_no_store_size(self):
-      DATA = os.urandom(128 * 1024)  # Read 128kb
-
-      self.assertEqual(
-          DATA, lz4.block.decompress(
-              lz4.block.compress(DATA, mode='high_compression', compression=9, store_size=False),
-              uncompressed_size=128 * 1024
-          )
-      )
-
-    def test_random_fast_no_store_size(self):
-      DATA = os.urandom(128 * 1024)  # Read 128kb
-
-      self.assertEqual(
-          DATA, lz4.block.decompress(
-              lz4.block.compress(DATA, mode='fast', acceleration=9, store_size=False),
-              uncompressed_size=128 * 1024
-          )
-      )
-
-    def test_threads(self):
-        data = [os.urandom(128 * 1024) for i in range(100)]
-        def roundtrip(x):
-            return lz4.block.decompress(lz4.block.compress(x))
-
-        pool = ThreadPool(8)
-        out = pool.map(roundtrip, data)
-        assert data == out
-        pool.close()
-
-    def test_threads_hc1(self):
-        data = [os.urandom(128 * 1024) for i in range(100)]
-        def roundtriphc(x):
-            return lz4.block.decompress(lz4.block.compress(x, mode='high_compression'))
-
-        pool = ThreadPool(8)
-        out = pool.map(roundtriphc, data)
-        assert data == out
-        pool.close()
-
-    def test_threads_hc2(self):
-        data = [os.urandom(128 * 1024) for i in range(100)]
-        def roundtriphc(x):
-            return lz4.block.decompress(
-                lz4.block.compress(x, mode='high_compression', compression=4))
-
-        pool = ThreadPool(8)
-        out = pool.map(roundtriphc, data)
-        assert data == out
-        pool.close()
-
-    def test_threads_hc3(self):
-        data = [os.urandom(128 * 1024) for i in range(100)]
-        def roundtriphc(x):
-            return lz4.block.decompress(
-                lz4.block.compress(x, mode='high_compression', compression=9))
-
-        pool = ThreadPool(8)
-        out = pool.map(roundtriphc, data)
-        assert data == out
-        pool.close()
-
-    def test_threads_fast1(self):
-        data = [os.urandom(128 * 1024) for i in range(100)]
-        def roundtripfast(x):
-            return lz4.block.decompress(lz4.block.compress(x, mode='fast', acceleration=1))
-
-        pool = ThreadPool(8)
-        out = pool.map(roundtripfast, data)
-        assert data == out
-        pool.close()
-
-    def test_threads_fast2(self):
-        data = [os.urandom(128 * 1024) for i in range(100)]
-        def roundtripfast(x):
-            return lz4.block.decompress(lz4.block.compress(x, mode='fast', acceleration=4))
-
-        pool = ThreadPool(8)
-        out = pool.map(roundtripfast, data)
-        assert data == out
-        pool.close()
-
-    def test_threads_fast3(self):
-        data = [os.urandom(128 * 1024) for i in range(100)]
-        def roundtripfast(x):
-            return lz4.block.decompress(lz4.block.compress(x, mode='fast', acceleration=8))
-
-        pool = ThreadPool(8)
-        out = pool.map(roundtripfast, data)
-        assert data == out
-        pool.close()
-
-    def test_threads_fast_no_store_size(self):
-        data = [os.urandom(128 * 1024) for i in range(100)]
-        def roundtripfast(x):
-            return lz4.block.decompress(
-                lz4.block.compress(x, mode='fast', acceleration=8, store_size=False),
-                uncompressed_size=128 * 1024
-            )
-
-        pool = ThreadPool(8)
-        out = pool.map(roundtripfast, data)
-        assert data == out
-        pool.close()
-
-    def test_threads_hc_no_store_size(self):
-        data = [os.urandom(128 * 1024) for i in range(100)]
-        def roundtriphc(x):
-            return lz4.block.decompress(
-                lz4.block.compress(x, mode='high_compression', store_size=False, compression=4),
-                uncompressed_size=128 * 1024
-            )
-
-        pool = ThreadPool(8)
-        out = pool.map(roundtriphc, data)
-        assert data == out
-        pool.close()
-
-    def test_block_format(self):
-        data = lz4.block.compress(b'A' * 64)
-        self.assertEqual(data[:4], b'\x40\0\0\0')
-        self.assertEqual(lz4.block.decompress(data[4:], uncompressed_size=64), b'A' * 64)
-
-class TestLZ4BlockModern(unittest.TestCase):
-    def test_decompress_ui32_overflow(self):
-        data = lz4.block.compress(b'A' * 64)
-        with self.assertRaises(OverflowError):
-            lz4.block.decompress(data[4:], uncompressed_size=((1<<32) + 64))
-
-    def test_decompress_without_leak(self):
-        # Verify that hand-crafted packet does not leak uninitialized(?) memory.
-        data = lz4.block.compress(b'A' * 64)
-        with self.assertRaisesRegexp(ValueError, r'^Decompressor wrote 64 bytes, but 79 bytes expected from header$'):
-            lz4.block.decompress(b'\x4f' + data[1:])
-        with self.assertRaisesRegexp(ValueError, r'^Decompressor wrote 64 bytes, but 79 bytes expected from header$'):
-            lz4.block.decompress(data[4:], uncompressed_size=79)
-
-    def test_decompress_truncated(self):
-        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123" * 24
-        compressed = lz4.block.compress(input_data)
-        for i in range(len(compressed)):
-            with self.assertRaisesRegexp(ValueError, '^(Input source data size too small|Corrupt input at byte \d+|Decompressor wrote \d+ bytes, but \d+ bytes expected from header)'):
-                lz4.block.decompress(compressed[:i])
-
-    def test_decompress_with_trailer(self):
-        data = b'A' * 64
-        comp = lz4.block.compress(data)
-        with self.assertRaisesRegexp(ValueError, r'^Corrupt input at byte'):
-            self.assertEqual(data, lz4.block.decompress(comp + b'A'))
-        with self.assertRaisesRegexp(ValueError, r'^Corrupt input at byte'):
-            self.assertEqual(data, lz4.block.decompress(comp + comp))
-        with self.assertRaisesRegexp(ValueError, r'^Corrupt input at byte'):
-            self.assertEqual(data, lz4.block.decompress(comp + comp[4:]))
-
-if sys.version_info < (2, 7):
-    # Poor-man unittest.TestCase.skip for Python 2.6
-    del TestLZ4BlockModern
+def get_stored_size(buff):
+    if sys.version_info > (3, 2):
+        return int.from_bytes(buff[:4], 'little')
+    else:
+        import struct
+        return struct.unpack('<I', bytes(buff[:4]))[0]
 
 
-class TestLZ4BlockBufferObjects(unittest.TestCase):
+# Test single threaded usage with all valid variations of input
+def test_1(data, mode, store_size):
+    kwargs = {}
 
-    def test_bytearray(self):
-        DATA = os.urandom(128 * 1024)  # Read 128kb
-        compressed = lz4.block.compress(DATA)
-        self.assertEqual(lz4.block.compress(bytearray(DATA)), compressed)
-        self.assertEqual(lz4.block.decompress(bytearray(compressed)), DATA)
+    if mode[0] != None:
+        kwargs['mode'] = mode[0]
+    if mode[1] != None:
+        kwargs.update(mode[1])
 
-    def test_return_bytearray(self):
-        if sys.version_info < (3,):
-            return  # skip
-        DATA = os.urandom(128 * 1024)  # Read 128kb
-        compressed = lz4.block.compress(DATA)
-        b = lz4.block.compress(DATA, return_bytearray=True)
-        self.assertEqual(type(b), bytearray)
-        self.assertEqual(bytes(b), compressed)
-        b = lz4.block.decompress(compressed, return_bytearray=True)
-        self.assertEqual(type(b), bytearray)
-        self.assertEqual(bytes(b), DATA)
+    kwargs.update(store_size)
 
-    def test_memoryview(self):
-        if sys.version_info < (2, 7):
-            return  # skip
-        DATA = os.urandom(128 * 1024)  # Read 128kb
-        compressed = lz4.block.compress(DATA)
-        self.assertEqual(lz4.block.compress(memoryview(DATA)), compressed)
-        self.assertEqual(lz4.block.decompress(memoryview(compressed)), DATA)
-
-    def test_unicode(self):
-        if sys.version_info < (3,):
-            return  # skip
-        DATA = b'x'
-        self.assertRaises(TypeError, lz4.block.compress, DATA.decode('latin1'))
-        self.assertRaises(TypeError, lz4.block.decompress,
-                          lz4.block.compress(DATA).decode('latin1'))
+    c = []
+    c += [lz4.block.compress(data, **kwargs)]
+    c += [lz4.block.compress(bytearray(data), **kwargs)]
+    c += [bytearray(c[0])]
+    assert (c.count(c[0]) == len(c)) # Check all list members equal
+    for cc in c:
+        if store_size['store_size']:
+            assert(get_stored_size(cc) == len(data))
+            d = lz4.block.decompress(cc)
+        else:
+            d = lz4.block.decompress(cc, uncompressed_size=len(data))
+        assert(d == data)
 
 
-if __name__ == '__main__':
-    unittest.main()
+# Test multi threaded usage with all valid variations of input
+def test_threads2(data, mode, store_size):
+    kwargs = {}
+    if mode[0] != None:
+        kwargs['mode'] = mode[0]
+    if mode[1] != None:
+        kwargs.update(mode[1])
+
+    kwargs.update(store_size)
+
+    def roundtrip(x):
+        c = lz4.block.compress(x, **kwargs)
+        if store_size['store_size']:
+            assert(get_stored_size(c) == len(data))
+            d = lz4.block.decompress(c)
+        else:
+            d = lz4.block.decompress(c, uncompressed_size=len(x))
+        return d
+
+    data_in = [data for i in range(32)]
+
+    pool = ThreadPool(8)
+    data_out = pool.map(roundtrip, data_in)
+    pool.close()
+    assert data_in == data_out
+
+
+def test_decompress_ui32_overflow():
+    data = lz4.block.compress(b'A' * 64)
+    with pytest.raises(OverflowError):
+        lz4.block.decompress(data[4:], uncompressed_size=((1<<32) + 64))
+
+
+def test_decompress_without_leak():
+    # Verify that hand-crafted packet does not leak uninitialized(?) memory.
+    data = lz4.block.compress(b'A' * 64)
+    message=r'^Decompressor wrote 64 bytes, but 79 bytes expected from header$'
+    with pytest.raises(ValueError, message=message):
+        lz4.block.decompress(b'\x4f' + data[1:])
+    with pytest.raises(ValueError, message=message):
+        lz4.block.decompress(data[4:], uncompressed_size=79)
+
+
+def test_decompress_truncated():
+    input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123" * 24
+    compressed = lz4.block.compress(input_data)
+    # for i in range(len(compressed)):
+    #     try:
+    #         lz4.block.decompress(compressed[:i])
+    #     except:
+    #         print(i, sys.exc_info()[0], sys.exc_info()[1])
+    with pytest.raises(ValueError, message='Input source data size too small'):
+        lz4.block.decompress(compressed[:0])
+        lz4.block.decompress(compressed[:1])
+    with pytest.raises(ValueError, message=r'^Corrupt input at byte'):
+        lz4.block.decompress(compressed[:24])
+        lz4.block.decompress(compressed[:25])
+        lz4.block.decompress(compressed[:-2])
+    with pytest.raises(ValueError, message=r'Decompressor wrote \d+ bytes, but \d+ bytes expected from header)'):
+        lz4.block.decompress(compressed[:27])
+        lz4.block.decompress(compressed[:67])
+        lz4.block.decompress(compressed[:85])
+
+
+def test_decompress_with_trailer():
+    data = b'A' * 64
+    comp = lz4.block.compress(data)
+    message=r'^Corrupt input at byte'
+    with pytest.raises(ValueError, message=message):
+        lz4.block.decompress(comp + b'A')
+    with pytest.raises(ValueError, message=message):
+        lz4.block.decompress(comp + comp)
+    with pytest.raises(ValueError, message=message):
+        lz4.block.decompress(comp + comp[4:])
+
+
+def test_unicode():
+    if sys.version_info < (3,):
+        return  # skip
+    DATA = b'x'
+    with pytest.raises(TypeError):
+        lz4.block.compress (DATA.decode('latin1'))
+        lz4.block.decompress(lz4.block.compress(DATA).decode('latin1'))
+
+
+def test_return_bytearray():
+    if sys.version_info < (3,):
+        return  # skip
+    data = os.urandom(128 * 1024)  # Read 128kb
+    compressed = lz4.block.compress(data)
+    b = lz4.block.compress(data, return_bytearray=True)
+    assert(type(b) == bytearray)
+    assert(bytes(b) == compressed)
+    b = lz4.block.decompress(compressed, return_bytearray=True)
+    assert(type(b) == bytearray)
+    assert(bytes(b) == data)
+
+def test_memoryview():
+    if sys.version_info < (2, 7):
+        return  # skip
+    data = os.urandom(128 * 1024)  # Read 128kb
+    compressed = lz4.block.compress(data)
+    assert(lz4.block.compress(memoryview(data)) == compressed)
+    assert(lz4.block.decompress(memoryview(compressed)) == data)

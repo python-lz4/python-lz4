@@ -334,7 +334,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       return NULL;
     }
 
-  if (uncompressed_size > 0)
+  if (uncompressed_size >= 0)
     {
       dest_size = uncompressed_size;
     }
