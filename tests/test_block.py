@@ -3,6 +3,8 @@ import sys
 from multiprocessing.pool import ThreadPool
 import os
 import pytest
+if sys.version_info <= (3, 2):
+    import struct
 
 test_data=[
     (b''),
@@ -96,7 +98,8 @@ def get_stored_size(buff):
     if sys.version_info > (3, 2):
         return int.from_bytes(b[:4], 'little')
     else:
-        import struct
+        # This would not work on a memoryview object, hence buff.tobytes call
+        # above
         return struct.unpack('<I', b[:4])[0]
 
 
