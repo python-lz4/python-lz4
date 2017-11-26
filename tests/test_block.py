@@ -103,19 +103,19 @@ def test_1(data, mode, store_size, c_return_bytearray, d_return_bytearray):
         c += [lz4.block.compress(memoryview(data), **kwargs)]
         c += [memoryview(c[0])]
     c += [bytearray(c[0])] # should be redundant but belt and braces
-    assert (c.count(c[0]) == len(c)) # Check all list members equal
+    assert c.count(c[0]) == len(c) # Check all list members equal
     for cc in c:
         if c_return_bytearray['return_bytearray']:
-            assert(type(cc) == bytearray)
+            assert type(cc) == bytearray
         if store_size['store_size']:
-            assert(get_stored_size(cc) == len(data))
+            assert get_stored_size(cc) == len(data)
             d = lz4.block.decompress(cc, **d_return_bytearray)
         else:
             d = lz4.block.decompress(cc, uncompressed_size=len(data),
                                       **d_return_bytearray)
-        assert(d == data)
+        assert d == data
         if d_return_bytearray['return_bytearray']:
-            assert(type(d) == bytearray)
+            assert type(d) == bytearray
 
 
 # Test multi threaded usage with all valid variations of input
@@ -131,7 +131,7 @@ def test_threads2(data, mode, store_size):
     def roundtrip(x):
         c = lz4.block.compress(x, **kwargs)
         if store_size['store_size']:
-            assert(get_stored_size(c) == len(data))
+            assert get_stored_size(c) == len(data)
             d = lz4.block.decompress(c)
         else:
             d = lz4.block.decompress(c, uncompressed_size=len(x))
@@ -210,16 +210,16 @@ def test_return_bytearray():
     data = os.urandom(128 * 1024)  # Read 128kb
     compressed = lz4.block.compress(data)
     b = lz4.block.compress(data, return_bytearray=True)
-    assert(type(b) == bytearray)
-    assert(bytes(b) == compressed)
+    assert type(b) == bytearray
+    assert bytes(b) == compressed
     b = lz4.block.decompress(compressed, return_bytearray=True)
-    assert(type(b) == bytearray)
-    assert(bytes(b) == data)
+    assert type(b) == bytearray
+    assert bytes(b) == data
 
 def test_memoryview():
     if sys.version_info < (2, 7):
         return  # skip
     data = os.urandom(128 * 1024)  # Read 128kb
     compressed = lz4.block.compress(data)
-    assert(lz4.block.compress(memoryview(data)) == compressed)
-    assert(lz4.block.decompress(memoryview(compressed)) == data)
+    assert lz4.block.compress(memoryview(data)) == compressed
+    assert lz4.block.decompress(memoryview(compressed)) == data
