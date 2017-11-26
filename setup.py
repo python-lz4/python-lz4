@@ -10,18 +10,34 @@ from distutils import ccompiler
 # for now. This neds removing before 1.0 release.
 LZ4_VERSION = "1.7.4.2"
 
-def library_is_installed(libname):
-    # Check to see if we have a library called'libname' installed on the
-    # system. This uses pkg-config to check for existence of the library, and
-    # returns True if it's found, False otherwise. If pkg-config isn't found,
-    # Flase is returned.
+def pkgconfig_cmd(cmd, libname):
     try:
         pkg_config_exe = os.environ.get('PKG_CONFIG', None) or 'pkg-config'
-        cmd = '{0} --exists {1}'.format(pkg_config_exe, libname).split()
-        return subprocess.call(cmd) == 0
+        # poor-man's check_output (for Python 2.6 compat)
+        p = subprocess.Popen([pkg_config_exe, cmd, libname], stdout=subprocess.PIPE)
+        stdout, _ = p.communicate()
+        res = p.wait() # communicate already waits for us so this shouldn't block
+        if res != 0:
+            # pkg-config failed
+            return None
+        return stdout.decode('utf-8')
     except OSError:
         # pkg-config not present
-        return False
+        return None
+
+def library_is_installed(libname):
+    ''' Check to see if we have a library called 'libname' installed.
+
+    This uses pkg-config to check for existence of the library, and
+    returns True if it's found, False otherwise. If pkg-config isn't found,
+    False is returned. '''
+    return pkgconfig_cmd('--exists', libname) is not None
+
+def get_cflags(libname):
+    return pkgconfig_cmd('--cflags', libname).split()
+
+def get_ldflags(libname):
+    return pkgconfig_cmd('--libs', libname).split()
 
 # Check to see if we have a lz4 library installed on the system and
 # use it if so. If not, we'll use the bundled library.
@@ -55,9 +71,10 @@ lz4frame_sources = [
 ]
 
 if liblz4_found is True:
-    libraries.append('lz4')
+    extra_link_args = get_ldflags('liblz4')
 else:
     include_dirs.append('lz4libs')
+    extra_link_args = []
     lz4version_sources.extend(
         [
             'lz4libs/lz4.c',
@@ -87,7 +104,7 @@ if compiler == 'msvc':
     extra_compile_args = ['/Ot', '/Wall']
 elif compiler in ('unix', 'mingw32'):
     if liblz4_found:
-        extra_compile_args = []
+        extra_compile_args = get_cflags('liblz4')
     else:
         extra_compile_args = [
             '-O3',
@@ -101,6 +118,7 @@ else:
 lz4version = Extension('lz4._version',
                        lz4version_sources,
                        extra_compile_args=extra_compile_args,
+                       extra_link_args=extra_link_args,
                        libraries=libraries,
                        include_dirs=include_dirs,
 )
@@ -108,6 +126,7 @@ lz4version = Extension('lz4._version',
 lz4block = Extension('lz4.block._block',
                      lz4block_sources,
                      extra_compile_args=extra_compile_args,
+                     extra_link_args=extra_link_args,
                      libraries=libraries,
                      include_dirs=include_dirs,
 )
@@ -115,6 +134,7 @@ lz4block = Extension('lz4.block._block',
 lz4frame = Extension('lz4.frame._frame',
                      lz4frame_sources,
                      extra_compile_args=extra_compile_args,
+                     extra_link_args=extra_link_args,
                      libraries=libraries,
                      include_dirs=include_dirs,
 )
@@ -133,7 +153,10 @@ setup(
     use_scm_version={
         'write_to': "lz4/version.py",
     },
-    setup_requires=['setuptools_scm'],
+    setup_requires=[
+        'setuptools_scm',
+        'pytest-runner',
+    ],
     description="LZ4 Bindings for Python",
     long_description=open('README.rst', 'r').read(),
     author='Jonathan Underwood',
@@ -145,8 +168,9 @@ setup(
         lz4block,
         lz4frame
     ],
-    tests_require=["nose>=1.0"],
-    test_suite = "nose.collector",
+    tests_require=[
+        'pytest',
+    ],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: BSD License',
@@ -155,7 +179,6 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
