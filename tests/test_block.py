@@ -87,8 +87,9 @@ def mode(request):
     return request.param
 
 def get_stored_size(buff):
-    if isinstance(buff, memoryview):
-        b = buff.tobytes()
+    if sys.version_info > (2, 7):
+        if isinstance(buff, memoryview):
+            b = buff.tobytes()
     else:
         b = bytes(buff)
 
