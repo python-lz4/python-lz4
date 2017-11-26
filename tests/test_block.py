@@ -3,12 +3,22 @@ import sys
 from multiprocessing.pool import ThreadPool
 import os
 import pytest
+if sys.version_info <= (3, 2):
+    import struct
 
 test_data=[
     (b''),
-    (os.urandom(128 * 1024)),
-    (b'0' * 128 * 1024),
+    (os.urandom(8 * 1024)),
+    (b'0' * 8 * 1024),
+    (bytearray(b'')),
+    (bytearray(os.urandom(8 * 1024))),
 ]
+if sys.version_info > (2, 7):
+    test_data += [
+        (memoryview(b'')),
+        (memoryview(os.urandom(8 * 1024)))
+    ]
+
 @pytest.fixture(
     params=test_data,
     ids=[
@@ -77,11 +87,23 @@ def mode(request):
     return request.param
 
 def get_stored_size(buff):
-    if sys.version_info > (3, 2):
-        return int.from_bytes(buff[:4], 'little')
+    if sys.version_info > (2, 7):
+        if isinstance(buff, memoryview):
+            b = buff.tobytes()
+        else:
+            b = bytes(buff)
     else:
-        import struct
-        return struct.unpack('<I', bytes(buff[:4]))[0]
+        b = bytes(buff)
+
+    if len(b) < 4:
+        return None
+
+    if sys.version_info > (3, 2):
+        return int.from_bytes(b[:4], 'little')
+    else:
+        # This would not work on a memoryview object, hence buff.tobytes call
+        # above
+        return struct.unpack('<I', b[:4])[0]
 
 
 # Test single threaded usage with all valid variations of input
@@ -96,26 +118,17 @@ def test_1(data, mode, store_size, c_return_bytearray, d_return_bytearray):
     kwargs.update(store_size)
     kwargs.update(c_return_bytearray)
 
-    c = []
-    c += [lz4.block.compress(data, **kwargs)]
-    c += [lz4.block.compress(bytearray(data), **kwargs)]
-    if sys.version_info > (2, 7):
-        c += [lz4.block.compress(memoryview(data), **kwargs)]
-        c += [memoryview(c[0])]
-    c += [bytearray(c[0])] # should be redundant but belt and braces
-    assert (c.count(c[0]) == len(c)) # Check all list members equal
-    for cc in c:
-        if c_return_bytearray['return_bytearray']:
-            assert(type(cc) == bytearray)
-        if store_size['store_size']:
-            assert(get_stored_size(cc) == len(data))
-            d = lz4.block.decompress(cc, **d_return_bytearray)
-        else:
-            d = lz4.block.decompress(cc, uncompressed_size=len(data),
-                                      **d_return_bytearray)
-        assert(d == data)
-        if d_return_bytearray['return_bytearray']:
-            assert(type(d) == bytearray)
+    c = lz4.block.compress(data, **kwargs)
+
+    if store_size['store_size']:
+        assert get_stored_size(c) == len(data)
+        d = lz4.block.decompress(c, **d_return_bytearray)
+    else:
+        d = lz4.block.decompress(c, uncompressed_size=len(data),
+                                 **d_return_bytearray)
+    assert d == data
+    if d_return_bytearray['return_bytearray']:
+        assert isinstance(d, bytearray)
 
 
 # Test multi threaded usage with all valid variations of input
@@ -131,7 +144,7 @@ def test_threads2(data, mode, store_size):
     def roundtrip(x):
         c = lz4.block.compress(x, **kwargs)
         if store_size['store_size']:
-            assert(get_stored_size(c) == len(data))
+            assert get_stored_size(c) == len(data)
             d = lz4.block.decompress(c)
         else:
             d = lz4.block.decompress(c, uncompressed_size=len(x))
@@ -210,16 +223,16 @@ def test_return_bytearray():
     data = os.urandom(128 * 1024)  # Read 128kb
     compressed = lz4.block.compress(data)
     b = lz4.block.compress(data, return_bytearray=True)
-    assert(type(b) == bytearray)
-    assert(bytes(b) == compressed)
+    assert isinstance(b, bytearray)
+    assert bytes(b) == compressed
     b = lz4.block.decompress(compressed, return_bytearray=True)
-    assert(type(b) == bytearray)
-    assert(bytes(b) == data)
+    assert isinstance(b, bytearray)
+    assert bytes(b) == data
 
 def test_memoryview():
     if sys.version_info < (2, 7):
         return  # skip
     data = os.urandom(128 * 1024)  # Read 128kb
     compressed = lz4.block.compress(data)
-    assert(lz4.block.compress(memoryview(data)) == compressed)
-    assert(lz4.block.decompress(memoryview(compressed)) == data)
+    assert lz4.block.compress(memoryview(data)) == compressed
+    assert lz4.block.decompress(memoryview(compressed)) == data
