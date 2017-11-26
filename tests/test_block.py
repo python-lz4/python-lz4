@@ -90,6 +90,8 @@ def get_stored_size(buff):
     if sys.version_info > (2, 7):
         if isinstance(buff, memoryview):
             b = buff.tobytes()
+        else:
+            b = bytes(buff)
     else:
         b = bytes(buff)
 
