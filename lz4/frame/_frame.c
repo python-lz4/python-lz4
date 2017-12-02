@@ -60,10 +60,8 @@ struct compression_context
 
 struct decompression_context
 {
-  LZ4F_decompressionContext_t decompression_context;
-  char * destination_buffer;
-  size_t destination_buffer_size;
-  int status;
+  LZ4F_decompressionContext_t context;
+  int block_size;
 };
 
 /*****************************
@@ -873,58 +871,53 @@ static void
 destruct_decompression_context (PyObject * py_context)
 {
 #ifndef PyCapsule_Type
-  struct decompression_context *context =
+  struct decompression_context *c =
     PyCapsule_GetPointer (py_context, decompression_context_capsule_name);
 #else
   /* Compatibility with 2.6 via capsulethunk. */
   struct decompression_context *context =  py_context;
 #endif
   Py_BEGIN_ALLOW_THREADS
-    LZ4F_freeDecompressionContext (context->decompression_context);
+    LZ4F_freeDecompressionContext (c->context);
   Py_END_ALLOW_THREADS
-  if (context->destination_buffer != NULL)
-    {
-      PyMem_Free (context->destination_buffer);
-    }
-  PyMem_Free (context);
+  PyMem_Free (c);
 }
 
 static PyObject *
 create_decompression_context (PyObject * Py_UNUSED (self))
 {
-  struct decompression_context * context;
+  struct decompression_context * c;
   LZ4F_errorCode_t result;
 
-  context =
+  c =
     (struct decompression_context *)
     PyMem_Malloc (sizeof (struct decompression_context));
 
-  if (!context)
+  if (!c)
     {
       return PyErr_NoMemory ();
     }
 
   Py_BEGIN_ALLOW_THREADS
 
-  memset (context, 0, sizeof (*context));
-  context->destination_buffer = NULL;
+  memset (c, 0, sizeof (*c));
+  c->block_size = -1;
 
   result =
-    LZ4F_createDecompressionContext (&context->decompression_context,
-                                     LZ4F_VERSION);
+    LZ4F_createDecompressionContext (&c->context, LZ4F_VERSION);
   Py_END_ALLOW_THREADS
 
   if (LZ4F_isError (result))
     {
-      LZ4F_freeDecompressionContext (context->decompression_context);
-      PyMem_Free (context);
+      LZ4F_freeDecompressionContext (c->context);
+      PyMem_Free (c);
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_createDecompressionContext failed with code: %s",
                     LZ4F_getErrorName (result));
       return NULL;
     }
 
-  return PyCapsule_New (context, decompression_context_capsule_name,
+  return PyCapsule_New (c, decompression_context_capsule_name,
                         destruct_decompression_context);
 }
 
@@ -960,9 +953,12 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
   int full_frame = 0;
   size_t source_read;
   LZ4F_decompressOptions_t options;
+  char * destination_buffer;
+  PyObject *py_destination;
   size_t destination_write;
   char * destination_cursor;
   size_t destination_written;
+  size_t destination_buffer_size;
   const char * source_cursor;
   const char * source_end;
   size_t result = 0;
@@ -987,7 +983,7 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
   context = (struct decompression_context *)
     PyCapsule_GetPointer (py_context, decompression_context_capsule_name);
 
-  if (!context || !context->decompression_context)
+  if (!context || !context->context)
     {
       PyErr_SetString (PyExc_ValueError, "No valid decompression context supplied");
       return NULL;
@@ -999,14 +995,13 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
   source_end = source + source_size;
   source_remain = source_size;
 
-  if (context->destination_buffer == NULL)
+  if (context->block_size < 0)
     {
-      /* First call, so we haven't read the frame header yet, or allocated
-         storage for decompressed data */
+      /* First call, so we haven't read the frame header yet */
       source_read = source_size;
 
       result =
-        LZ4F_getFrameInfo (context->decompression_context, &frame_info,
+        LZ4F_getFrameInfo (context->context, &frame_info,
                            source_cursor, &source_read);
 
       if (LZ4F_isError (result))
@@ -1024,56 +1019,50 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
       source_cursor += source_read;
       source_remain -= source_read;
 
-      if (full_frame)
+      /* Establish and store block size */
+      switch (frame_info.blockSizeID)
         {
-          context->destination_buffer_size = 2 * source_remain;
+        case LZ4F_default:
+        case LZ4F_max64KB:
+          context->block_size = 1 << 16;
+          break;
+        case LZ4F_max256KB:
+          context->block_size = 1 << 18;
+          break;
+        case LZ4F_max1MB:
+          context->block_size = 1 << 20;
+          break;
+        case LZ4F_max4MB:
+          context->block_size = 1 << 22;
+          break;
+        default:
+          Py_BLOCK_THREADS
+            PyErr_Format (PyExc_RuntimeError,
+                          "Failed to resolve block size from blockSizeID: %d",
+                          frame_info.blockSizeID);
+          return NULL;
         }
-      else
-        {
-          switch (frame_info.blockSizeID)
-            {
-            case LZ4F_default:
-            case LZ4F_max64KB:
-              block_size = 1 << 16;
-              break;
-            case LZ4F_max256KB:
-              block_size = 1 << 18;
-              break;
-            case LZ4F_max1MB:
-              block_size = 1 << 20;
-              break;
-            case LZ4F_max4MB:
-              block_size = 1 << 22;
-              break;
-            default:
-              Py_BLOCK_THREADS
-                PyErr_Format (PyExc_RuntimeError,
-                              "Failed to resolve block size from blockSizeID: %d",
-                              frame_info.blockSizeID);
-              return NULL;
-            }
-
-          /* Choose an initial destination size as either twice the source size, or
-             a single block, and we'll grow the allocation as needed. */
-          if (source_remain > block_size)
-            {
-              context->destination_buffer_size = 2 * source_remain;
-            }
-          else
-            {
-              context->destination_buffer_size = block_size;
-            }
-        }
-
-      Py_BLOCK_THREADS
-      context->destination_buffer =
-        (char *) PyMem_Malloc (context->destination_buffer_size);
-      if (!context->destination_buffer)
-        {
-          return PyErr_NoMemory ();
-        }
-      Py_UNBLOCK_THREADS
     }
+
+  /* Choose an initial destination size as either twice the source size, or
+     a single block, and we'll grow the allocation as needed. */
+  if (source_remain > block_size)
+    {
+      destination_buffer_size = 2 * source_remain;
+    }
+  else
+    {
+      destination_buffer_size = block_size;
+    }
+
+  Py_BLOCK_THREADS
+  py_destination = PyBytes_FromStringAndSize (NULL, destination_buffer_size);
+  if (!py_destination)
+    {
+      return PyErr_NoMemory ();
+    }
+  destination_buffer = PyBytes_AS_STRING (py_destination);
+  Py_UNBLOCK_THREADS
 
   if (full_frame)
     {
@@ -1086,8 +1075,8 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
 
   source_read = source_remain;
 
-  destination_write = context->destination_buffer_size;
-  destination_cursor = context->destination_buffer;
+  destination_write = destination_buffer_size;
+  destination_cursor = destination_buffer;
   destination_written = 0;
 
   while (1)
@@ -1104,7 +1093,7 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
          On calling LZ4F_decompres, destination_write is the number of bytes in
          destination available for writing. On exit, destination_write is set to
          the actual number of bytes written to destination. */
-      result = LZ4F_decompress (context->decompression_context,
+      result = LZ4F_decompress (context->context,
                                 destination_cursor,
                                 &destination_write,
                                 source_cursor,
@@ -1134,17 +1123,17 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
           /* We've reached end of input. */
           break;
         }
-      else if (destination_written == context->destination_buffer_size)
+      else if (destination_written == destination_buffer_size)
         {
           /* Destination_buffer is full, so need to expand it. result is an
              indication of number of source bytes remaining, so we'll use this
              to estimate the new size of the destination buffer. */
           char * destination_buffer_new;
-          context->destination_buffer_size += 3 * result;
+          destination_buffer_size += 3 * result;
 
           Py_BLOCK_THREADS
           destination_buffer_new =
-            PyMem_Realloc(context->destination_buffer, context->destination_buffer_size);
+            PyMem_Realloc(destination_buffer, destination_buffer_size);
           if (!destination_buffer_new)
             {
               PyErr_SetString (PyExc_RuntimeError,
@@ -1152,7 +1141,7 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
               return NULL;
             }
           Py_UNBLOCK_THREADS
-          context->destination_buffer = destination_buffer_new;
+          destination_buffer = destination_buffer_new;
         }
 
       /* Data still remaining to be decompressed, so increment the destination
@@ -1160,8 +1149,8 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
          iteration. Important to re-initialize destination_cursor here (as
          opposed to simply incrementing it) so we're pointing to the realloc'd
          memory location. */
-      destination_cursor = context->destination_buffer + destination_written;
-      destination_write = context->destination_buffer_size - destination_written;
+      destination_cursor = destination_buffer + destination_written;
+      destination_write = destination_buffer_size - destination_written;
     }
 
   if (result != 0 && full_frame)
@@ -1170,8 +1159,6 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
                     "full_frame=True specified, but data did not contain complete frame. LZ4F_decompress returned: %zu", result);
       return NULL;
     }
-
-  context->status = result;
 
   Py_END_ALLOW_THREADS
 
@@ -1182,14 +1169,10 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
                     LZ4F_getErrorName (result));
       return NULL;
     }
+  // TODO - resize here
+  Py_SIZE (py_destination) = destination_written;
 
-#if IS_PY3
-  return Py_BuildValue("y#i", context->destination_buffer,
-                       destination_written, source_cursor - source);
-#else
-  return Py_BuildValue("s#i", context->destination_buffer,
-                       destination_written, source_cursor - source);
-#endif
+  return Py_BuildValue("Oi", py_destination, source_cursor - source);
 }
 
 static PyMethodDef module_methods[] =
