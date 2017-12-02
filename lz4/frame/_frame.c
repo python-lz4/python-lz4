@@ -645,217 +645,6 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
                         "contentSize", frame_info.contentSize);
 }
 
-/**************
- * decompress *
- **************/
-PyDoc_STRVAR(decompress__doc,
-             "decompress(source)\n\n"                                   \
-             "Decompressed a frame of data and returns it as a string of bytes.\n" \
-             "Args:\n"                                                  \
-             "    source (str): LZ4 frame as a string\n\n"              \
-             "Returns:\n"                                               \
-             "    str: Uncompressed data as a string.\n"
-             );
-
-static PyObject *
-decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
-{
-  char const *source;
-  int source_size;
-  LZ4F_decompressionContext_t context;
-  LZ4F_frameInfo_t frame_info;
-  LZ4F_decompressOptions_t options;
-  size_t result;
-  size_t source_read;
-  size_t destination_size;
-  char * destination_buffer;
-  size_t destination_write;
-  char * destination_cursor;
-  size_t destination_written;
-  const char * source_cursor;
-  const char * source_end;
-  PyObject *py_dest;
-  static char *kwlist[] = { "source", NULL };
-
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s#", kwlist,
-                                    &source, &source_size))
-    {
-      return NULL;
-    }
-
-  Py_BEGIN_ALLOW_THREADS
-
-  result = LZ4F_createDecompressionContext (&context, LZ4F_VERSION);
-  if (LZ4F_isError (result))
-    {
-      Py_BLOCK_THREADS
-      PyErr_Format (PyExc_RuntimeError,
-                    "LZ4F_createDecompressionContext failed with code: %s",
-                    LZ4F_getErrorName (result));
-      return NULL;
-    }
-
-  source_read = source_size;
-
-  result =
-    LZ4F_getFrameInfo (context, &frame_info, source, &source_read);
-
-  if (LZ4F_isError (result))
-    {
-      LZ4F_freeDecompressionContext (context);
-      Py_BLOCK_THREADS
-      PyErr_Format (PyExc_RuntimeError,
-                    "LZ4F_getFrameInfo failed with code: %s",
-                    LZ4F_getErrorName (result));
-      return NULL;
-    }
-
-  /* Advance the source pointer past the header - the call to getFrameInfo above
-     replaces the passed source_read value with the number of bytes
-     read. Also reduce source_size accordingly. */
-  source += source_read;
-  source_size -= source_read;
-
-  if (frame_info.contentSize == 0)
-    {
-      /* We'll allocate twice the source buffer size as the output size, and
-         later increase it if needed. */
-      destination_size = 2 * source_size;
-    }
-  else
-    {
-      destination_size = frame_info.contentSize;
-    }
-
-  Py_END_ALLOW_THREADS
-
-  destination_buffer = (char *) PyMem_Malloc (destination_size);
-  if (!destination_buffer)
-    {
-      LZ4F_freeDecompressionContext (context);
-      return PyErr_NoMemory ();
-    }
-
-  Py_BEGIN_ALLOW_THREADS
-
-  options.stableDst = 1;
-
-  source_read = source_size;
-  source_cursor = source;
-  source_end = source + source_size;
-
-  destination_write = destination_size;
-  destination_cursor = destination_buffer;
-  destination_written = 0;
-
-  while (source_cursor < source_end)
-    {
-      /* Decompress from the source string and write to the destination_buffer
-         until there's no more source string to read.
-
-         On calling LZ4F_decompress, source_read is set to the remaining length
-         of source available to read. On return, source_read is set to the
-         actual number of bytes read from source, which may be less than
-         available. NB: LZ4F_decompress does not explicitly fail on empty input.
-
-         On calling LZ4F_decompres, destination_write is the number of bytes in
-         destination available for writing. On exit, destination_write is set to
-         the actual number of bytes written to destination. */
-      result = LZ4F_decompress (context,
-                                destination_cursor,
-                                &destination_write,
-                                source_cursor,
-                                &source_read,
-                                &options);
-
-      if (LZ4F_isError (result))
-        {
-          LZ4F_freeDecompressionContext (context);
-          Py_BLOCK_THREADS
-          PyErr_Format (PyExc_RuntimeError,
-                        "LZ4F_decompress failed with code: %s",
-                        LZ4F_getErrorName (result));
-          PyMem_Free (destination_buffer);
-          return NULL;
-        }
-
-      destination_written += destination_write;
-      source_cursor += source_read;
-
-      if (result == 0)
-        {
-          break;
-        }
-
-      if (destination_written == destination_size)
-        {
-          /* Destination_buffer is full, so need to expand it. result is an
-             indication of number of source bytes remaining, so we'll use this
-             to estimate the new size of the destination buffer. */
-          char * destination_buffer_new;
-          destination_size += 3 * result;
-          Py_BLOCK_THREADS
-          destination_buffer_new = PyMem_Realloc(destination_buffer, destination_size);
-          if (!destination_buffer_new)
-            {
-              LZ4F_freeDecompressionContext (context);
-              PyErr_SetString (PyExc_RuntimeError,
-                               "Failed to increase destination buffer size");
-              PyMem_Free (destination_buffer);
-              return NULL;
-            }
-          Py_UNBLOCK_THREADS
-          destination_buffer = destination_buffer_new;
-        }
-      /* Data still remaining to be decompressed, so increment the source and
-         destination cursor locations, and reset source_read and
-         destination_write ready for the next iteration. Important to
-         re-initialize destination_cursor here (as opposed to simply
-         incrementing it) so we're pointing to the realloc'd memory location. */
-      destination_cursor = destination_buffer + destination_written;
-      destination_write = destination_size - destination_written;
-      source_read = source_end - source_cursor;
-    }
-
-  result = LZ4F_freeDecompressionContext (context);
-
-  Py_END_ALLOW_THREADS
-
-  if (LZ4F_isError (result))
-    {
-      PyMem_Free (destination_buffer);
-      PyErr_Format (PyExc_RuntimeError,
-                    "LZ4F_freeDecompressionContext failed with code: %s",
-                    LZ4F_getErrorName (result));
-      return NULL;
-    }
-  else if (result != 0)
-    {
-      PyMem_Free (destination_buffer);
-      PyErr_Format (PyExc_RuntimeError,
-                    "LZ4F_freeDecompressionContext reported unclean decompressor state (truncated frame?): %zu", result);
-      return NULL;
-    }
-  else if (source_cursor != source_end)
-    {
-      PyMem_Free (destination_buffer);
-      PyErr_Format (PyExc_ValueError,
-                    "Extra data: %zd trailing bytes", source_end - source_cursor);
-      return NULL;
-    }
-
-  py_dest = PyBytes_FromStringAndSize (destination_buffer, destination_written);
-
-  if (py_dest == NULL)
-    {
-      PyErr_SetString (PyExc_RuntimeError,
-                       "Failed to create Python object from destination_buffer");
-    }
-
-  PyMem_Free (destination_buffer);
-  return py_dest;
-}
-
 /*******************************
 * create_decompression_context *
 ********************************/
@@ -922,7 +711,7 @@ create_decompression_context (PyObject * Py_UNUSED (self))
 }
 
 /***************
- * decompress2 *
+ * decompress *
  ***************/
 PyDoc_STRVAR(decompress2__doc,
              "decompress2(context, source, full_frame=False)\n\n"                          \
@@ -938,8 +727,8 @@ PyDoc_STRVAR(decompress2__doc,
              );
 
 static PyObject *
-decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
-             PyObject * keywds)
+decompress (PyObject * Py_UNUSED (self), PyObject * args,
+            PyObject * keywds)
 /* This function is passed the first part of the compressed frame, which needs
    to contain the frame header, and establishes the frame parameters for future
    calls to the decompress function. If the passed data contains more than the
@@ -1209,16 +998,12 @@ static PyMethodDef module_methods[] =
     METH_VARARGS | METH_KEYWORDS, get_frame_info__doc
   },
   {
-    "decompress", (PyCFunction) decompress,
-    METH_VARARGS | METH_KEYWORDS, decompress__doc
-  },
-  {
     "create_decompression_context", (PyCFunction) create_decompression_context,
     METH_NOARGS, create_decompression_context__doc
   },
   {
-    "decompress2", (PyCFunction) decompress2,
-    METH_VARARGS | METH_KEYWORDS, decompress2__doc
+    "decompress", (PyCFunction) decompress,
+    METH_VARARGS | METH_KEYWORDS, decompress__doc
   },
   {NULL, NULL, 0, NULL}		/* Sentinel */
 };
