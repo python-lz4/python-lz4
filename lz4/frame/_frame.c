@@ -962,7 +962,6 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
   const char * source_cursor;
   const char * source_end;
   size_t result = 0;
-  int block_size;
   LZ4F_frameInfo_t frame_info;
   static char *kwlist[] = { "context",
                             "source",
@@ -1046,13 +1045,13 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
 
   /* Choose an initial destination size as either twice the source size, or
      a single block, and we'll grow the allocation as needed. */
-  if (source_remain > block_size)
+  if (source_remain > context->block_size)
     {
       destination_buffer_size = 2 * source_remain;
     }
   else
     {
-      destination_buffer_size = block_size;
+      destination_buffer_size = context->block_size;
     }
 
   Py_BLOCK_THREADS
@@ -1157,6 +1156,7 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
     {
       PyErr_Format (PyExc_RuntimeError,
                     "full_frame=True specified, but data did not contain complete frame. LZ4F_decompress returned: %zu", result);
+      // TODO free destination storage, or at least return it incomplete?
       return NULL;
     }
 
@@ -1167,12 +1167,21 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_freeDecompressionContext failed with code: %s",
                     LZ4F_getErrorName (result));
+      // TODO free destination storage
       return NULL;
     }
-  // TODO - resize here
-  Py_SIZE (py_destination) = destination_written;
+  if (destination_written < (destination_buffer_size / 4) * 3)
+    {
+      // TODO add error check
+      printf("HERE\n");
+      _PyBytes_Resize (&py_destination, destination_written);
+    }
+  else
+    {
+      Py_SIZE (py_destination) = destination_written;
+    }
 
-  return Py_BuildValue("Oi", py_destination, source_cursor - source);
+  return Py_BuildValue ("Oi", py_destination, source_cursor - source);
 }
 
 static PyMethodDef module_methods[] =
