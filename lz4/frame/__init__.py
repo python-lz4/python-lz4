@@ -154,3 +154,27 @@ class LZ4FrameCompressor(object):
         """
         self._context = create_compression_context()
         self._started = False
+
+
+class LZ4FrameDecompressor(object):
+    def __init__(self):
+        """Create a LZ4 compressor object, which can be used to compress data
+        incrementally.
+
+        Args:
+            (No arguments)
+        """
+
+        self._context = create_decompression_context()
+
+    def __enter__(self):
+        # All necessary initialization is done in __init__
+        return self
+
+    def __exit__(self, exception_type, exception, traceback):
+        # The decompression context is created with an appropriate destructor,
+        # so no need to del it here
+        pass
+
+    def decompress(self, data, full_frame=False):
+        return decompress2(self._context, data, full_frame=full_frame)
