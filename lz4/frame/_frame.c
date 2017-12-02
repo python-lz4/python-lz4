@@ -713,8 +713,8 @@ create_decompression_context (PyObject * Py_UNUSED (self))
 /***************
  * decompress *
  ***************/
-PyDoc_STRVAR(decompress2__doc,
-             "decompress2(context, source, full_frame=False)\n\n"                          \
+PyDoc_STRVAR(decompress__doc,
+             "decompress(context, source, full_frame=False)\n\n"                          \
              "Decompresses part of a frame of data and returns it as a string of bytes.\n" \
              "Args:\n"                                                  \
              "    context (dCtx): decompression context\n"              \
