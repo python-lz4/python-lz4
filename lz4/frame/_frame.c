@@ -1127,20 +1127,18 @@ decompress2 (PyObject * Py_UNUSED (self), PyObject * args,
           /* Destination_buffer is full, so need to expand it. result is an
              indication of number of source bytes remaining, so we'll use this
              to estimate the new size of the destination buffer. */
-          char * destination_buffer_new;
           destination_buffer_size += 3 * result;
 
           Py_BLOCK_THREADS
-          destination_buffer_new =
-            PyMem_Realloc(destination_buffer, destination_buffer_size);
-          if (!destination_buffer_new)
+
+          if (_PyBytes_Resize (&py_destination, destination_buffer_size) != 0)
             {
               PyErr_SetString (PyExc_RuntimeError,
                                "Failed to increase destination buffer size");
               return NULL;
             }
+          destination_buffer = PyBytes_AS_STRING (py_destination);
           Py_UNBLOCK_THREADS
-          destination_buffer = destination_buffer_new;
         }
 
       /* Data still remaining to be decompressed, so increment the destination
