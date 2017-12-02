@@ -1,9 +1,86 @@
 import lz4.frame as lz4frame
+import pytest
 import unittest
 import os
 import sys
 import struct
 from multiprocessing.pool import ThreadPool
+
+test_data=[
+    (b''),
+    (os.urandom(8 * 1024)),
+    (b'0' * 8 * 1024),
+    (bytearray(b'')),
+    (bytearray(os.urandom(8 * 1024))),
+]
+if sys.version_info > (2, 7):
+    test_data += [
+        (memoryview(b'')),
+        (memoryview(os.urandom(8 * 1024)))
+    ]
+
+@pytest.fixture(
+    params=test_data,
+    ids=[
+        'data' + str(i) for i in range(len(test_data))
+    ]
+)
+def data(request):
+    return request.param
+
+
+@pytest.fixture(
+    params=[
+        (lz4frame.BLOCKSIZE_DEFAULT),
+        (lz4frame.BLOCKSIZE_MAX64KB),
+        (lz4frame.BLOCKSIZE_MAX256KB),
+        (lz4frame.BLOCKSIZE_MAX1MB),
+        (lz4frame.BLOCKSIZE_MAX4MB),
+    ]
+)
+def block_size(request):
+    return request.param
+
+@pytest.fixture(
+    params=[
+        (lz4frame.BLOCKMODE_LINKED),
+        (lz4frame.BLOCKMODE_INDEPENDENT),
+    ]
+)
+def block_mode(request):
+    return request.param
+
+@pytest.fixture(
+    params=[
+        (lz4frame.CONTENTCHECKSUM_DISABLED),
+        (lz4frame.CONTENTCHECKSUM_ENABLED),
+    ]
+)
+def content_checksum(request):
+    return request.param
+
+@pytest.fixture(
+    params=[
+        (lz4frame.FRAMETYPE_FRAME),
+        (lz4frame.FRAMETYPE_SKIPPABLEFRAME),
+    ]
+)
+def frame_type(request):
+    return request.param
+
+compression_levels = list(range(16)) + [
+        lz4frame.COMPRESSIONLEVEL_MIN,
+        lz4frame.COMPRESSIONLEVEL_MINHC,
+        lz4frame.COMPRESSIONLEVEL_MAX,
+    ]
+compression_levels = [
+    (i) for i in compression_levels
+]
+@pytest.fixture(
+    params=compression_levels
+)
+def compression_level(request):
+    return request.param
 
 class TestLZ4Frame(unittest.TestCase):
     def test_create_and_free_compression_context(self):
@@ -296,6 +373,21 @@ class TestLZ4Frame(unittest.TestCase):
         read += r
         self.assertEqual(input_data, decompressed)
         self.assertEqual(read, len(compressed))
+
+    def test_LZ4FrameCompressor2b(self):
+        input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
+        with lz4frame.LZ4FrameCompressor() as compressor:
+            compressed = compressor.compress_begin()
+            compressed += compressor.compress(input_data)
+            compressed += compressor.flush()
+        mid = int(len(compressed) / 2)
+        with lz4frame.LZ4FrameDecompressor() as decompressor:
+            decompressed, read = decompressor.decompress(compressed[0:mid])
+            decompressed, r = decompressor.decompress(compressed[read:])
+            read += r
+        self.assertEqual(input_data, decompressed)
+        self.assertEqual(read, len(compressed))
+
 
 class TestLZ4FrameModern(unittest.TestCase):
     def test_decompress_truncated(self):
