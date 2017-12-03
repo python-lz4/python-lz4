@@ -156,7 +156,6 @@ setup(
     setup_requires=[
         'setuptools_scm',
         'pytest-runner',
-        'pytest-xdist',
     ],
     description="LZ4 Bindings for Python",
     long_description=open('README.rst', 'r').read(),
