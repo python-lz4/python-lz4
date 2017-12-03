@@ -128,6 +128,11 @@ create_compression_context (PyObject * Py_UNUSED (self))
   return PyCapsule_New (context, compression_context_capsule_name, destruct_compression_context);
 }
 
+// TODO Remove compress and build it in python from compress_begin, update, end
+// TODO Update docs for compress_begin - params missing
+// TODO Rename compress_update to something else
+// TODO fix alllocation in compress
+
 /************
  * compress *
  ************/
