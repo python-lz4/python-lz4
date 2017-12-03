@@ -29,6 +29,31 @@ def data(request):
     return request.param
 
 
+test_data_chunked=[
+    (b'', 1, 1),
+    (os.urandom(8 * 1024), 8, 1),
+    (os.urandom(8 * 1024), 1, 8),
+    (b'0' * 8 * 1024, 8, 1),
+    (b'0' * 8 * 1024, 8, 1),
+    # (bytearray(b'')),
+    # (bytearray(os.urandom(8 * 1024))),
+]
+# if sys.version_info > (2, 7):
+#     test_data += [
+#         (memoryview(b'')),
+#         (memoryview(os.urandom(8 * 1024)))
+#     ]
+
+@pytest.fixture(
+    params=test_data_chunked,
+    ids=[
+        'data' + str(i) for i in range(len(test_data_chunked))
+    ]
+)
+def data_chunked(request):
+    return request.param
+
+
 @pytest.fixture(
     params=[
         (lz4frame.BLOCKSIZE_DEFAULT),
@@ -123,13 +148,67 @@ def test_roundtrip(data, block_size, block_mode,
     assert bytes_read == len(compressed)
     assert decompressed == data
 
+import math
+def get_chunked(data, nchunks):
+    size = len(data)
+    stride = int(math.ceil(float(size)/nchunks)) # no // on py 2.6
+    start = 0
+    end = start + stride
+    while end < size:
+        yield data[start:end]
+        start += stride
+        end += stride
+    yield data[start:]
+
+def test_roundtrip_chunked(data_chunked, block_size, block_mode,
+                           content_checksum, frame_type,
+                           compression_level, auto_flush):
+    data, c_chunks, d_chunks = data_chunked
+
+    c_context = lz4frame.create_compression_context()
+    compressed = lz4frame.compress_begin(
+        c_context,
+        source_size=len(data),
+        compression_level=compression_level,
+        block_size=block_size,
+        content_checksum=content_checksum,
+        frame_type=frame_type,
+        auto_flush=auto_flush
+    )
+    data_in = get_chunked(data, c_chunks)
+    try:
+        while True:
+            compressed += lz4frame.compress_update(
+                c_context,
+                next(data_in)
+            )
+    except StopIteration:
+        pass
+    finally:
+        del data_in
+
+    compressed += lz4frame.compress_end(c_context)
+
+    d_context = lz4frame.create_decompression_context()
+    compressed_in = get_chunked(compressed, d_chunks)
+    decompressed = b''
+    bytes_read = 0
+    try:
+        while True:
+            d, b = lz4frame.decompress(d_context, next(compressed_in))
+            decompressed += d
+            bytes_read += b
+    except StopIteration:
+        pass
+    finally:
+        del compressed_in
+
+    #assert bytes_read == len(compressed)
+    assert decompressed == data
+
+
 # class TestLZ4Frame(unittest.TestCase):
 
-#     def test_compress(self):
-#         input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
-#         compressed = lz4frame.compress(input_data)
-#         decompressed = lz4frame.decompress(compressed)
-#         self.assertEqual(input_data, decompressed)
 
 #     def test_compress_begin_update_end(self):
 #         context = lz4frame.create_compression_context()
