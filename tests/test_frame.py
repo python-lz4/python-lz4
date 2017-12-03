@@ -93,7 +93,7 @@ def content_checksum(request):
 def frame_type(request):
     return request.param
 
-compression_levels = list(range(16)) + [
+compression_levels = list(range(-5, 13)) + [
         lz4frame.COMPRESSIONLEVEL_MIN,
         lz4frame.COMPRESSIONLEVEL_MINHC,
         lz4frame.COMPRESSIONLEVEL_MAX,
