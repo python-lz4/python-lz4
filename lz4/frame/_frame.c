@@ -967,7 +967,6 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
   if (destination_written < (destination_buffer_size / 4) * 3)
     {
       // TODO add error check
-      printf("HERE\n");
       _PyBytes_Resize (&py_destination, destination_written);
     }
   else
