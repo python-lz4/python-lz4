@@ -132,6 +132,8 @@ create_compression_context (PyObject * Py_UNUSED (self))
 // TODO Update docs for compress_begin - params missing
 // TODO Rename compress_update to something else
 // TODO fix alllocation in compress
+// TODO store source size in decompression context and keep track of bytes decompressed - smarter dest sizing
+// TODO split out a decompress_begin function  which establishes frame info
 
 /************
  * compress *
@@ -669,7 +671,7 @@ destruct_decompression_context (PyObject * py_context)
     PyCapsule_GetPointer (py_context, decompression_context_capsule_name);
 #else
   /* Compatibility with 2.6 via capsulethunk. */
-  struct decompression_context *context =  py_context;
+  struct decompression_context *c =  py_context;
 #endif
   Py_BEGIN_ALLOW_THREADS
     LZ4F_freeDecompressionContext (c->context);
