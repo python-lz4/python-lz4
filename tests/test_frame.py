@@ -1,10 +1,10 @@
 import lz4.frame as lz4frame
 import pytest
-import unittest
 import os
 import sys
 import struct
 from multiprocessing.pool import ThreadPool
+import math
 
 test_data=[
     (b''),
@@ -148,7 +148,6 @@ def test_roundtrip(data, block_size, block_mode,
     assert bytes_read == len(compressed)
     assert decompressed == data
 
-import math
 def get_chunked(data, nchunks):
     size = len(data)
     stride = int(math.ceil(float(size)/nchunks)) # no // on py 2.6
