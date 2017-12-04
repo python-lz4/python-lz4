@@ -86,10 +86,10 @@ destruct_compression_context (PyObject * py_context)
   struct compression_context *context =  py_context;
 #endif
   Py_BEGIN_ALLOW_THREADS
-    LZ4F_freeCompressionContext (context->compression_context);
+  LZ4F_freeCompressionContext (context->compression_context);
   Py_END_ALLOW_THREADS
 
-    PyMem_Free (context);
+  PyMem_Free (context);
 }
 
 static PyObject *
@@ -125,7 +125,8 @@ create_compression_context (PyObject * Py_UNUSED (self))
       return NULL;
     }
 
-  return PyCapsule_New (context, compression_context_capsule_name, destruct_compression_context);
+  return PyCapsule_New (context, compression_context_capsule_name,
+                        destruct_compression_context);
 }
 
 // TODO Remove compress and build it in python from compress_begin, update, end
