@@ -324,10 +324,8 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
   PyObject *py_context = NULL;
   unsigned long source_size = 0;
   LZ4F_preferences_t preferences;
-  /* Only needs to be large enough for a header, which is 15 bytes.
-   * Unfortunately, the lz4 library doesn't provide a #define for this.
-   * We over-allocate to allow for larger headers in the future. */
-  char destination_buffer[64];
+  PyObject *py_destination;
+  char * destination_buffer;
   struct compression_context *context;
   size_t result;
   static char *kwlist[] = { "context",
@@ -374,11 +372,23 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
 
   context->preferences = preferences;
 
+  /* Only needs to be large enough for a header, which is 15 bytes.
+   * Unfortunately, the lz4 library doesn't provide a #define for this.
+   * We over-allocate to allow for larger headers in the future. */
+#define __COMPRESS_BEGIN_SIZE 32
+  py_destination = PyBytes_FromStringAndSize (NULL, 64);
+  if (!py_destination)
+    {
+      return PyErr_NoMemory ();
+    }
+  destination_buffer = PyBytes_AS_STRING (py_destination);
+
   Py_BEGIN_ALLOW_THREADS
   result = LZ4F_compressBegin (context->compression_context,
                                destination_buffer,
-                               sizeof (destination_buffer),
+                               __COMPRESS_BEGIN_SIZE,
                                &context->preferences);
+#undef __COMPRESS_BEGIN_SIZE
   Py_END_ALLOW_THREADS
 
   if (LZ4F_isError (result))
@@ -389,7 +399,8 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  return PyBytes_FromStringAndSize (destination_buffer, result);
+  Py_SIZE (py_destination) = result;
+  return py_destination;
 }
 
 /*******************
@@ -418,10 +429,10 @@ compress_update (PyObject * Py_UNUSED (self), PyObject * args,
   unsigned long source_size = 0;
   struct compression_context *context;
   size_t compressed_bound;
+  PyObject *py_destination;
   char *destination_buffer;
   LZ4F_compressOptions_t compress_options;
   size_t result;
-  PyObject *bytes;
   static char *kwlist[] = { "context", "source", NULL };
 
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os#", kwlist,
@@ -465,11 +476,12 @@ compress_update (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  destination_buffer = (char *) PyMem_Malloc (compressed_bound);
-  if (!destination_buffer)
+  py_destination = PyBytes_FromStringAndSize (NULL, compressed_bound);
+  if (!py_destination)
     {
       return PyErr_NoMemory ();
     }
+  destination_buffer = PyBytes_AS_STRING (py_destination);
 
   compress_options.stableSrc = 0;
 
@@ -488,10 +500,18 @@ compress_update (PyObject * Py_UNUSED (self), PyObject * args,
                     LZ4F_getErrorName (result));
       return NULL;
     }
-  bytes = PyBytes_FromStringAndSize (destination_buffer, result);
-  PyMem_Free (destination_buffer);
 
-  return bytes;
+  if (result < (compressed_bound / 4) * 3)
+    {
+      // TODO add error check
+      _PyBytes_Resize (&py_destination, result);
+    }
+  else
+    {
+      Py_SIZE (py_destination) = result;
+    }
+
+  return py_destination;
 }
 
 /****************
@@ -514,9 +534,9 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   LZ4F_compressOptions_t compress_options;
   struct compression_context *context;
   size_t destination_size;
+  PyObject *py_destination;
   char * destination_buffer;
   size_t result;
-  PyObject *bytes;
   static char *kwlist[] = { "context", NULL };
 
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "O", kwlist, &py_context))
@@ -542,11 +562,13 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   destination_size = LZ4F_compressBound (1, &(context->preferences));
   Py_END_ALLOW_THREADS
 
-  destination_buffer = (char *) PyMem_Malloc(destination_size * sizeof(char));
-  if (destination_buffer == NULL)
+
+  py_destination = PyBytes_FromStringAndSize (NULL, destination_size);
+  if (!py_destination)
     {
       return PyErr_NoMemory ();
     }
+  destination_buffer = PyBytes_AS_STRING (py_destination);
 
   Py_BEGIN_ALLOW_THREADS
   result =
@@ -563,15 +585,17 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
       return NULL;
     }
 
-  bytes = PyBytes_FromStringAndSize (destination_buffer, result);
-  if (bytes == NULL)
+  if (result < (destination_size / 4) * 3)
     {
-      PyErr_SetString (PyExc_RuntimeError,
-                       "Failed to create Python object from destination_buffer");
+      // TODO add error check
+      _PyBytes_Resize (&py_destination, result);
     }
-  PyMem_Free (destination_buffer);
+  else
+    {
+      Py_SIZE (py_destination) = result;
+    }
 
-  return bytes;
+  return py_destination;
 }
 
 /******************
@@ -675,7 +699,7 @@ destruct_decompression_context (PyObject * py_context)
   struct decompression_context *c =  py_context;
 #endif
   Py_BEGIN_ALLOW_THREADS
-    LZ4F_freeDecompressionContext (c->context);
+  LZ4F_freeDecompressionContext (c->context);
   Py_END_ALLOW_THREADS
   PyMem_Free (c);
 }
