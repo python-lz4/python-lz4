@@ -1,4 +1,8 @@
 import pytest
+import os
+import sys
+import lz4.frame as lz4frame
+
 
 test_data=[
     (b''),

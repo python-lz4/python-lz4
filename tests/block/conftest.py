@@ -1,4 +1,6 @@
 import pytest
+import os
+import sys
 
 test_data=[
     (b''),
