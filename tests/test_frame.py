@@ -147,10 +147,6 @@ def test_roundtrip(data, block_size, block_mode,
     decompressed, bytes_read = lz4frame.decompress(d_context, compressed)
     assert bytes_read == len(compressed)
     assert decompressed == data
-    del compressed
-    del decompressed
-    del c_context
-    del d_context
 
 def get_chunked(data, nchunks):
     size = len(data)
@@ -208,10 +204,6 @@ def test_roundtrip_chunked(data_chunked, block_size, block_mode,
 
     #assert bytes_read == len(compressed)
     assert decompressed == data
-    del compressed
-    del decompressed
-    del c_context
-    del d_context
 
 
 # class TestLZ4Frame(unittest.TestCase):
