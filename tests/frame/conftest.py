@@ -102,7 +102,7 @@ compression_levels = [
     # tests becomes too large. So, we'll select some compression levels at
     # random.
     # (i) for i in compression_levels
-    (i) for i in random.sample(set(compression_levels), k=3)
+    (i) for i in random.sample(set(compression_levels), k=2)
 ]
 @pytest.fixture(
     params=compression_levels
