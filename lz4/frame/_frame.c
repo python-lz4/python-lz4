@@ -326,6 +326,10 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
   LZ4F_preferences_t preferences;
   PyObject *py_destination;
   char * destination_buffer;
+  /* The destination buffer needs to be large enough for a header, which is 15
+   * bytes. Unfortunately, the lz4 library doesn't provide a #define for this.
+   * We over-allocate to allow for larger headers in the future. */
+  const size_t header_size = 32;
   struct compression_context *context;
   size_t result;
   static char *kwlist[] = { "context",
@@ -372,11 +376,7 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
 
   context->preferences = preferences;
 
-  /* Only needs to be large enough for a header, which is 15 bytes.
-   * Unfortunately, the lz4 library doesn't provide a #define for this.
-   * We over-allocate to allow for larger headers in the future. */
-#define __COMPRESS_BEGIN_SIZE 32
-  py_destination = PyBytes_FromStringAndSize (NULL, 64);
+  py_destination = PyBytes_FromStringAndSize (NULL, header_size);
   if (!py_destination)
     {
       return PyErr_NoMemory ();
@@ -386,7 +386,7 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
   Py_BEGIN_ALLOW_THREADS
   result = LZ4F_compressBegin (context->compression_context,
                                destination_buffer,
-                               __COMPRESS_BEGIN_SIZE,
+                               header_size,
                                &context->preferences);
 #undef __COMPRESS_BEGIN_SIZE
   Py_END_ALLOW_THREADS
