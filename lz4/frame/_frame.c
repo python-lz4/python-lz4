@@ -76,7 +76,7 @@ PyDoc_STRVAR(create_compression_context__doc,
             );
 
 static void
-destruct_compression_context (PyObject * py_context)
+destroy_compression_context (PyObject * py_context)
 {
 #ifndef PyCapsule_Type
   struct compression_context *context =
@@ -126,7 +126,7 @@ create_compression_context (PyObject * Py_UNUSED (self))
     }
 
   return PyCapsule_New (context, compression_context_capsule_name,
-                        destruct_compression_context);
+                        destroy_compression_context);
 }
 
 // TODO Remove compress and build it in python from compress_begin, update, end
@@ -689,7 +689,7 @@ PyDoc_STRVAR(create_decompression_context__doc,
             );
 
 static void
-destruct_decompression_context (PyObject * py_context)
+destroy_decompression_context (PyObject * py_context)
 {
 #ifndef PyCapsule_Type
   struct decompression_context *c =
@@ -739,7 +739,7 @@ create_decompression_context (PyObject * Py_UNUSED (self))
     }
 
   return PyCapsule_New (c, decompression_context_capsule_name,
-                        destruct_decompression_context);
+                        destroy_decompression_context);
 }
 
 /***************
