@@ -72,7 +72,7 @@ You can contact the author at :
 **************************************/
 #define LZ4F_STATIC_ASSERT(c)    { enum { LZ4F_static_assert = 1/(int)(!!(c)) }; }   /* use only *after* variable declarations */
 
-
+#include <stdio.h>
 /*-************************************
 *  Basic Types
 **************************************/
