@@ -1,6 +1,7 @@
 import pytest
 import os
 import sys
+import random
 import lz4.frame as lz4frame
 
 
@@ -97,8 +98,11 @@ compression_levels = list(range(-5, 13)) + [
         lz4frame.COMPRESSIONLEVEL_MAX,
     ]
 compression_levels = [
-#    (i) for i in compression_levels
-    (6)
+    # Although testing with all compression levels is desirable, the number of
+    # tests becomes too large. So, we'll select some compression levels at
+    # random.
+    # (i) for i in compression_levels
+    (i) for i in random.sample(set(compression_levels), k=3)
 ]
 @pytest.fixture(
     params=compression_levels
