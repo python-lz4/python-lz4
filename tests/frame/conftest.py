@@ -55,11 +55,11 @@ def data_chunked(request):
 
 @pytest.fixture(
     params=[
+        (lz4frame.BLOCKSIZE_MAX4MB),
         (lz4frame.BLOCKSIZE_DEFAULT),
         (lz4frame.BLOCKSIZE_MAX64KB),
         (lz4frame.BLOCKSIZE_MAX256KB),
         (lz4frame.BLOCKSIZE_MAX1MB),
-        (lz4frame.BLOCKSIZE_MAX4MB),
     ]
 )
 def block_size(request):
