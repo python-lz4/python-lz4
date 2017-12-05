@@ -97,7 +97,8 @@ compression_levels = list(range(-5, 13)) + [
         lz4frame.COMPRESSIONLEVEL_MAX,
     ]
 compression_levels = [
-    (i) for i in compression_levels
+#    (i) for i in compression_levels
+    (6)
 ]
 @pytest.fixture(
     params=compression_levels
