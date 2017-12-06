@@ -65,7 +65,10 @@ build_script:
 test_script:
   # Run the project tests
   # "build.cmd python setup.py test"
-  - "build.cmd tox"
+  # "build.cmd tox"
+  # IF "%PYTHON_ARCH%" == "64" "build.cmd tox"
+  - ps: $env:is64bit = $env:PYTHON.Contains("-x64")
+  - IF %is64bit% == True build.cmd tox
 
 after_test:
   # If tests are successful, create binary packages for the project.
