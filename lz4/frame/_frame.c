@@ -75,7 +75,8 @@ PyDoc_STRVAR(create_compression_context__doc,
              "    cCtx: A compression context\n"
             );
 
-static void
+//static void
+PyCapsule_Destructor
 destroy_compression_context (PyObject * py_context)
 {
 #ifndef PyCapsule_Type
@@ -90,6 +91,7 @@ destroy_compression_context (PyObject * py_context)
   Py_END_ALLOW_THREADS
 
   PyMem_Free (context);
+  printf("compression context destroyted\n");
 }
 
 static PyObject *
@@ -688,7 +690,8 @@ PyDoc_STRVAR(create_decompression_context__doc,
              "    dCtx: A decompression context\n"
             );
 
-static void
+//static void
+PyCapsule_Destructor
 destroy_decompression_context (PyObject * py_context)
 {
 #ifndef PyCapsule_Type
@@ -702,6 +705,7 @@ destroy_decompression_context (PyObject * py_context)
   LZ4F_freeDecompressionContext (c->context);
   Py_END_ALLOW_THREADS
   PyMem_Free (c);
+  printf("decompression context destroyted\n");
 }
 
 static PyObject *
