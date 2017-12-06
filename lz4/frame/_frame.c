@@ -75,7 +75,6 @@ PyDoc_STRVAR(create_compression_context__doc,
              "    cCtx: A compression context\n"
             );
 
-//static void
 PyCapsule_Destructor
 destroy_compression_context (PyObject * py_context)
 {
@@ -690,7 +689,6 @@ PyDoc_STRVAR(create_decompression_context__doc,
              "    dCtx: A decompression context\n"
             );
 
-//static void
 PyCapsule_Destructor
 destroy_decompression_context (PyObject * py_context)
 {

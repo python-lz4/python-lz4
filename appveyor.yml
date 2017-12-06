@@ -64,10 +64,8 @@ build_script:
   - "build.cmd python setup.py build"
 
 test_script:
-  # Run the project tests
-  # "build.cmd python setup.py test"
-  # "build.cmd tox"
-  # IF "%PYTHON_ARCH%" == "64" "build.cmd tox"
+  # Run the project tests. Test only for 64 bit Python as the 32 bit tests fail
+  # due to memory fragmentation resulting from many alloc/free cycles
   - ps: $env:is64bit = $env:PYTHON.Contains("-x64")
   - IF %is64bit% == True build.cmd tox
 
