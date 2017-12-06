@@ -1272,18 +1272,10 @@ size_t LZ4F_decompress(LZ4F_dctx* dctx,
                     dctx->maxBufferSize = 0;   /* ensure allocation will be re-attempted on next entry*/
                     FREEMEM(dctx->tmpIn);
                     dctx->tmpIn = (BYTE*)ALLOCATOR(dctx->maxBlockSize);
-                    if (dctx->tmpIn == NULL)
-                      {
-                        printf("Err1: %d", dctx->maxBlockSize);
-                        return err0r(LZ4F_ERROR_allocation_failed); 
-                      }
+                    if (dctx->tmpIn == NULL) return err0r(LZ4F_ERROR_allocation_failed);
                     FREEMEM(dctx->tmpOutBuffer);
                     dctx->tmpOutBuffer= (BYTE*)ALLOCATOR(bufferNeeded);
-                    if (dctx->tmpOutBuffer== NULL)
-                      {
-                        printf("Err2: %d", bufferNeeded);
-                        return err0r(LZ4F_ERROR_allocation_failed);
-                      }
+                    if (dctx->tmpOutBuffer== NULL) return err0r(LZ4F_ERROR_allocation_failed);
                     dctx->maxBufferSize = bufferNeeded;
             }   }
             dctx->tmpInSize = 0;
