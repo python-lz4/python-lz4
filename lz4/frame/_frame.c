@@ -90,7 +90,6 @@ destroy_compression_context (PyObject * py_context)
   Py_END_ALLOW_THREADS
 
   PyMem_Free (context);
-  printf("compression context destroyted\n");
 }
 
 static PyObject *
@@ -703,7 +702,6 @@ destroy_decompression_context (PyObject * py_context)
   LZ4F_freeDecompressionContext (c->context);
   Py_END_ALLOW_THREADS
   PyMem_Free (c);
-  printf("decompression context destroyted\n");
 }
 
 static PyObject *
