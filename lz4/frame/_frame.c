@@ -129,8 +129,6 @@ create_compression_context (PyObject * Py_UNUSED (self))
                         destroy_compression_context);
 }
 
-// TODO Remove compress and build it in python from compress_begin, update, end
-// TODO Update docs for compress_begin - params missing
 // TODO Rename compress_update to something else - compress_chunk?
 // TODO split out a decompress_begin function  which establishes frame info
 
