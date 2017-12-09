@@ -277,7 +277,12 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
          expensive resize operation to reclaim some space. */
       if ((Py_ssize_t) compressed_size < (dest_size / 4) * 3)
         {
-          _PyBytes_Resize (&py_dest, (Py_ssize_t) compressed_size);
+          if (_PyBytes_Resize (&py_dest, (Py_ssize_t) compressed_size) != 0)
+            {
+              PyErr_SetString (PyExc_RuntimeError,
+                               "Failed to increase destination buffer size");
+              return NULL;
+            }
         }
       else
         {
@@ -497,8 +502,12 @@ compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
 
   if (result < (compressed_bound / 4) * 3)
     {
-      // TODO add error check
-      _PyBytes_Resize (&py_destination, result);
+      if (_PyBytes_Resize (&py_destination, result) != 0)
+        {
+          PyErr_SetString (PyExc_RuntimeError,
+                           "Failed to increase destination buffer size");
+          return NULL;
+        }
     }
   else
     {
@@ -581,8 +590,12 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
 
   if (result < (destination_size / 4) * 3)
     {
-      // TODO add error check
-      _PyBytes_Resize (&py_destination, result);
+      if (_PyBytes_Resize (&py_destination, result) != 0)
+        {
+          PyErr_SetString (PyExc_RuntimeError,
+                           "Failed to increase destination buffer size");
+          return NULL;
+        }
     }
   else
     {
@@ -918,28 +931,32 @@ __decompress(struct decompression_context * context, char const * source,
       destination_write = destination_buffer_size - destination_written;
     }
 
+  Py_END_ALLOW_THREADS
+
   if (result != 0 && full_frame)
     {
       PyErr_Format (PyExc_RuntimeError,
                     "full_frame=True specified, but data did not contain complete frame. LZ4F_decompress returned: %zu", result);
-      // TODO free destination storage, or at least return it incomplete?
+      Py_DECREF(py_destination);
       return NULL;
     }
-
-  Py_END_ALLOW_THREADS
 
   if (LZ4F_isError (result))
     {
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_freeDecompressionContext failed with code: %s",
                     LZ4F_getErrorName (result));
-      // TODO free destination storage
+      Py_DECREF(py_destination);
       return NULL;
     }
   if (destination_written < (destination_buffer_size / 4) * 3)
     {
-      // TODO add error check
-      _PyBytes_Resize (&py_destination, destination_written);
+      if (_PyBytes_Resize (&py_destination, destination_written) != 0)
+        {
+          PyErr_SetString (PyExc_RuntimeError,
+                           "Failed to increase destination buffer size");
+          return NULL;
+        }
     }
   else
     {
