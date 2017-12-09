@@ -27,7 +27,6 @@ def test_roundtrip(data, block_size, block_mode,
         c_context,
         data)
     compressed += lz4frame.compress_end(c_context)
-    d_context = lz4frame.create_decompression_context()
     decompressed, bytes_read = lz4frame.decompress(compressed)
     assert bytes_read == len(compressed)
     assert decompressed == data

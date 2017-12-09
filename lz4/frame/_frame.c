@@ -997,7 +997,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
   context->block_size = -1;
 
   result =
-    LZ4F_createDecompressionContext (&context->context, LZ4F_VERSION);
+    LZ4F_createDecompressionContext (&(context->context), LZ4F_VERSION);
 
   if (LZ4F_isError (result))
     {
@@ -1010,7 +1010,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  decompressed = __decompress(context, source, source_size, 1);
+  decompressed = __decompress (context, source, source_size, 1);
 
   LZ4F_freeDecompressionContext (context->context);
 
@@ -1062,11 +1062,12 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
 
   if (!context || !context->context)
     {
-      PyErr_SetString (PyExc_ValueError, "No valid decompression context supplied");
+      PyErr_SetString (PyExc_ValueError,
+                       "No valid decompression context supplied");
       return NULL;
     }
 
-  return __decompress(context, source, source_size, 0);
+  return __decompress (context, source, source_size, 0);
 }
 
 
