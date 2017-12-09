@@ -172,7 +172,8 @@ create_compression_context (PyObject * Py_UNUSED (self))
   "        The default is lz4.frame.FRAMETYPE_FRAME.\n"                 \
 
 PyDoc_STRVAR(compress__doc,
-             "compress(source, compression_level=0, block_size=0, content_checksum=0, block_mode=0, frame_type=0,  content_size_header=1)\n\n" \
+             "compress(source, compression_level=0, block_size=0, content_checksum=0,\n" \
+             "         block_mode=0, frame_type=0, store_size=True)\n\n"  \
              "Accepts a string, and compresses the string in one go, returning the\n" \
              "compressed string as a string of bytes. The compressed string includes\n" \
              "a header and endmark and so is suitable for writing to a file.\n\n" \
@@ -180,7 +181,7 @@ PyDoc_STRVAR(compress__doc,
              "    source (str): String to compress\n\n"                 \
              "Keyword Args:\n"                                          \
              __COMPRESS_KWARGS_DOCSTRING                                \
-             "    content_size_header (bool): Specifies whether to include an optional\n" \
+             "    store_size (bool): Specifies whether to include an optional\n" \
              "        8-byte header field that is the uncompressed size of data included\n" \
              "        within the frame. Including the content-size header is optional\n" \
              "        and is enabled by default.\n\n"                   \
@@ -194,7 +195,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
 {
   const char *source;
   int source_size;
-  int content_size_header = 1;
+  int store_size = 1;
   LZ4F_preferences_t preferences;
   size_t compressed_bound;
   Py_ssize_t dest_size;
@@ -207,7 +208,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
                             "content_checksum",
                             "block_mode",
                             "frame_type",
-                            "content_size_header",
+                            "store_size",
                             NULL
                           };
 
@@ -221,13 +222,13 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
                                     &preferences.frameInfo.contentChecksumFlag,
                                     &preferences.frameInfo.blockMode,
                                     &preferences.frameInfo.frameType,
-                                    &content_size_header))
+                                    &store_size))
     {
       return NULL;
     }
 
   preferences.autoFlush = 0;
-  if (content_size_header)
+  if (store_size)
     {
       preferences.frameInfo.contentSize = source_size;
     }
