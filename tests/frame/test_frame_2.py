@@ -52,7 +52,7 @@ def test_roundtrip_chunked(data_chunked, block_size, block_mode,
     bytes_read = 0
     try:
         while True:
-            d, b = lz4frame.decompress(d_context, next(compressed_in))
+            d, b = lz4frame.decompress_chunk(d_context, next(compressed_in))
             decompressed += d
             bytes_read += b
     except StopIteration:

@@ -75,7 +75,7 @@ PyDoc_STRVAR(create_compression_context__doc,
              "    cCtx: A compression context\n"
             );
 
-PyCapsule_Destructor
+static void
 destroy_compression_context (PyObject * py_context)
 {
 #ifndef PyCapsule_Type
@@ -682,7 +682,7 @@ PyDoc_STRVAR(create_decompression_context__doc,
              "    dCtx: A decompression context\n"
             );
 
-PyCapsule_Destructor
+static void
 destroy_decompression_context (PyObject * py_context)
 {
 #ifndef PyCapsule_Type
@@ -736,38 +736,14 @@ create_decompression_context (PyObject * Py_UNUSED (self))
                         destroy_decompression_context);
 }
 
-/***************
- * decompress *
- ***************/
-PyDoc_STRVAR(decompress__doc,
-             "decompress(context, source, full_frame=False)\n\n"                          \
-             "Decompresses part of a frame of data and returns it as a string of bytes.\n" \
-             "Args:\n"                                                  \
-             "    context (dCtx): decompression context\n"              \
-             "    source (str): LZ4 frame as a string\n"                \
-             "    full_frame (bool): True if source contains a full frame.\n"
-             "        Default is False\n\n" \
-             "Returns:\n"                                               \
-             "    str: Uncompressed data as a string\n"                 \
-             "    int: Number of bytes consumed from source\n"
-             );
 
-static PyObject *
-decompress (PyObject * Py_UNUSED (self), PyObject * args,
-            PyObject * keywds)
-/* This function is passed the first part of the compressed frame, which needs
-   to contain the frame header, and establishes the frame parameters for future
-   calls to the decompress function. If the passed data contains more than the
-   header, the data will be decompressed and returned. */
+static
+PyObject *
+__decompress(struct decompression_context * context, char const * source,
+             int source_size, int full_frame)
 {
-  PyObject * py_context = NULL;
-  struct decompression_context *context;
-  char const * source;
-  int source_size;
   int source_remain;
-  int full_frame = 0;
   size_t source_read;
-  LZ4F_decompressOptions_t options;
   char * destination_buffer;
   PyObject *py_destination;
   size_t destination_write;
@@ -778,30 +754,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
   const char * source_end;
   size_t result = 0;
   LZ4F_frameInfo_t frame_info;
-  static char *kwlist[] = { "context",
-                            "source",
-                            "full_frame",
-                            NULL
-                          };
-
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os#|i", kwlist,
-                                    &py_context,
-                                    &source,
-                                    &source_size,
-                                    &full_frame
-                                    ))
-    {
-      return NULL;
-    }
-
-  context = (struct decompression_context *)
-    PyCapsule_GetPointer (py_context, decompression_context_capsule_name);
-
-  if (!context || !context->context)
-    {
-      PyErr_SetString (PyExc_ValueError, "No valid decompression context supplied");
-      return NULL;
-    }
+  LZ4F_decompressOptions_t options;
 
   Py_BEGIN_ALLOW_THREADS
 
@@ -858,15 +811,15 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
         }
     }
 
-  /* Choose an initial destination size as either twice the source size, or
-     a single block, and we'll grow the allocation as needed. */
-  if (source_remain > context->block_size)
+  if (frame_info.contentSize > 0 && full_frame)
     {
-      destination_buffer_size = 2 * source_remain;
+      destination_buffer_size = frame_info.contentSize;
     }
   else
     {
-      destination_buffer_size = context->block_size;
+      /* Choose an initial destination size as either twice the source size, and
+         we'll grow the allocation as needed. */
+      destination_buffer_size = 2 * source_remain;
     }
 
   Py_BLOCK_THREADS
@@ -994,7 +947,128 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
     }
 
   return Py_BuildValue ("Oi", py_destination, source_cursor - source);
+
 }
+
+/**************
+ * decompress *
+ **************/
+PyDoc_STRVAR(decompress__doc,
+             "decompress(source)\n\n"                                   \
+             "Decompresses a frame of data and returns it as a string of bytes.\n" \
+             "Args:\n"                                                  \
+             "    source (str): part of a LZ4 frame as a string\n"      \
+             "Returns:\n"                                               \
+             "    str: Uncompressed data as a string\n"                 \
+             );
+
+static PyObject *
+decompress (PyObject * Py_UNUSED (self), PyObject * args,
+            PyObject * keywds)
+{
+  struct decompression_context * context;
+  LZ4F_errorCode_t result;
+  char const * source;
+  int source_size;
+  PyObject * decompressed;
+  static char *kwlist[] = { "source",
+                            NULL
+                          };
+
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s#", kwlist,
+                                    &source,
+                                    &source_size
+                                    ))
+    {
+      return NULL;
+    }
+
+  context =
+    (struct decompression_context *)
+    PyMem_Malloc (sizeof (struct decompression_context));
+
+  if (!context)
+    {
+      return PyErr_NoMemory ();
+    }
+
+  Py_BEGIN_ALLOW_THREADS
+
+  context->block_size = -1;
+
+  result =
+    LZ4F_createDecompressionContext (&context->context, LZ4F_VERSION);
+
+  if (LZ4F_isError (result))
+    {
+      LZ4F_freeDecompressionContext (context->context);
+      Py_BLOCK_THREADS
+      PyMem_Free (context);
+      PyErr_Format (PyExc_RuntimeError,
+                    "LZ4F_createDecompressionContext failed with code: %s",
+                    LZ4F_getErrorName (result));
+      return NULL;
+    }
+
+  decompressed = __decompress(context, source, source_size, 1);
+
+  LZ4F_freeDecompressionContext (context->context);
+
+  Py_END_ALLOW_THREADS
+
+  PyMem_Free (context);
+
+  return decompressed;
+}
+
+/********************
+ * decompress_chunk *
+ ********************/
+PyDoc_STRVAR(decompress_chunk__doc,
+             "decompress(context, source, full_frame=False)\n\n"                          \
+             "Decompresses part of a frame of data and returns it as a string of bytes.\n" \
+             "Args:\n"                                                  \
+             "    context (dCtx): decompression context\n"              \
+             "    source (str): part of a LZ4 frame as a string\n"      \
+             "Returns:\n"                                               \
+             "    str: Uncompressed data as a string\n"                 \
+             "    int: Number of bytes consumed from source\n"
+             );
+
+static PyObject *
+decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
+                  PyObject * keywds)
+{
+  PyObject * py_context = NULL;
+  struct decompression_context *context;
+  char const * source;
+  int source_size;
+  static char *kwlist[] = { "context",
+                            "source",
+                            NULL
+                          };
+
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os#", kwlist,
+                                    &py_context,
+                                    &source,
+                                    &source_size
+                                    ))
+    {
+      return NULL;
+    }
+
+  context = (struct decompression_context *)
+    PyCapsule_GetPointer (py_context, decompression_context_capsule_name);
+
+  if (!context || !context->context)
+    {
+      PyErr_SetString (PyExc_ValueError, "No valid decompression context supplied");
+      return NULL;
+    }
+
+  return __decompress(context, source, source_size, 0);
+}
+
 
 static PyMethodDef module_methods[] =
 {
@@ -1029,6 +1103,10 @@ static PyMethodDef module_methods[] =
   {
     "decompress", (PyCFunction) decompress,
     METH_VARARGS | METH_KEYWORDS, decompress__doc
+  },
+  {
+    "decompress_chunk", (PyCFunction) decompress_chunk,
+    METH_VARARGS | METH_KEYWORDS, decompress_chunk__doc
   },
   {NULL, NULL, 0, NULL}		/* Sentinel */
 };
