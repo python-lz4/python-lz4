@@ -999,10 +999,11 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
   result =
     LZ4F_createDecompressionContext (&(context->context), LZ4F_VERSION);
 
+  Py_END_ALLOW_THREADS
+
   if (LZ4F_isError (result))
     {
       LZ4F_freeDecompressionContext (context->context);
-      Py_BLOCK_THREADS
       PyMem_Free (context);
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_createDecompressionContext failed with code: %s",
@@ -1012,8 +1013,8 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
 
   decompressed = __decompress (context, source, source_size, 1);
 
+  Py_BEGIN_ALLOW_THREADS
   LZ4F_freeDecompressionContext (context->context);
-
   Py_END_ALLOW_THREADS
 
   PyMem_Free (context);
