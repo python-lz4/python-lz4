@@ -127,7 +127,7 @@ class LZ4FrameCompressor(object):
         if self._started is False:
             raise RuntimeError('compress called before compress_begin()')
 
-        result = compress_update(self._context, data)
+        result = compress_chunk(self._context, data)
 
         return result
 

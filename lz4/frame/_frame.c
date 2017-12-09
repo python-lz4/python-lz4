@@ -129,9 +129,6 @@ create_compression_context (PyObject * Py_UNUSED (self))
                         destroy_compression_context);
 }
 
-// TODO Rename compress_update to something else - compress_chunk?
-// TODO split out a decompress_begin function  which establishes frame info
-
 /************
  * compress *
  ************/
@@ -400,11 +397,11 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
   return py_destination;
 }
 
-/*******************
- * compress_update *
- *******************/
-PyDoc_STRVAR(compress_update__doc,
-             "compress_update(context, source)\n\n" \
+/******************
+ * compress_chunk *
+ ******************/
+PyDoc_STRVAR(compress_chunk__doc,
+             "compress_chunk(context, source)\n\n" \
              "Compresses blocks of data and returns the compressed data in a string of bytes.\n" \
              "Args:\n"                                                  \
              "    context (cCtx): compression context\n"                \
@@ -418,7 +415,7 @@ PyDoc_STRVAR(compress_update__doc,
              );
 
 static PyObject *
-compress_update (PyObject * Py_UNUSED (self), PyObject * args,
+compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
                  PyObject * keywds)
 {
   PyObject *py_context = NULL;
@@ -1014,8 +1011,8 @@ static PyMethodDef module_methods[] =
     METH_VARARGS | METH_KEYWORDS, compress_begin__doc
   },
   {
-    "compress_update", (PyCFunction) compress_update,
-    METH_VARARGS | METH_KEYWORDS, compress_update__doc
+    "compress_chunk", (PyCFunction) compress_chunk,
+    METH_VARARGS | METH_KEYWORDS, compress_chunk__doc
   },
   {
     "compress_end", (PyCFunction) compress_end,

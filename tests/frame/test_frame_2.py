@@ -35,7 +35,7 @@ def test_roundtrip_chunked(data_chunked, block_size, block_mode,
     data_in = get_chunked(data, c_chunks)
     try:
         while True:
-            compressed += lz4frame.compress_update(
+            compressed += lz4frame.compress_chunk(
                 c_context,
                 next(data_in)
             )

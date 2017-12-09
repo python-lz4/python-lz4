@@ -23,7 +23,7 @@ def test_roundtrip(data, block_size, block_mode,
         frame_type=frame_type,
         auto_flush=auto_flush
     )
-    compressed += lz4frame.compress_update(
+    compressed += lz4frame.compress_chunk(
         c_context,
         data)
     compressed += lz4frame.compress_end(c_context)
