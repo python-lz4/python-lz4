@@ -907,7 +907,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
          actual number of bytes read from source, which may be less than
          available. NB: LZ4F_decompress does not explicitly fail on empty input.
 
-         On calling LZ4F_decompres, destination_write is the number of bytes in
+         On calling LZ4F_decompress, destination_write is the number of bytes in
          destination available for writing. On exit, destination_write is set to
          the actual number of bytes written to destination. */
       result = LZ4F_decompress (context->context,
