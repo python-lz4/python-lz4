@@ -775,9 +775,8 @@ __decompress(struct decompression_context * context, char const * source,
   source_end = source + source_size;
   source_remain = source_size;
 
-  if (context->block_size < 0)
+  if (full_frame)
     {
-      /* First call, so we haven't read the frame header yet */
       source_read = source_size;
 
       result =
@@ -787,9 +786,9 @@ __decompress(struct decompression_context * context, char const * source,
       if (LZ4F_isError (result))
         {
           Py_BLOCK_THREADS
-          PyErr_Format (PyExc_RuntimeError,
-                        "LZ4F_getFrameInfo failed with code: %s",
-                        LZ4F_getErrorName (result));
+            PyErr_Format (PyExc_RuntimeError,
+                          "LZ4F_getFrameInfo failed with code: %s",
+                          LZ4F_getErrorName (result));
           return NULL;
         }
 
@@ -798,35 +797,14 @@ __decompress(struct decompression_context * context, char const * source,
          number of bytes read. Also reduce source_size accordingly. */
       source_cursor += source_read;
       source_remain -= source_read;
-
-      /* Establish and store block size */
-      switch (frame_info.blockSizeID)
+      if (frame_info.contentSize > 0)
         {
-        case LZ4F_default:
-        case LZ4F_max64KB:
-          context->block_size = 1 << 16;
-          break;
-        case LZ4F_max256KB:
-          context->block_size = 1 << 18;
-          break;
-        case LZ4F_max1MB:
-          context->block_size = 1 << 20;
-          break;
-        case LZ4F_max4MB:
-          context->block_size = 1 << 22;
-          break;
-        default:
-          Py_BLOCK_THREADS
-            PyErr_Format (PyExc_RuntimeError,
-                          "Failed to resolve block size from blockSizeID: %d",
-                          frame_info.blockSizeID);
-          return NULL;
+          destination_buffer_size = frame_info.contentSize;
         }
-    }
-
-  if (frame_info.contentSize > 0 && full_frame)
-    {
-      destination_buffer_size = frame_info.contentSize;
+      else
+        {
+          destination_buffer_size = 2 * source_remain;
+        }
     }
   else
     {
