@@ -54,7 +54,7 @@ static const char * decompression_context_capsule_name = "_frame.LZ4F_dctx";
 
 struct compression_context
 {
-  LZ4F_compressionContext_t compression_context;
+  LZ4F_cctx * compression_context;
   LZ4F_preferences_t preferences;
 };
 
