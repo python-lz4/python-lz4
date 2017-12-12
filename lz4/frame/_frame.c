@@ -54,7 +54,7 @@ static const char * decompression_context_capsule_name = "_frame.LZ4F_dctx";
 
 struct compression_context
 {
-  LZ4F_cctx * compression_context;
+  LZ4F_cctx * context;
   LZ4F_preferences_t preferences;
 };
 
@@ -80,7 +80,7 @@ destroy_compression_context (PyObject * py_context)
   struct compression_context *context =  py_context;
 #endif
   Py_BEGIN_ALLOW_THREADS
-  LZ4F_freeCompressionContext (context->compression_context);
+  LZ4F_freeCompressionContext (context->context);
   Py_END_ALLOW_THREADS
 
   PyMem_Free (context);
@@ -105,13 +105,13 @@ create_compression_context (PyObject * Py_UNUSED (self))
   memset (context, 0, sizeof (*context));
 
   result =
-    LZ4F_createCompressionContext (&context->compression_context,
+    LZ4F_createCompressionContext (&context->context,
                                    LZ4F_VERSION);
   Py_END_ALLOW_THREADS
 
   if (LZ4F_isError (result))
     {
-      LZ4F_freeCompressionContext (context->compression_context);
+      LZ4F_freeCompressionContext (context->context);
       PyMem_Free (context);
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_createCompressionContext failed with code: %s",
@@ -361,7 +361,7 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
   context =
     (struct compression_context *) PyCapsule_GetPointer (py_context, compression_context_capsule_name);
 
-  if (!context || !context->compression_context)
+  if (!context || !context->context)
     {
       PyErr_SetString (PyExc_ValueError, "No valid compression context supplied");
       return NULL;
@@ -377,7 +377,7 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
   destination_buffer = PyBytes_AS_STRING (py_destination);
 
   Py_BEGIN_ALLOW_THREADS
-  result = LZ4F_compressBegin (context->compression_context,
+  result = LZ4F_compressBegin (context->context,
                                destination_buffer,
                                header_size,
                                &context->preferences);
@@ -436,7 +436,7 @@ compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
 
   context =
     (struct compression_context *) PyCapsule_GetPointer (py_context, compression_context_capsule_name);
-  if (!context || !context->compression_context)
+  if (!context || !context->context)
     {
       PyErr_Format (PyExc_ValueError, "No compression context supplied");
       return NULL;
@@ -480,7 +480,7 @@ compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
 
   Py_BEGIN_ALLOW_THREADS
   result =
-    LZ4F_compressUpdate (context->compression_context, destination_buffer,
+    LZ4F_compressUpdate (context->context, destination_buffer,
                          compressed_bound, source, source_size,
                          &compress_options);
   Py_END_ALLOW_THREADS
@@ -543,7 +543,7 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
 
   context =
     (struct compression_context *) PyCapsule_GetPointer (py_context, compression_context_capsule_name);
-  if (!context || !context->compression_context)
+  if (!context || !context->context)
     {
       PyErr_SetString (PyExc_ValueError, "No compression context supplied");
       return NULL;
@@ -569,7 +569,7 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
 
   Py_BEGIN_ALLOW_THREADS
   result =
-    LZ4F_compressEnd (context->compression_context, destination_buffer,
+    LZ4F_compressEnd (context->context, destination_buffer,
                       destination_size, &compress_options);
   Py_END_ALLOW_THREADS
 
