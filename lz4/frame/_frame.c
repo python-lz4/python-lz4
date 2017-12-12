@@ -757,13 +757,15 @@ create_decompression_context (PyObject * Py_UNUSED (self))
 
 static
 PyObject *
-__decompress(LZ4F_dctx * context, Py_buffer source,
+__decompress(LZ4F_dctx * context, Py_buffer py_source,
              int full_frame)
 {
+  char * source;
   size_t source_remain;
+  size_t source_size;
   size_t source_read;
-  void * source_cursor;
-  void * source_end;
+  char * source_cursor;
+  char * source_end;
   char * destination_buffer;
   size_t destination_write;
   char * destination_cursor;
@@ -776,13 +778,17 @@ __decompress(LZ4F_dctx * context, Py_buffer source,
 
   Py_BEGIN_ALLOW_THREADS
 
-  source_cursor = source.buf;
-  source_end = source.buf + source.len;
-  source_remain = source.len;
+  /* MSVC can't do pointer arithmetic on void * pointers, so cast to char * */
+  source = (char *) py_source.buf;
+  source_size = py_source.len;
+
+  source_cursor = source;
+  source_end = source + source_size;
+  source_remain = source_size;
 
   if (full_frame)
     {
-      source_read = source.len;
+      source_read = source_size;
 
       result =
         LZ4F_getFrameInfo (context, &frame_info,
@@ -946,7 +952,7 @@ __decompress(LZ4F_dctx * context, Py_buffer source,
       Py_SIZE (py_destination) = destination_written;
     }
 
-  return Py_BuildValue ("Oi", py_destination, source_cursor - source.buf);
+  return Py_BuildValue ("Oi", py_destination, source_cursor - source);
 
 }
 
