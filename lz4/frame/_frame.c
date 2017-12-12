@@ -58,11 +58,6 @@ struct compression_context
   LZ4F_preferences_t preferences;
 };
 
-struct decompression_context
-{
-  LZ4F_decompressionContext_t context;
-};
-
 /*****************************
 * create_compression_context *
 ******************************/
@@ -698,59 +693,44 @@ static void
 destroy_decompression_context (PyObject * py_context)
 {
 #ifndef PyCapsule_Type
-  struct decompression_context *c =
+  LZ4F_dctx * context =
     PyCapsule_GetPointer (py_context, decompression_context_capsule_name);
 #else
   /* Compatibility with 2.6 via capsulethunk. */
-  struct decompression_context *c =  py_context;
+  LZ4F_dctx * context =  py_context;
 #endif
   Py_BEGIN_ALLOW_THREADS
-  LZ4F_freeDecompressionContext (c->context);
+  LZ4F_freeDecompressionContext (context);
   Py_END_ALLOW_THREADS
-  PyMem_Free (c);
 }
 
 static PyObject *
 create_decompression_context (PyObject * Py_UNUSED (self))
 {
-  struct decompression_context * c;
+  LZ4F_dctx * context;
   LZ4F_errorCode_t result;
 
-  c =
-    (struct decompression_context *)
-    PyMem_Malloc (sizeof (struct decompression_context));
-
-  if (!c)
-    {
-      return PyErr_NoMemory ();
-    }
-
   Py_BEGIN_ALLOW_THREADS
-
-  memset (c, 0, sizeof (*c));
-
-  result =
-    LZ4F_createDecompressionContext (&c->context, LZ4F_VERSION);
-  Py_END_ALLOW_THREADS
-
+  result = LZ4F_createDecompressionContext (&context, LZ4F_VERSION);
   if (LZ4F_isError (result))
     {
-      LZ4F_freeDecompressionContext (c->context);
-      PyMem_Free (c);
+      Py_BLOCK_THREADS
+      LZ4F_freeDecompressionContext (context);
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_createDecompressionContext failed with code: %s",
                     LZ4F_getErrorName (result));
       return NULL;
     }
+  Py_END_ALLOW_THREADS
 
-  return PyCapsule_New (c, decompression_context_capsule_name,
+  return PyCapsule_New (context, decompression_context_capsule_name,
                         destroy_decompression_context);
 }
 
 
 static
 PyObject *
-__decompress(struct decompression_context * context, char const * source,
+__decompress(LZ4F_dctx * context, char const * source,
              int source_size, int full_frame)
 {
   int source_remain;
@@ -778,7 +758,7 @@ __decompress(struct decompression_context * context, char const * source,
       source_read = source_size;
 
       result =
-        LZ4F_getFrameInfo (context->context, &frame_info,
+        LZ4F_getFrameInfo (context, &frame_info,
                            source_cursor, &source_read);
 
       if (LZ4F_isError (result))
@@ -849,7 +829,7 @@ __decompress(struct decompression_context * context, char const * source,
          On calling LZ4F_decompress, destination_write is the number of bytes in
          destination available for writing. On exit, destination_write is set to
          the actual number of bytes written to destination. */
-      result = LZ4F_decompress (context->context,
+      result = LZ4F_decompress (context,
                                 destination_cursor,
                                 &destination_write,
                                 source_cursor,
@@ -959,7 +939,7 @@ static PyObject *
 decompress (PyObject * Py_UNUSED (self), PyObject * args,
             PyObject * keywds)
 {
-  struct decompression_context * context;
+  LZ4F_dctx * context;
   LZ4F_errorCode_t result;
   char const * source;
   int source_size;
@@ -976,39 +956,24 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  context =
-    (struct decompression_context *)
-    PyMem_Malloc (sizeof (struct decompression_context));
-
-  if (!context)
-    {
-      return PyErr_NoMemory ();
-    }
-
   Py_BEGIN_ALLOW_THREADS
-
-  result =
-    LZ4F_createDecompressionContext (&(context->context), LZ4F_VERSION);
-
-  Py_END_ALLOW_THREADS
-
+  result = LZ4F_createDecompressionContext (&context, LZ4F_VERSION);
   if (LZ4F_isError (result))
     {
-      LZ4F_freeDecompressionContext (context->context);
-      PyMem_Free (context);
+      Py_BLOCK_THREADS
+      LZ4F_freeDecompressionContext (context);
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_createDecompressionContext failed with code: %s",
                     LZ4F_getErrorName (result));
       return NULL;
     }
+  Py_END_ALLOW_THREADS
 
   decompressed = __decompress (context, source, source_size, 1);
 
   Py_BEGIN_ALLOW_THREADS
-  LZ4F_freeDecompressionContext (context->context);
+  LZ4F_freeDecompressionContext (context);
   Py_END_ALLOW_THREADS
-
-  PyMem_Free (context);
 
   return decompressed;
 }
@@ -1032,7 +997,7 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
                   PyObject * keywds)
 {
   PyObject * py_context = NULL;
-  struct decompression_context *context;
+  LZ4F_dctx * context;
   char const * source;
   int source_size;
   static char *kwlist[] = { "context",
@@ -1049,10 +1014,10 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  context = (struct decompression_context *)
+  context = (LZ4F_dctx *)
     PyCapsule_GetPointer (py_context, decompression_context_capsule_name);
 
-  if (!context || !context->context)
+  if (!context)
     {
       PyErr_SetString (PyExc_ValueError,
                        "No valid decompression context supplied");
