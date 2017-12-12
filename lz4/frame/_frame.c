@@ -137,14 +137,14 @@ create_compression_context (PyObject * Py_UNUSED (self))
   "        If unspecified, will default to lz4.frame.BLOCKSIZE_DEFAULT.\n" \
   "    block_mode (int): Specifies whether to use block-linked\n"       \
   "        compression. Options:\n\n"                                   \
-  "        - lz4.frame.BLOCKMODE_LINKED or 0: linked mode\n"          \
+  "        - lz4.frame.BLOCKMODE_LINKED or 0: linked mode\n"            \
   "        - lz4.frame.BLOCKMODE_INDEPENDENT or 1: disable linked mode\n\n" \
-  "        The default is lz4.frame.BLOCKMODE_LINKED.\n"           \
+  "        The default is lz4.frame.BLOCKMODE_LINKED.\n"                \
   "    compression_level (int): Specifies the level of compression used.\n" \
   "        Values between 0-16 are valid, with 0 (default) being the\n"     \
   "        lowest compression (0-2 are the same value), and 16 the highest.\n" \
-  "        Values above 16 will be treated as 16.\n"             \
-  "        Values between 4-9 are recommended.\n"      \
+  "        Values above 16 will be treated as 16.\n"                    \
+  "        Values between 4-9 are recommended.\n"                       \
   "        The following module constants are provided as a convenience:\n\n" \
   "        - lz4.frame.COMPRESSIONLEVEL_MIN: Minimum compression (0, the default)\n" \
   "        - lz4.frame.COMPRESSIONLEVEL_MINHC: Minimum high-compression mode (3)\n" \
@@ -162,12 +162,12 @@ create_compression_context (PyObject * Py_UNUSED (self))
 
 PyDoc_STRVAR(compress__doc,
              "compress(source, compression_level=0, block_size=0, content_checksum=0,\n" \
-             "         block_mode=0, frame_type=0, store_size=True)\n\n"  \
-             "Accepts a string, and compresses the string in one go, returning the\n" \
-             "compressed string as a string of bytes. The compressed string includes\n" \
-             "a header and endmark and so is suitable for writing to a file.\n\n" \
+             "         block_mode=0, frame_type=0, store_size=True)\n\n" \
+             "Compresses the source returning the compressed data as a string of bytes.\n" \
+             "The compressed string includes a header and endmark and so is suitable\n" \
+             "for writing to a file.\n\n"                               \
              "Args:\n"                                                  \
-             "    source (str): String to compress\n\n"                 \
+             "    source (str, bytes or buffer-compatible object): data to compress\n\n"                 \
              "Keyword Args:\n"                                          \
              __COMPRESS_KWARGS_DOCSTRING                                \
              "    store_size (bool): Specifies whether to include an optional\n" \
@@ -175,7 +175,7 @@ PyDoc_STRVAR(compress__doc,
              "        within the frame. Including the content-size header is optional\n" \
              "        and is enabled by default.\n\n"                   \
              "Returns:\n"                                               \
-             "    str: Compressed data as a string\n"
+             "    str: Compressed data\n"
              );
 
 static PyObject *
