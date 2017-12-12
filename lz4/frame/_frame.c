@@ -61,7 +61,6 @@ struct compression_context
 struct decompression_context
 {
   LZ4F_decompressionContext_t context;
-  int block_size;
 };
 
 /*****************************
@@ -729,7 +728,6 @@ create_decompression_context (PyObject * Py_UNUSED (self))
   Py_BEGIN_ALLOW_THREADS
 
   memset (c, 0, sizeof (*c));
-  c->block_size = -1;
 
   result =
     LZ4F_createDecompressionContext (&c->context, LZ4F_VERSION);
@@ -988,8 +986,6 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
     }
 
   Py_BEGIN_ALLOW_THREADS
-
-  context->block_size = -1;
 
   result =
     LZ4F_createDecompressionContext (&(context->context), LZ4F_VERSION);
