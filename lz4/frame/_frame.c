@@ -755,13 +755,13 @@ create_decompression_context (PyObject * Py_UNUSED (self))
                         destroy_decompression_context);
 }
 
-
 static
 PyObject *
-__decompress(LZ4F_dctx * context, char const * source,
-             int source_size, int full_frame)
+__decompress(LZ4F_dctx * context, Py_buffer source,
+             int full_frame)
 {
-  int source_remain;
+  Py_ssize_t source_size;
+  size_t source_remain;
   size_t source_read;
   char * destination_buffer;
   PyObject *py_destination;
@@ -769,16 +769,17 @@ __decompress(LZ4F_dctx * context, char const * source,
   char * destination_cursor;
   size_t destination_written;
   size_t destination_buffer_size;
-  const char * source_cursor;
-  const char * source_end;
+  void * source_cursor;
+  void * source_end;
   size_t result = 0;
   LZ4F_frameInfo_t frame_info;
   LZ4F_decompressOptions_t options;
 
   Py_BEGIN_ALLOW_THREADS
 
-  source_cursor = source;
-  source_end = source + source_size;
+  source_cursor = source.buf;
+  source_size = source.len;
+  source_end = source.buf + source_size;
   source_remain = source_size;
 
   if (full_frame)
@@ -947,7 +948,7 @@ __decompress(LZ4F_dctx * context, char const * source,
       Py_SIZE (py_destination) = destination_written;
     }
 
-  return Py_BuildValue ("Oi", py_destination, source_cursor - source);
+  return Py_BuildValue ("Oi", py_destination, source_cursor - source.buf);
 
 }
 
@@ -969,20 +970,27 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
 {
   LZ4F_dctx * context;
   LZ4F_errorCode_t result;
-  char const * source;
-  int source_size;
+  Py_buffer source;
   PyObject * decompressed;
   static char *kwlist[] = { "source",
                             NULL
                           };
 
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s#", kwlist,
-                                    &source,
-                                    &source_size
+#if IS_PY3
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*", kwlist,
+                                    &source
                                     ))
     {
       return NULL;
     }
+#else
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*", kwlist,
+                                    &source
+                                    ))
+    {
+      return NULL;
+    }
+#endif
 
   Py_BEGIN_ALLOW_THREADS
   result = LZ4F_createDecompressionContext (&context, LZ4F_VERSION);
@@ -997,7 +1005,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
     }
   Py_END_ALLOW_THREADS
 
-  decompressed = __decompress (context, source, source_size, 1);
+  decompressed = __decompress (context, source, 1);
 
   Py_BEGIN_ALLOW_THREADS
   LZ4F_freeDecompressionContext (context);
@@ -1026,21 +1034,29 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
 {
   PyObject * py_context = NULL;
   LZ4F_dctx * context;
-  char const * source;
-  int source_size;
+  Py_buffer source;
   static char *kwlist[] = { "context",
                             "source",
                             NULL
                           };
 
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os#", kwlist,
+#if IS_PY3
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Oy*", kwlist,
                                     &py_context,
-                                    &source,
-                                    &source_size
+                                    &source
                                     ))
     {
       return NULL;
     }
+#else
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os*", kwlist,
+                                    &py_context,
+                                    &source
+                                    ))
+    {
+      return NULL;
+    }
+#endif
 
   context = (LZ4F_dctx *)
     PyCapsule_GetPointer (py_context, decompression_context_capsule_name);
@@ -1052,7 +1068,7 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  return __decompress (context, source, source_size, 0);
+  return __decompress (context, source, 0);
 }
 
 
