@@ -760,17 +760,16 @@ PyObject *
 __decompress(LZ4F_dctx * context, Py_buffer source,
              int full_frame)
 {
-  Py_ssize_t source_size;
   size_t source_remain;
   size_t source_read;
+  void * source_cursor;
+  void * source_end;
   char * destination_buffer;
-  PyObject *py_destination;
   size_t destination_write;
   char * destination_cursor;
   size_t destination_written;
   size_t destination_buffer_size;
-  void * source_cursor;
-  void * source_end;
+  PyObject *py_destination;
   size_t result = 0;
   LZ4F_frameInfo_t frame_info;
   LZ4F_decompressOptions_t options;
@@ -778,13 +777,12 @@ __decompress(LZ4F_dctx * context, Py_buffer source,
   Py_BEGIN_ALLOW_THREADS
 
   source_cursor = source.buf;
-  source_size = source.len;
-  source_end = source.buf + source_size;
-  source_remain = source_size;
+  source_end = source.buf + source.len;
+  source_remain = source.len;
 
   if (full_frame)
     {
-      source_read = source_size;
+      source_read = source.len;
 
       result =
         LZ4F_getFrameInfo (context, &frame_info,
@@ -801,7 +799,7 @@ __decompress(LZ4F_dctx * context, Py_buffer source,
 
       /* Advance the source_cursor pointer past the header - the call to
          getFrameInfo above replaces the passed source_read value with the
-         number of bytes read. Also reduce source_size accordingly. */
+         number of bytes read. Also reduce source_remain accordingly. */
       source_cursor += source_read;
       source_remain -= source_read;
       if (frame_info.contentSize > 0)
