@@ -182,8 +182,8 @@ static PyObject *
 compress (PyObject * Py_UNUSED (self), PyObject * args,
           PyObject * keywds)
 {
-  const char *source;
-  int source_size;
+  Py_buffer source;
+  Py_ssize_t source_size;
   int store_size = 1;
   LZ4F_preferences_t preferences;
   size_t compressed_bound;
@@ -204,8 +204,9 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
 
   memset (&preferences, 0, sizeof (preferences));
 
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s#|iiiiii", kwlist,
-                                    &source, &source_size,
+#if IS_PY3
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|iiiiii", kwlist,
+                                    &source,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
                                     &preferences.frameInfo.contentChecksumFlag,
@@ -215,6 +216,21 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
     {
       return NULL;
     }
+#else
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*|iiiiii", kwlist,
+                                    &source,
+                                    &preferences.compressionLevel,
+                                    &preferences.frameInfo.blockSizeID,
+                                    &preferences.frameInfo.contentChecksumFlag,
+                                    &preferences.frameInfo.blockMode,
+                                    &preferences.frameInfo.frameType,
+                                    &store_size))
+    {
+      return NULL;
+    }
+#endif
+
+  source_size = source.len;
 
   preferences.autoFlush = 0;
   if (store_size)
@@ -253,7 +269,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
       size_t compressed_size;
       Py_BEGIN_ALLOW_THREADS
       compressed_size =
-        LZ4F_compressFrame (dest, dest_size, source, source_size,
+        LZ4F_compressFrame (dest, dest_size, source.buf, source_size,
                             &preferences);
       Py_END_ALLOW_THREADS
 
@@ -315,7 +331,7 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
                 PyObject * keywds)
 {
   PyObject *py_context = NULL;
-  unsigned long source_size = 0;
+  Py_ssize_t source_size = 0;
   LZ4F_preferences_t preferences;
   PyObject *py_destination;
   char * destination_buffer;
@@ -418,8 +434,8 @@ compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
                  PyObject * keywds)
 {
   PyObject *py_context = NULL;
-  const char *source = NULL;
-  unsigned long source_size = 0;
+  Py_buffer source;
+  Py_ssize_t source_size;
   struct compression_context *context;
   size_t compressed_bound;
   PyObject *py_destination;
@@ -428,11 +444,23 @@ compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
   size_t result;
   static char *kwlist[] = { "context", "source", NULL };
 
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os#", kwlist,
-                                    &py_context, &source, &source_size))
+#if IS_PY3
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Oy*", kwlist,
+                                    &py_context,
+                                    &source))
     {
       return NULL;
     }
+#else
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os*", kwlist,
+                                    &py_context,
+                                    &source))
+    {
+      return NULL;
+    }
+#endif
+
+  source_size = source.len;
 
   context =
     (struct compression_context *) PyCapsule_GetPointer (py_context, compression_context_capsule_name);
@@ -481,7 +509,7 @@ compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
   Py_BEGIN_ALLOW_THREADS
   result =
     LZ4F_compressUpdate (context->context, destination_buffer,
-                         compressed_bound, source, source_size,
+                         compressed_bound, source.buf, source_size,
                          &compress_options);
   Py_END_ALLOW_THREADS
 
