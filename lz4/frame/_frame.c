@@ -185,6 +185,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
   Py_buffer source;
   Py_ssize_t source_size;
   int store_size = 1;
+  int return_bytearray = 0;
   LZ4F_preferences_t preferences;
   size_t compressed_bound;
   Py_ssize_t dest_size;
@@ -198,6 +199,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
                             "block_mode",
                             "frame_type",
                             "store_size",
+                            "return_bytearray",
                             NULL
                           };
 
@@ -205,26 +207,28 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
   memset (&preferences, 0, sizeof (preferences));
 
 #if IS_PY3
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|iiiiii", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|iiiiipp", kwlist,
                                     &source,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
                                     &preferences.frameInfo.contentChecksumFlag,
                                     &preferences.frameInfo.blockMode,
                                     &preferences.frameInfo.frameType,
-                                    &store_size))
+                                    &store_size,
+                                    &return_bytearray))
     {
       return NULL;
     }
 #else
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*|iiiiii", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*|iiiiiii", kwlist,
                                     &source,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
                                     &preferences.frameInfo.contentChecksumFlag,
                                     &preferences.frameInfo.blockMode,
                                     &preferences.frameInfo.frameType,
-                                    &store_size))
+                                    &store_size,
+                                    &return_bytearray))
     {
       return NULL;
     }
@@ -257,13 +261,27 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
 
   dest_size = (Py_ssize_t) compressed_bound;
 
-  py_dest = PyBytes_FromStringAndSize (NULL, dest_size);
-  if (py_dest == NULL)
+  if (return_bytearray)
     {
-      return NULL;
+      py_dest = PyByteArray_FromStringAndSize (NULL, dest_size);
+      if (py_dest == NULL)
+        {
+          PyBuffer_Release(&source);
+          return PyErr_NoMemory();
+        }
+      dest = PyByteArray_AS_STRING (py_dest);
+    }
+  else
+    {
+      py_dest = PyBytes_FromStringAndSize (NULL, dest_size);
+      if (py_dest == NULL)
+        {
+          PyBuffer_Release(&source);
+          return NULL;
+        }
+      dest = PyBytes_AS_STRING (py_dest);
     }
 
-  dest = PyBytes_AS_STRING (py_dest);
   if (source_size > 0)
     {
       size_t compressed_size;
@@ -272,6 +290,8 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
         LZ4F_compressFrame (dest, dest_size, source.buf, source_size,
                             &preferences);
       Py_END_ALLOW_THREADS
+
+      PyBuffer_Release(&source);
 
       if (LZ4F_isError (compressed_size))
         {
@@ -287,7 +307,17 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
          expensive resize operation to reclaim some space. */
       if ((Py_ssize_t) compressed_size < (dest_size / 4) * 3)
         {
-          if (_PyBytes_Resize (&py_dest, (Py_ssize_t) compressed_size) != 0)
+          int ret;
+
+          if (return_bytearray)
+            {
+              ret = PyByteArray_Resize (py_dest, (Py_ssize_t) compressed_size);
+            }
+          else
+            {
+              ret = _PyBytes_Resize (&py_dest, (Py_ssize_t) compressed_size);
+            }
+          if (ret)
             {
               PyErr_SetString (PyExc_RuntimeError,
                                "Failed to increase destination buffer size");
