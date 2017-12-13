@@ -362,6 +362,7 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
 {
   PyObject *py_context = NULL;
   Py_ssize_t source_size = 0;
+  int return_bytearray = 0;
   LZ4F_preferences_t preferences;
   PyObject *py_destination;
   char * destination_buffer;
@@ -379,6 +380,7 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
                             "block_mode",
                             "frame_type",
                             "auto_flush",
+                            "return_bytearray",
                             NULL
                           };
 
@@ -388,7 +390,8 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
      argument */
   preferences.autoFlush = 1;
 
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiiiiii", kwlist,
+#if IS_PY3
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiiiiipp", kwlist,
                                     &py_context,
                                     &source_size,
                                     &preferences.compressionLevel,
@@ -396,12 +399,28 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
                                     &preferences.frameInfo.contentChecksumFlag,
                                     &preferences.frameInfo.blockMode,
                                     &preferences.frameInfo.frameType,
-                                    &preferences.autoFlush
+                                    &preferences.autoFlush,
+                                    &return_bytearray
                                     ))
     {
       return NULL;
     }
-
+#else
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiiiiiii", kwlist,
+                                    &py_context,
+                                    &source_size,
+                                    &preferences.compressionLevel,
+                                    &preferences.frameInfo.blockSizeID,
+                                    &preferences.frameInfo.contentChecksumFlag,
+                                    &preferences.frameInfo.blockMode,
+                                    &preferences.frameInfo.frameType,
+                                    &preferences.autoFlush,
+                                    &return_bytearray
+                                    ))
+    {
+      return NULL;
+    }
+#endif
   preferences.frameInfo.contentSize = source_size;
 
   context =
@@ -415,19 +434,30 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
 
   context->preferences = preferences;
 
-  py_destination = PyBytes_FromStringAndSize (NULL, header_size);
-  if (!py_destination)
+  if (return_bytearray)
     {
-      return PyErr_NoMemory ();
+      py_destination = PyByteArray_FromStringAndSize (NULL, header_size);
+      if (py_destination == NULL)
+        {
+          return PyErr_NoMemory();
+        }
+      destination_buffer = PyByteArray_AS_STRING (py_destination);
     }
-  destination_buffer = PyBytes_AS_STRING (py_destination);
+  else
+    {
+      py_destination = PyBytes_FromStringAndSize (NULL, header_size);
+      if (py_destination == NULL)
+        {
+          return NULL;
+        }
+      destination_buffer = PyBytes_AS_STRING (py_destination);
+    }
 
   Py_BEGIN_ALLOW_THREADS
   result = LZ4F_compressBegin (context->context,
                                destination_buffer,
                                header_size,
                                &context->preferences);
-#undef __COMPRESS_BEGIN_SIZE
   Py_END_ALLOW_THREADS
 
   if (LZ4F_isError (result))
