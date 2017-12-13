@@ -502,19 +502,26 @@ compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
   char *destination_buffer;
   LZ4F_compressOptions_t compress_options;
   size_t result;
-  static char *kwlist[] = { "context", "source", NULL };
+  int return_bytearray = 0;
+  static char *kwlist[] = { "context",
+                            "source",
+                            "return_bytearray",
+                            NULL
+  };
 
 #if IS_PY3
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Oy*", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Oy*|p", kwlist,
                                     &py_context,
-                                    &source))
+                                    &source,
+                                    &return_bytearray))
     {
       return NULL;
     }
 #else
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os*", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os*|i", kwlist,
                                     &py_context,
-                                    &source))
+                                    &source,
+                                    &return_bytearray))
     {
       return NULL;
     }
@@ -526,6 +533,7 @@ compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
     (struct compression_context *) PyCapsule_GetPointer (py_context, compression_context_capsule_name);
   if (!context || !context->context)
     {
+      PyBuffer_Release(&source);
       PyErr_Format (PyExc_ValueError, "No compression context supplied");
       return NULL;
     }
@@ -551,18 +559,33 @@ compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
 
   if (compressed_bound > PY_SSIZE_T_MAX)
     {
+      PyBuffer_Release(&source);
       PyErr_Format (PyExc_ValueError,
                     "input data could require %zu bytes, which is larger than the maximum supported size of %zd bytes",
                     compressed_bound, PY_SSIZE_T_MAX);
       return NULL;
     }
 
-  py_destination = PyBytes_FromStringAndSize (NULL, compressed_bound);
-  if (!py_destination)
+  if (return_bytearray)
     {
-      return PyErr_NoMemory ();
+      py_destination = PyByteArray_FromStringAndSize (NULL, compressed_bound);
+      if (py_destination == NULL)
+        {
+          PyBuffer_Release(&source);
+          return PyErr_NoMemory();
+        }
+      destination_buffer = PyByteArray_AS_STRING (py_destination);
     }
-  destination_buffer = PyBytes_AS_STRING (py_destination);
+  else
+    {
+      py_destination = PyBytes_FromStringAndSize (NULL, compressed_bound);
+      if (py_destination == NULL)
+        {
+          PyBuffer_Release(&source);
+          return NULL;
+        }
+      destination_buffer = PyBytes_AS_STRING (py_destination);
+    }
 
   compress_options.stableSrc = 0;
 
@@ -572,6 +595,8 @@ compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
                          compressed_bound, source.buf, source_size,
                          &compress_options);
   Py_END_ALLOW_THREADS
+
+  PyBuffer_Release(&source);
 
   if (LZ4F_isError (result))
     {
@@ -584,7 +609,17 @@ compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
 
   if (result < (compressed_bound / 4) * 3)
     {
-      if (_PyBytes_Resize (&py_destination, result) != 0)
+      int ret;
+
+      if (return_bytearray)
+        {
+          ret = PyByteArray_Resize (py_destination, (Py_ssize_t) result);
+        }
+      else
+        {
+          ret = _PyBytes_Resize (&py_destination, (Py_ssize_t) result);
+        }
+      if (ret)
         {
           PyErr_SetString (PyExc_RuntimeError,
                            "Failed to increase destination buffer size");
@@ -593,7 +628,7 @@ compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
     }
   else
     {
-      Py_SIZE (py_destination) = result;
+      Py_SIZE (py_destination) = (Py_ssize_t) result;
     }
 
   return py_destination;
