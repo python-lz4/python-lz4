@@ -277,7 +277,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
       if (py_dest == NULL)
         {
           PyBuffer_Release(&source);
-          return NULL;
+          return PyErr_NoMemory();
         }
       dest = PyBytes_AS_STRING (py_dest);
     }
@@ -448,7 +448,7 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
       py_destination = PyBytes_FromStringAndSize (NULL, header_size);
       if (py_destination == NULL)
         {
-          return NULL;
+          return PyErr_NoMemory();
         }
       destination_buffer = PyBytes_AS_STRING (py_destination);
     }
@@ -582,7 +582,7 @@ compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
       if (py_destination == NULL)
         {
           PyBuffer_Release(&source);
-          return NULL;
+          return PyErr_NoMemory();
         }
       destination_buffer = PyBytes_AS_STRING (py_destination);
     }
@@ -709,7 +709,7 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
         py_destination = PyBytes_FromStringAndSize (NULL, destination_size);
         if (py_destination == NULL)
           {
-            return NULL;
+            return PyErr_NoMemory();
           }
         destination_buffer = PyBytes_AS_STRING (py_destination);
       }
@@ -968,7 +968,7 @@ __decompress(LZ4F_dctx * context, Py_buffer py_source,
       py_destination = PyBytes_FromStringAndSize (NULL, destination_buffer_size);
       if (py_destination == NULL)
         {
-          return NULL;
+          return PyErr_NoMemory();
         }
       destination_buffer = PyBytes_AS_STRING (py_destination);
     }
