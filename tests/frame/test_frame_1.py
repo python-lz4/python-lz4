@@ -9,10 +9,27 @@ def test_create_decompression_context():
     context = lz4frame.create_decompression_context()
     assert context != None
 
+# TODO add store_source fixture
+def test_roundtrip_1(data, block_size, block_mode,
+                     content_checksum, frame_type,
+                     compression_level, auto_flush):
+    c_context = lz4frame.create_compression_context()
+    compressed = lz4frame.compress(
+        data,
+        store_size=True,
+        compression_level=compression_level,
+        block_size=block_size,
+        content_checksum=content_checksum,
+        frame_type=frame_type,
+    )
+    decompressed, bytes_read = lz4frame.decompress(compressed)
+    assert bytes_read == len(compressed)
+    assert decompressed == data
+
 # TODO add source_size fixture
-def test_roundtrip(data, block_size, block_mode,
-                   content_checksum, frame_type,
-                   compression_level, auto_flush):
+def test_roundtrip_2(data, block_size, block_mode,
+                     content_checksum, frame_type,
+                     compression_level, auto_flush):
     c_context = lz4frame.create_compression_context()
     compressed = lz4frame.compress_begin(
         c_context,
