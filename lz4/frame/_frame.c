@@ -887,7 +887,7 @@ create_decompression_context (PyObject * Py_UNUSED (self))
 static
 PyObject *
 __decompress(LZ4F_dctx * context, Py_buffer py_source,
-             int full_frame)
+             int full_frame, int return_bytearray)
 {
   char * source;
   size_t source_remain;
@@ -926,9 +926,9 @@ __decompress(LZ4F_dctx * context, Py_buffer py_source,
       if (LZ4F_isError (result))
         {
           Py_BLOCK_THREADS
-            PyErr_Format (PyExc_RuntimeError,
-                          "LZ4F_getFrameInfo failed with code: %s",
-                          LZ4F_getErrorName (result));
+          PyErr_Format (PyExc_RuntimeError,
+                        "LZ4F_getFrameInfo failed with code: %s",
+                        LZ4F_getErrorName (result));
           return NULL;
         }
 
@@ -954,12 +954,24 @@ __decompress(LZ4F_dctx * context, Py_buffer py_source,
     }
 
   Py_BLOCK_THREADS
-  py_destination = PyBytes_FromStringAndSize (NULL, destination_buffer_size);
-  if (!py_destination)
+  if (return_bytearray)
     {
-      return PyErr_NoMemory ();
+      py_destination = PyByteArray_FromStringAndSize (NULL, destination_buffer_size);
+      if (py_destination == NULL)
+        {
+          return PyErr_NoMemory();
+        }
+      destination_buffer = PyByteArray_AS_STRING (py_destination);
     }
-  destination_buffer = PyBytes_AS_STRING (py_destination);
+  else
+    {
+      py_destination = PyBytes_FromStringAndSize (NULL, destination_buffer_size);
+      if (py_destination == NULL)
+        {
+          return NULL;
+        }
+      destination_buffer = PyBytes_AS_STRING (py_destination);
+    }
   Py_UNBLOCK_THREADS
 
   if (full_frame)
@@ -1023,6 +1035,7 @@ __decompress(LZ4F_dctx * context, Py_buffer py_source,
         }
       else if (destination_written == destination_buffer_size)
         {
+          int ret;
           /* Destination_buffer is full, so need to expand it. result is an
              indication of number of source bytes remaining, so we'll use this
              to estimate the new size of the destination buffer. */
@@ -1030,16 +1043,34 @@ __decompress(LZ4F_dctx * context, Py_buffer py_source,
 
           Py_BLOCK_THREADS
 
-          if (_PyBytes_Resize (&py_destination, destination_buffer_size) != 0)
+          if (return_bytearray)
+            {
+              ret = PyByteArray_Resize (py_destination,
+                                        (Py_ssize_t) destination_buffer_size);
+            }
+          else
+            {
+              ret = _PyBytes_Resize (&py_destination,
+                                     (Py_ssize_t) destination_buffer_size);
+            }
+
+          if (ret)
             {
               PyErr_SetString (PyExc_RuntimeError,
                                "Failed to increase destination buffer size");
               return NULL;
             }
-          destination_buffer = PyBytes_AS_STRING (py_destination);
+
+          if (return_bytearray)
+            {
+              destination_buffer = PyByteArray_AS_STRING (py_destination);
+            }
+          else
+            {
+              destination_buffer = PyBytes_AS_STRING (py_destination);
+            }
           Py_UNBLOCK_THREADS
         }
-
       /* Data still remaining to be decompressed, so increment the destination
          cursor location, and reset destination_write ready for the next
          iteration. Important to re-initialize destination_cursor here (as
@@ -1067,9 +1098,20 @@ __decompress(LZ4F_dctx * context, Py_buffer py_source,
       Py_DECREF(py_destination);
       return NULL;
     }
+
   if (destination_written < (destination_buffer_size / 4) * 3)
     {
-      if (_PyBytes_Resize (&py_destination, destination_written) != 0)
+      int ret;
+
+      if (return_bytearray)
+        {
+          ret = PyByteArray_Resize (py_destination, destination_written);
+        }
+      else
+        {
+          ret = _PyBytes_Resize (&py_destination, destination_written);
+        }
+      if (ret)
         {
           PyErr_SetString (PyExc_RuntimeError,
                            "Failed to increase destination buffer size");
@@ -1082,7 +1124,6 @@ __decompress(LZ4F_dctx * context, Py_buffer py_source,
     }
 
   return Py_BuildValue ("Oi", py_destination, source_cursor - source);
-
 }
 
 /**************
@@ -1105,20 +1146,24 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
   LZ4F_errorCode_t result;
   Py_buffer source;
   PyObject * decompressed;
+  int return_bytearray = 0;
   static char *kwlist[] = { "source",
+                            "return_bytearray",
                             NULL
                           };
 
 #if IS_PY3
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*", kwlist,
-                                    &source
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|p", kwlist,
+                                    &source,
+                                    &return_bytearray
                                     ))
     {
       return NULL;
     }
 #else
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*", kwlist,
-                                    &source
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*|i", kwlist,
+                                    &source,
+                                    &return_bytearray
                                     ))
     {
       return NULL;
@@ -1129,8 +1174,9 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
   result = LZ4F_createDecompressionContext (&context, LZ4F_VERSION);
   if (LZ4F_isError (result))
     {
-      Py_BLOCK_THREADS
       LZ4F_freeDecompressionContext (context);
+      Py_BLOCK_THREADS
+      PyBuffer_Release(&source);
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_createDecompressionContext failed with code: %s",
                     LZ4F_getErrorName (result));
@@ -1138,7 +1184,9 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
     }
   Py_END_ALLOW_THREADS
 
-  decompressed = __decompress (context, source, 1);
+  decompressed = __decompress (context, source, 1, return_bytearray);
+
+  PyBuffer_Release(&source);
 
   Py_BEGIN_ALLOW_THREADS
   LZ4F_freeDecompressionContext (context);
@@ -1166,25 +1214,30 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
                   PyObject * keywds)
 {
   PyObject * py_context = NULL;
+  PyObject * decompressed;
   LZ4F_dctx * context;
   Py_buffer source;
+  int return_bytearray = 0;
   static char *kwlist[] = { "context",
                             "source",
+                            "return_bytearray",
                             NULL
                           };
 
 #if IS_PY3
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Oy*", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Oy*|p", kwlist,
                                     &py_context,
-                                    &source
+                                    &source,
+                                    &return_bytearray
                                     ))
     {
       return NULL;
     }
 #else
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os*", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os*|i", kwlist,
                                     &py_context,
-                                    &source
+                                    &source,
+                                    &return_bytearray
                                     ))
     {
       return NULL;
@@ -1196,12 +1249,17 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
 
   if (!context)
     {
+      PyBuffer_Release(&source);
       PyErr_SetString (PyExc_ValueError,
                        "No valid decompression context supplied");
       return NULL;
     }
 
-  return __decompress (context, source, 0);
+  decompressed = __decompress (context, source, 0, return_bytearray);
+
+  PyBuffer_Release(&source);
+
+  return decompressed;
 }
 
 
