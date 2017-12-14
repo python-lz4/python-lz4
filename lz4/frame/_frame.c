@@ -654,16 +654,29 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   LZ4F_compressOptions_t compress_options;
   struct compression_context *context;
   size_t destination_size;
+  int return_bytearray = 0;
   PyObject *py_destination;
   char * destination_buffer;
   size_t result;
-  static char *kwlist[] = { "context", NULL };
-
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O", kwlist, &py_context))
+  static char *kwlist[] = { "context",
+                            "return_bytearray",
+                            NULL
+  };
+#if IS_PY3
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|p", kwlist,
+                                    &py_context,
+                                    &return_bytearray))
     {
       return NULL;
     }
-
+#else
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|i", kwlist,
+                                    &py_context,
+                                    &return_bytearray))
+    {
+      return NULL;
+    }
+#endif
   context =
     (struct compression_context *) PyCapsule_GetPointer (py_context, compression_context_capsule_name);
   if (!context || !context->context)
@@ -682,13 +695,24 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   destination_size = LZ4F_compressBound (1, &(context->preferences));
   Py_END_ALLOW_THREADS
 
-
-  py_destination = PyBytes_FromStringAndSize (NULL, destination_size);
-  if (!py_destination)
-    {
-      return PyErr_NoMemory ();
-    }
-  destination_buffer = PyBytes_AS_STRING (py_destination);
+    if (return_bytearray)
+      {
+        py_destination = PyByteArray_FromStringAndSize (NULL, destination_size);
+        if (py_destination == NULL)
+          {
+            return PyErr_NoMemory();
+          }
+        destination_buffer = PyByteArray_AS_STRING (py_destination);
+      }
+    else
+      {
+        py_destination = PyBytes_FromStringAndSize (NULL, destination_size);
+        if (py_destination == NULL)
+          {
+            return NULL;
+          }
+        destination_buffer = PyBytes_AS_STRING (py_destination);
+      }
 
   Py_BEGIN_ALLOW_THREADS
   result =
@@ -707,7 +731,17 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
 
   if (result < (destination_size / 4) * 3)
     {
-      if (_PyBytes_Resize (&py_destination, result) != 0)
+      int ret;
+
+      if (return_bytearray)
+        {
+          ret = PyByteArray_Resize (py_destination, (Py_ssize_t) result);
+        }
+      else
+        {
+          ret = _PyBytes_Resize (&py_destination, (Py_ssize_t) result);
+        }
+      if (ret)
         {
           PyErr_SetString (PyExc_RuntimeError,
                            "Failed to increase destination buffer size");
@@ -716,7 +750,7 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
     }
   else
     {
-      Py_SIZE (py_destination) = result;
+      Py_SIZE (py_destination) = (Py_ssize_t) result;
     }
 
   return py_destination;
