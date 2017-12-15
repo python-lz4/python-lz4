@@ -161,18 +161,18 @@ __buff_to_string (PyObject const * buff, const int bytearray)
 }
 
 static inline void
-__buff_resize (PyObject * buff, Py_ssize_t size,
+__buff_resize (PyObject ** buff, Py_ssize_t size,
                const int return_bytearray)
 {
   int ret;
 
   if (return_bytearray)
     {
-      ret = PyByteArray_Resize (buff, size);
+      ret = PyByteArray_Resize (*buff, size);
     }
   else
     {
-      ret = _PyBytes_Resize (&buff, size);
+      ret = _PyBytes_Resize (buff, size);
     }
   if (ret)
     {
@@ -350,7 +350,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
      reclaim some space. */
   if ((Py_ssize_t) compressed_size < (dest_size / 4) * 3)
     {
-      __buff_resize(py_dest, (Py_ssize_t) compressed_size, return_bytearray);
+      __buff_resize(&py_dest, (Py_ssize_t) compressed_size, return_bytearray);
     }
   else
     {

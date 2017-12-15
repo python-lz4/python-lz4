@@ -52,7 +52,6 @@ if sys.version_info > (2, 7):
 def data_chunked(request):
     return request.param
 
-
 @pytest.fixture(
     params=[
         (lz4frame.BLOCKSIZE_MAX4MB),
