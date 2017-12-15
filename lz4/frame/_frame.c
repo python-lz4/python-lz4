@@ -123,6 +123,64 @@ create_compression_context (PyObject * Py_UNUSED (self))
                         destroy_compression_context);
 }
 
+static inline PyObject *
+__buff_alloc (const Py_ssize_t dest_size, const int return_bytearray)
+{
+  PyObject * py_dest;
+
+  if (return_bytearray)
+    {
+      py_dest = PyByteArray_FromStringAndSize (NULL, dest_size);
+    }
+  else
+    {
+      py_dest = PyBytes_FromStringAndSize (NULL, dest_size);
+    }
+
+  if (py_dest == NULL)
+    {
+      return PyErr_NoMemory();
+    }
+  else
+    {
+      return py_dest;
+    }
+}
+
+static inline char *
+__buff_to_string (PyObject const * buff, const int bytearray)
+{
+  if (bytearray)
+    {
+      return PyByteArray_AS_STRING (buff);
+    }
+  else
+    {
+      return PyBytes_AS_STRING (buff);
+    }
+}
+
+static inline void
+__buff_resize (PyObject * buff, Py_ssize_t size,
+               const int return_bytearray)
+{
+  int ret;
+
+  if (return_bytearray)
+    {
+      ret = PyByteArray_Resize (buff, size);
+    }
+  else
+    {
+      ret = _PyBytes_Resize (&buff, size);
+    }
+  if (ret)
+    {
+      PyErr_SetString (PyExc_RuntimeError,
+                       "Failed to resize buffer size");
+    }
+}
+
 /************
  * compress *
  ************/
