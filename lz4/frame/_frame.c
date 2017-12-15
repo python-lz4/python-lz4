@@ -330,7 +330,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
   Py_BEGIN_ALLOW_THREADS
   compressed_size =
     LZ4F_compressFrame (dest, dest_size, source.buf, source_size,
-                            &preferences);
+                        &preferences);
   Py_END_ALLOW_THREADS
 
   PyBuffer_Release(&source);
@@ -343,6 +343,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
                     LZ4F_getErrorName (compressed_size));
       return NULL;
     }
+
   /* The actual compressed size might be less than we allocated (we allocated
      using a worst case guess). If the actual size is less than 75% of what we
      allocated, then it's worth performing an expensive resize operation to
@@ -460,24 +461,12 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
 
   context->preferences = preferences;
 
-  if (return_bytearray)
+  py_destination = __buff_alloc(header_size, return_bytearray);
+  if (py_destination == NULL)
     {
-      py_destination = PyByteArray_FromStringAndSize (NULL, header_size);
-      if (py_destination == NULL)
-        {
-          return PyErr_NoMemory();
-        }
-      destination_buffer = PyByteArray_AS_STRING (py_destination);
+      return PyErr_NoMemory();
     }
-  else
-    {
-      py_destination = PyBytes_FromStringAndSize (NULL, header_size);
-      if (py_destination == NULL)
-        {
-          return PyErr_NoMemory();
-        }
-      destination_buffer = PyBytes_AS_STRING (py_destination);
-    }
+  destination_buffer = __buff_to_string (py_destination, return_bytearray);
 
   Py_BEGIN_ALLOW_THREADS
   result = LZ4F_compressBegin (context->context,
