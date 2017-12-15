@@ -912,24 +912,14 @@ __decompress(LZ4F_dctx * context, Py_buffer py_source,
     }
 
   Py_BLOCK_THREADS
-  if (return_bytearray)
+
+  py_destination = __buff_alloc ((Py_ssize_t) destination_buffer_size, return_bytearray);
+  if (py_destination == NULL)
     {
-      py_destination = PyByteArray_FromStringAndSize (NULL, destination_buffer_size);
-      if (py_destination == NULL)
-        {
-          return PyErr_NoMemory();
-        }
-      destination_buffer = PyByteArray_AS_STRING (py_destination);
+      return PyErr_NoMemory();
     }
-  else
-    {
-      py_destination = PyBytes_FromStringAndSize (NULL, destination_buffer_size);
-      if (py_destination == NULL)
-        {
-          return PyErr_NoMemory();
-        }
-      destination_buffer = PyBytes_AS_STRING (py_destination);
-    }
+  destination_buffer = __buff_to_string (py_destination, return_bytearray);
+
   Py_UNBLOCK_THREADS
 
   if (full_frame)
@@ -993,40 +983,20 @@ __decompress(LZ4F_dctx * context, Py_buffer py_source,
         }
       else if (destination_written == destination_buffer_size)
         {
-          int ret;
           /* Destination_buffer is full, so need to expand it. result is an
              indication of number of source bytes remaining, so we'll use this
              to estimate the new size of the destination buffer. */
           destination_buffer_size += 3 * result;
 
           Py_BLOCK_THREADS
-
-          if (return_bytearray)
+          __buff_resize (&py_destination, (Py_ssize_t) destination_buffer_size,
+                         return_bytearray);
+          if (py_destination == NULL)
             {
-              ret = PyByteArray_Resize (py_destination,
-                                        (Py_ssize_t) destination_buffer_size);
-            }
-          else
-            {
-              ret = _PyBytes_Resize (&py_destination,
-                                     (Py_ssize_t) destination_buffer_size);
-            }
-
-          if (ret)
-            {
-              PyErr_SetString (PyExc_RuntimeError,
-                               "Failed to increase destination buffer size");
+              /* PyErr_SetString already called in __buff_resize */
               return NULL;
             }
-
-          if (return_bytearray)
-            {
-              destination_buffer = PyByteArray_AS_STRING (py_destination);
-            }
-          else
-            {
-              destination_buffer = PyBytes_AS_STRING (py_destination);
-            }
+          destination_buffer = __buff_to_string (py_destination, return_bytearray);
           Py_UNBLOCK_THREADS
         }
       /* Data still remaining to be decompressed, so increment the destination
@@ -1059,22 +1029,8 @@ __decompress(LZ4F_dctx * context, Py_buffer py_source,
 
   if (destination_written < (destination_buffer_size / 4) * 3)
     {
-      int ret;
-
-      if (return_bytearray)
-        {
-          ret = PyByteArray_Resize (py_destination, destination_written);
-        }
-      else
-        {
-          ret = _PyBytes_Resize (&py_destination, destination_written);
-        }
-      if (ret)
-        {
-          PyErr_SetString (PyExc_RuntimeError,
-                           "Failed to increase destination buffer size");
-          return NULL;
-        }
+      __buff_resize (&py_destination, (Py_ssize_t) destination_written,
+                     return_bytearray);
     }
   else
     {
