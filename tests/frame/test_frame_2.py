@@ -19,18 +19,25 @@ def get_chunked(data, nchunks):
 
 def test_roundtrip_chunked(data_chunked, block_size, block_mode,
                            content_checksum, frame_type,
-                           compression_level, auto_flush):
+                           compression_level, auto_flush,
+                           store_size):
     data, c_chunks, d_chunks = data_chunked
 
     c_context = lz4frame.create_compression_context()
+
+    kwargs = {}
+    kwargs['compression_level'] = compression_level
+    kwargs['block_size'] = block_size
+    kwargs['block_mode'] = block_mode
+    kwargs['content_checksum'] = content_checksum
+    kwargs['frame_type'] = frame_type
+    kwargs['auto_flush'] = auto_flush
+    if store_size is True:
+        kwargs['source_size'] = len(data)
+
     compressed = lz4frame.compress_begin(
         c_context,
-        source_size=len(data),
-        compression_level=compression_level,
-        block_size=block_size,
-        content_checksum=content_checksum,
-        frame_type=frame_type,
-        auto_flush=auto_flush
+        **kwargs
     )
     data_in = get_chunked(data, c_chunks)
     try:
