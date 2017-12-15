@@ -25,20 +25,25 @@ def test_roundtrip_1(data, block_size, block_mode,
     assert bytes_read == len(compressed)
     assert decompressed == data
 
-# TODO add source_size fixture
 def test_roundtrip_2(data, block_size, block_mode,
                      content_checksum, frame_type,
-                     compression_level, auto_flush):
+                     compression_level, auto_flush,
+                     store_size):
     c_context = lz4frame.create_compression_context()
+
+    kwargs = {}
+    kwargs['compression_level'] = compression_level
+    kwargs['block_size'] = block_size
+    kwargs['block_mode'] = block_mode
+    kwargs['content_checksum'] = content_checksum
+    kwargs['frame_type'] = frame_type
+    kwargs['auto_flush'] = auto_flush
+    if store_size is True:
+        kwargs['source_size'] = len(data)
+
     compressed = lz4frame.compress_begin(
         c_context,
-        source_size=len(data),
-        compression_level=compression_level,
-        block_size=block_size,
-        block_mode=block_mode,
-        content_checksum=content_checksum,
-        frame_type=frame_type,
-        auto_flush=auto_flush
+        **kwargs
     )
     compressed += lz4frame.compress_chunk(
         c_context,
