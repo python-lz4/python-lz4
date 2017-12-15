@@ -410,7 +410,7 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
                             NULL
                           };
 
-  memset (&preferences, 0, sizeof (preferences));
+  memset (&preferences, 0, sizeof preferences);
 
   /* Default to having autoFlush enabled unless specified otherwise via keyword
      argument */
