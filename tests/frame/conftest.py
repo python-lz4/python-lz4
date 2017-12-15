@@ -117,3 +117,12 @@ def compression_level(request):
 )
 def auto_flush(request):
     return request.param
+
+@pytest.fixture(
+    params=[
+        (True),
+        (False)
+    ]
+)
+def store_size(request):
+    return request.param

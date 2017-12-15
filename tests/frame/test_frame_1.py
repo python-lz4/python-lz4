@@ -9,13 +9,12 @@ def test_create_decompression_context():
     context = lz4frame.create_decompression_context()
     assert context != None
 
-# TODO add store_source fixture
 def test_roundtrip_1(data, block_size, block_mode,
                      content_checksum, frame_type,
-                     compression_level):
+                     compression_level, store_size):
     compressed = lz4frame.compress(
         data,
-        store_size=True,
+        store_size=store_size,
         compression_level=compression_level,
         block_size=block_size,
         block_mode=block_mode,
