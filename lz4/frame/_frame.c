@@ -319,26 +319,13 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
 
   dest_size = (Py_ssize_t) compressed_bound;
 
-  if (return_bytearray)
+  py_dest = __buff_alloc(dest_size, return_bytearray);
+  if (py_dest == NULL)
     {
-      py_dest = PyByteArray_FromStringAndSize (NULL, dest_size);
-      if (py_dest == NULL)
-        {
-          PyBuffer_Release(&source);
-          return PyErr_NoMemory();
-        }
-      dest = PyByteArray_AS_STRING (py_dest);
+      PyBuffer_Release(&source);
+      return PyErr_NoMemory();
     }
-  else
-    {
-      py_dest = PyBytes_FromStringAndSize (NULL, dest_size);
-      if (py_dest == NULL)
-        {
-          PyBuffer_Release(&source);
-          return PyErr_NoMemory();
-        }
-      dest = PyBytes_AS_STRING (py_dest);
-    }
+  dest = __buff_to_string(py_dest, return_bytearray);
 
   Py_BEGIN_ALLOW_THREADS
   compressed_size =
@@ -362,22 +349,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
      reclaim some space. */
   if ((Py_ssize_t) compressed_size < (dest_size / 4) * 3)
     {
-      int ret;
-
-      if (return_bytearray)
-        {
-          ret = PyByteArray_Resize (py_dest, (Py_ssize_t) compressed_size);
-        }
-      else
-        {
-          ret = _PyBytes_Resize (&py_dest, (Py_ssize_t) compressed_size);
-        }
-      if (ret)
-        {
-          PyErr_SetString (PyExc_RuntimeError,
-                           "Failed to increase destination buffer size");
-          return NULL;
-        }
+      __buff_resize(py_dest, (Py_ssize_t) compressed_size, return_bytearray);
     }
   else
     {
