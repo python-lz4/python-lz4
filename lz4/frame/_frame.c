@@ -732,19 +732,27 @@ static PyObject *
 get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
                 PyObject * keywds)
 {
-  const char *source;
-  int source_size;
-  size_t source_size_copy;
+  Py_buffer py_source;
+  char *source;
+  size_t source_size;
   LZ4F_decompressionContext_t context;
   LZ4F_frameInfo_t frame_info;
   size_t result;
   static char *kwlist[] = { "source", NULL };
 
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s#", kwlist,
-                                    &source, &source_size))
+#if IS_PY3
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*", kwlist,
+                                    &py_source))
     {
       return NULL;
     }
+#else
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*", kwlist,
+                                    &py_source))
+    {
+      return NULL;
+    }
+#endif
 
   Py_BEGIN_ALLOW_THREADS
 
@@ -759,15 +767,17 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  source_size_copy = source_size;
+  source = (char *) py_source.buf;
+  source_size = (size_t) py_source.len;
 
   result =
-    LZ4F_getFrameInfo (context, &frame_info, source, &source_size_copy);
+    LZ4F_getFrameInfo (context, &frame_info, source, &source_size);
 
   if (LZ4F_isError (result))
     {
       LZ4F_freeDecompressionContext (context);
       Py_BLOCK_THREADS
+      PyBuffer_Release(&py_source);
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_getFrameInfo failed with code: %s",
                     LZ4F_getErrorName (result));
@@ -777,6 +787,8 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
   result = LZ4F_freeDecompressionContext (context);
 
   Py_END_ALLOW_THREADS
+
+  PyBuffer_Release(&py_source);
 
   if (LZ4F_isError (result))
     {
