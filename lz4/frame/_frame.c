@@ -844,12 +844,10 @@ create_decompression_context (PyObject * Py_UNUSED (self))
 }
 
 static inline PyObject *
-__decompress(LZ4F_dctx * context, Py_buffer py_source,
+__decompress(LZ4F_dctx * context, char * source, size_t source_size,
              int full_frame, int return_bytearray)
 {
-  char * source;
   size_t source_remain;
-  size_t source_size;
   size_t source_read;
   char * source_cursor;
   char * source_end;
@@ -864,10 +862,6 @@ __decompress(LZ4F_dctx * context, Py_buffer py_source,
   LZ4F_decompressOptions_t options;
 
   Py_BEGIN_ALLOW_THREADS
-
-  /* MSVC can't do pointer arithmetic on void * pointers, so cast to char * */
-  source = (char *) py_source.buf;
-  source_size = py_source.len;
 
   source_cursor = source;
   source_end = source + source_size;
@@ -1058,7 +1052,9 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
 {
   LZ4F_dctx * context;
   LZ4F_errorCode_t result;
-  Py_buffer source;
+  Py_buffer py_source;
+  char * source;
+  size_t source_size;
   PyObject * decompressed;
   int return_bytearray = 0;
   static char *kwlist[] = { "source",
@@ -1068,7 +1064,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
 
 #if IS_PY3
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|p", kwlist,
-                                    &source,
+                                    &py_source,
                                     &return_bytearray
                                     ))
     {
@@ -1076,7 +1072,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
     }
 #else
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*|i", kwlist,
-                                    &source,
+                                    &py_source,
                                     &return_bytearray
                                     ))
     {
@@ -1090,7 +1086,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
     {
       LZ4F_freeDecompressionContext (context);
       Py_BLOCK_THREADS
-      PyBuffer_Release(&source);
+      PyBuffer_Release(&py_source);
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_createDecompressionContext failed with code: %s",
                     LZ4F_getErrorName (result));
@@ -1098,9 +1094,13 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
     }
   Py_END_ALLOW_THREADS
 
-  decompressed = __decompress (context, source, 1, return_bytearray);
+  /* MSVC can't do pointer arithmetic on void * pointers, so cast to char * */
+  source = (char *) py_source.buf;
+  source_size = py_source.len;
 
-  PyBuffer_Release(&source);
+  decompressed = __decompress (context, source, source_size, 1, return_bytearray);
+
+  PyBuffer_Release(&py_source);
 
   Py_BEGIN_ALLOW_THREADS
   LZ4F_freeDecompressionContext (context);
@@ -1130,7 +1130,9 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
   PyObject * py_context = NULL;
   PyObject * decompressed;
   LZ4F_dctx * context;
-  Py_buffer source;
+  Py_buffer py_source;
+  char * source;
+  size_t source_size;
   int return_bytearray = 0;
   static char *kwlist[] = { "context",
                             "source",
@@ -1141,7 +1143,7 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
 #if IS_PY3
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "Oy*|p", kwlist,
                                     &py_context,
-                                    &source,
+                                    &py_source,
                                     &return_bytearray
                                     ))
     {
@@ -1150,7 +1152,7 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
 #else
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os*|i", kwlist,
                                     &py_context,
-                                    &source,
+                                    &py_source,
                                     &return_bytearray
                                     ))
     {
@@ -1163,15 +1165,19 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
 
   if (!context)
     {
-      PyBuffer_Release(&source);
+      PyBuffer_Release(&py_source);
       PyErr_SetString (PyExc_ValueError,
                        "No valid decompression context supplied");
       return NULL;
     }
 
-  decompressed = __decompress (context, source, 0, return_bytearray);
+  /* MSVC can't do pointer arithmetic on void * pointers, so cast to char * */
+  source = (char *) py_source.buf;
+  source_size = py_source.len;
 
-  PyBuffer_Release(&source);
+  decompressed = __decompress (context, source, source_size, 0, return_bytearray);
+
+  PyBuffer_Release(&py_source);
 
   return decompressed;
 }
