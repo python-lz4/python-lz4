@@ -188,6 +188,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
   int return_bytearray = 0;
   LZ4F_preferences_t preferences;
   size_t compressed_bound;
+  size_t compressed_size;
   Py_ssize_t dest_size;
   PyObject *py_dest;
   char *dest;
@@ -204,7 +205,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
                           };
 
 
-  memset (&preferences, 0, sizeof (preferences));
+  memset (&preferences, 0, sizeof preferences);
 
 #if IS_PY3
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|iiiiipp", kwlist,
@@ -233,7 +234,6 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 #endif
-
   source_size = source.len;
 
   preferences.autoFlush = 0;
@@ -282,52 +282,48 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
       dest = PyBytes_AS_STRING (py_dest);
     }
 
-  if (source_size > 0)
-    {
-      size_t compressed_size;
-      Py_BEGIN_ALLOW_THREADS
-      compressed_size =
-        LZ4F_compressFrame (dest, dest_size, source.buf, source_size,
+  Py_BEGIN_ALLOW_THREADS
+  compressed_size =
+    LZ4F_compressFrame (dest, dest_size, source.buf, source_size,
                             &preferences);
-      Py_END_ALLOW_THREADS
+  Py_END_ALLOW_THREADS
 
-      PyBuffer_Release(&source);
+  PyBuffer_Release(&source);
 
-      if (LZ4F_isError (compressed_size))
+  if (LZ4F_isError (compressed_size))
+    {
+      Py_DECREF (py_dest);
+      PyErr_Format (PyExc_RuntimeError,
+                    "LZ4F_compressFrame failed with code: %s",
+                    LZ4F_getErrorName (compressed_size));
+      return NULL;
+    }
+  /* The actual compressed size might be less than we allocated (we allocated
+     using a worst case guess). If the actual size is less than 75% of what we
+     allocated, then it's worth performing an expensive resize operation to
+     reclaim some space. */
+  if ((Py_ssize_t) compressed_size < (dest_size / 4) * 3)
+    {
+      int ret;
+
+      if (return_bytearray)
         {
-          Py_DECREF (py_dest);
-          PyErr_Format (PyExc_RuntimeError,
-                        "LZ4F_compressFrame failed with code: %s",
-                        LZ4F_getErrorName (compressed_size));
-          return NULL;
-        }
-      /* The actual compressed size might be less than we allocated
-         (we allocated using a worst case guess). If the actual size is
-         less than 75% of what we allocated, then it's worth performing an
-         expensive resize operation to reclaim some space. */
-      if ((Py_ssize_t) compressed_size < (dest_size / 4) * 3)
-        {
-          int ret;
-
-          if (return_bytearray)
-            {
-              ret = PyByteArray_Resize (py_dest, (Py_ssize_t) compressed_size);
-            }
-          else
-            {
-              ret = _PyBytes_Resize (&py_dest, (Py_ssize_t) compressed_size);
-            }
-          if (ret)
-            {
-              PyErr_SetString (PyExc_RuntimeError,
-                               "Failed to increase destination buffer size");
-              return NULL;
-            }
+          ret = PyByteArray_Resize (py_dest, (Py_ssize_t) compressed_size);
         }
       else
         {
-          Py_SIZE (py_dest) = (Py_ssize_t) compressed_size;
+          ret = _PyBytes_Resize (&py_dest, (Py_ssize_t) compressed_size);
         }
+      if (ret)
+        {
+          PyErr_SetString (PyExc_RuntimeError,
+                           "Failed to increase destination buffer size");
+          return NULL;
+        }
+    }
+  else
+    {
+      Py_SIZE (py_dest) = (Py_ssize_t) compressed_size;
     }
 
   return py_dest;
