@@ -682,24 +682,12 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   destination_size = LZ4F_compressBound (1, &(context->preferences));
   Py_END_ALLOW_THREADS
 
-    if (return_bytearray)
-      {
-        py_destination = PyByteArray_FromStringAndSize (NULL, destination_size);
-        if (py_destination == NULL)
-          {
-            return PyErr_NoMemory();
-          }
-        destination_buffer = PyByteArray_AS_STRING (py_destination);
-      }
-    else
-      {
-        py_destination = PyBytes_FromStringAndSize (NULL, destination_size);
-        if (py_destination == NULL)
-          {
-            return PyErr_NoMemory();
-          }
-        destination_buffer = PyBytes_AS_STRING (py_destination);
-      }
+  py_destination = __buff_alloc((Py_ssize_t) destination_size, return_bytearray);
+  if (py_destination == NULL)
+    {
+      return PyErr_NoMemory();
+    }
+  destination_buffer = __buff_to_string (py_destination, return_bytearray);
 
   Py_BEGIN_ALLOW_THREADS
   result =
@@ -718,22 +706,7 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
 
   if (result < (destination_size / 4) * 3)
     {
-      int ret;
-
-      if (return_bytearray)
-        {
-          ret = PyByteArray_Resize (py_destination, (Py_ssize_t) result);
-        }
-      else
-        {
-          ret = _PyBytes_Resize (&py_destination, (Py_ssize_t) result);
-        }
-      if (ret)
-        {
-          PyErr_SetString (PyExc_RuntimeError,
-                           "Failed to increase destination buffer size");
-          return NULL;
-        }
+      __buff_resize (&py_destination, (Py_ssize_t) result, return_bytearray);
     }
   else
     {
