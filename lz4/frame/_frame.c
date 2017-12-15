@@ -102,7 +102,6 @@ create_compression_context (PyObject * Py_UNUSED (self))
     }
 
   Py_BEGIN_ALLOW_THREADS
-  memset (context, 0, sizeof (*context));
 
   result =
     LZ4F_createCompressionContext (&context->context,
