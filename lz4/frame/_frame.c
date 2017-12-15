@@ -843,8 +843,7 @@ create_decompression_context (PyObject * Py_UNUSED (self))
                         destroy_decompression_context);
 }
 
-static
-PyObject *
+static inline PyObject *
 __decompress(LZ4F_dctx * context, Py_buffer py_source,
              int full_frame, int return_bytearray)
 {
