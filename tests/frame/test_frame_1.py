@@ -12,13 +12,13 @@ def test_create_decompression_context():
 # TODO add store_source fixture
 def test_roundtrip_1(data, block_size, block_mode,
                      content_checksum, frame_type,
-                     compression_level, auto_flush):
-    c_context = lz4frame.create_compression_context()
+                     compression_level):
     compressed = lz4frame.compress(
         data,
         store_size=True,
         compression_level=compression_level,
         block_size=block_size,
+        block_mode=block_mode,
         content_checksum=content_checksum,
         frame_type=frame_type,
     )
@@ -36,6 +36,7 @@ def test_roundtrip_2(data, block_size, block_mode,
         source_size=len(data),
         compression_level=compression_level,
         block_size=block_size,
+        block_mode=block_mode,
         content_checksum=content_checksum,
         frame_type=frame_type,
         auto_flush=auto_flush
