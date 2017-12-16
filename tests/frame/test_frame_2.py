@@ -18,9 +18,8 @@ def get_chunked(data, nchunks):
     yield data[start:]
 
 def test_roundtrip_chunked(data_chunked, block_size, block_mode,
-                           content_checksum, frame_type,
-                           compression_level, auto_flush,
-                           store_size):
+                           content_checksum, compression_level,
+                           auto_flush, store_size):
     data, c_chunks, d_chunks = data_chunked
 
     c_context = lz4frame.create_compression_context()
@@ -30,7 +29,6 @@ def test_roundtrip_chunked(data_chunked, block_size, block_mode,
     kwargs['block_size'] = block_size
     kwargs['block_mode'] = block_mode
     kwargs['content_checksum'] = content_checksum
-    kwargs['frame_type'] = frame_type
     kwargs['auto_flush'] = auto_flush
     if store_size is True:
         kwargs['source_size'] = len(data)

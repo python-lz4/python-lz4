@@ -211,11 +211,6 @@ __buff_resize (PyObject ** buff, Py_ssize_t size,
   "        - lz4.frame.CONTENTCHECKSUM_DISABLED or 0: disables checksumming\n" \
   "        - lz4.frame.CONTENTCHECKSUM_ENABLED or 1: enables checksumming\n\n" \
   "        The default is CONTENTCHECKSUM_DISABLED.\n"                  \
-  "    frame_type (int): Specifies whether user data can be injected between\n" \
-  "        frames. Options:\n\n"                                        \
-  "        - lz4.frame.FRAMETYPE_FRAME or 0: disables user data injection\n" \
-  "        - lz4.frame.FRAMETYPE_SKIPPABLEFRAME or 1: enables user data injection\n\n" \
-  "        The default is lz4.frame.FRAMETYPE_FRAME.\n"                 \
 
 PyDoc_STRVAR(compress__doc,
              "compress(source, compression_level=0, block_size=0, content_checksum=0,\n" \
@@ -255,7 +250,6 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
                             "block_size",
                             "content_checksum",
                             "block_mode",
-                            "frame_type",
                             "store_size",
                             "return_bytearray",
                             NULL
@@ -265,26 +259,24 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
   memset (&preferences, 0, sizeof preferences);
 
 #if IS_PY3
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|iiiiipp", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|iiiipp", kwlist,
                                     &source,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
                                     &preferences.frameInfo.contentChecksumFlag,
                                     &preferences.frameInfo.blockMode,
-                                    &preferences.frameInfo.frameType,
                                     &store_size,
                                     &return_bytearray))
     {
       return NULL;
     }
 #else
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*|iiiiiii", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*|iiiiii", kwlist,
                                     &source,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
                                     &preferences.frameInfo.contentChecksumFlag,
                                     &preferences.frameInfo.blockMode,
-                                    &preferences.frameInfo.frameType,
                                     &store_size,
                                     &return_bytearray))
     {
@@ -404,7 +396,6 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
                             "block_size",
                             "content_checksum",
                             "block_mode",
-                            "frame_type",
                             "auto_flush",
                             "return_bytearray",
                             NULL
@@ -417,14 +408,13 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
   preferences.autoFlush = 1;
 
 #if IS_PY3
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiiiiipp", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiiiipp", kwlist,
                                     &py_context,
                                     &source_size,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
                                     &preferences.frameInfo.contentChecksumFlag,
                                     &preferences.frameInfo.blockMode,
-                                    &preferences.frameInfo.frameType,
                                     &preferences.autoFlush,
                                     &return_bytearray
                                     ))
@@ -432,14 +422,13 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 #else
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiiiiiii", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiiiiii", kwlist,
                                     &py_context,
                                     &source_size,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
                                     &preferences.frameInfo.contentChecksumFlag,
                                     &preferences.frameInfo.blockMode,
-                                    &preferences.frameInfo.frameType,
                                     &preferences.autoFlush,
                                     &return_bytearray
                                     ))

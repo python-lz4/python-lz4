@@ -82,15 +82,6 @@ def block_mode(request):
 def content_checksum(request):
     return request.param
 
-@pytest.fixture(
-    params=[
-        (lz4frame.FRAMETYPE_FRAME),
-        (lz4frame.FRAMETYPE_SKIPPABLEFRAME),
-    ]
-)
-def frame_type(request):
-    return request.param
-
 compression_levels = list(range(-5, 13)) + [
         lz4frame.COMPRESSIONLEVEL_MIN,
         lz4frame.COMPRESSIONLEVEL_MINHC,
