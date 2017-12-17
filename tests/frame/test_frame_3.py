@@ -1,10 +1,4 @@
 import lz4.frame as lz4frame
-import pytest
-import os
-import sys
-import struct
-from multiprocessing.pool import ThreadPool
-import math
 
 
 def test_get_frame_info_1(data, block_size, block_mode,
