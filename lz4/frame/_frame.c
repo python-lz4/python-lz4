@@ -750,7 +750,7 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
   if (LZ4F_isError (result))
     {
       Py_BLOCK_THREADS
-      PyBuffer_Release(&py_source);
+      PyBuffer_Release (&py_source);
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_createDecompressionContext failed with code: %s",
                     LZ4F_getErrorName (result));
@@ -767,7 +767,7 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
     {
       LZ4F_freeDecompressionContext (context);
       Py_BLOCK_THREADS
-      PyBuffer_Release(&py_source);
+      PyBuffer_Release (&py_source);
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_getFrameInfo failed with code: %s",
                     LZ4F_getErrorName (result));
@@ -778,7 +778,7 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
 
   Py_END_ALLOW_THREADS
 
-  PyBuffer_Release(&py_source);
+  PyBuffer_Release (&py_source);
 
   if (LZ4F_isError (result))
     {
