@@ -8,7 +8,7 @@ import lz4.frame as lz4frame
 test_data=[
     (b''),
     (os.urandom(8 * 1024)),
-    (os.urandom(5 * 1024 * 1024)),
+    (os.urandom(512 * 1024)),
     (b'0' * 8 * 1024),
     (bytearray(b'')),
     (bytearray(os.urandom(8 * 1024))),
