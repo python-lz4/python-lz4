@@ -707,6 +707,11 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
 /******************
  * get_frame_info *
  ******************/
+
+#define KB *(1<<10)
+#define MB *(1<<20)
+#define GB *(1<<30)
+
 PyDoc_STRVAR(get_frame_info__doc,
              "get_frame_info(frame)\n\n"                                \
              "Given a frame of compressed data, returns information about the frame.\n" \
@@ -727,6 +732,7 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
   LZ4F_decompressionContext_t context;
   LZ4F_frameInfo_t frame_info;
   size_t result;
+  unsigned int block_size;
   static char *kwlist[] = { "source", NULL };
 
 #if IS_PY3
@@ -776,6 +782,29 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
 
   result = LZ4F_freeDecompressionContext (context);
 
+  switch (frame_info.blockSizeID)
+    {
+    case 0:
+    case 4:
+      block_size = 64 KB;
+      break;
+    case 5:
+      block_size = 256 KB;
+      break;
+    case 6:
+      block_size = 1 MB;
+      break;
+    case 7:
+      block_size = 4 MB;
+      break;
+    default:
+      Py_BLOCK_THREADS
+      PyBuffer_Release (&py_source);
+      PyErr_SetString (PyExc_RuntimeError,
+                       "Unrecognized blockSizeID in get_frame_info");
+      return NULL;
+    }
+
   Py_END_ALLOW_THREADS
 
   PyBuffer_Release (&py_source);
@@ -788,8 +817,8 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  return Py_BuildValue ("{s:i,s:i,s:i,s:i,s:i}",
-                        "blockSizeID", frame_info.blockSizeID,
+  return Py_BuildValue ("{s:I,s:i,s:i,s:i,s:i}",
+                        "block_size", block_size,
                         "blockMode", frame_info.blockMode,
                         "contentChecksumFlag", frame_info.contentChecksumFlag,
                         "frameType", frame_info.frameType,
