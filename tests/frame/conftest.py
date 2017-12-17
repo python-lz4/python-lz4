@@ -8,6 +8,7 @@ import lz4.frame as lz4frame
 test_data=[
     (b''),
     (os.urandom(8 * 1024)),
+    (os.urandom(5 * 1024 * 1024)),
     (b'0' * 8 * 1024),
     (bytearray(b'')),
     (bytearray(os.urandom(8 * 1024))),
@@ -54,11 +55,11 @@ def data_chunked(request):
 
 @pytest.fixture(
     params=[
-        (lz4frame.BLOCKSIZE_MAX4MB),
         (lz4frame.BLOCKSIZE_DEFAULT),
         (lz4frame.BLOCKSIZE_MAX64KB),
         (lz4frame.BLOCKSIZE_MAX256KB),
         (lz4frame.BLOCKSIZE_MAX1MB),
+        (lz4frame.BLOCKSIZE_MAX4MB),
     ]
 )
 def block_size(request):
