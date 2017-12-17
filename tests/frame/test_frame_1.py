@@ -1,5 +1,4 @@
 import lz4.frame as lz4frame
-import pytest
 
 def test_create_compression_context():
     context = lz4frame.create_compression_context()
