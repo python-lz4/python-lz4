@@ -708,10 +708,6 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
  * get_frame_info *
  ******************/
 
-#define KB *(1<<10)
-#define MB *(1<<20)
-#define GB *(1<<30)
-
 PyDoc_STRVAR(get_frame_info__doc,
              "get_frame_info(frame)\n\n"                                \
              "Given a frame of compressed data, returns information about the frame.\n" \
@@ -733,6 +729,12 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
   LZ4F_frameInfo_t frame_info;
   size_t result;
   unsigned int block_size;
+  unsigned int block_size_id;
+  int blocks_linked;
+  int content_checksum;
+  int block_checksum;
+  int skippable;
+
   static char *kwlist[] = { "source", NULL };
 
 #if IS_PY3
@@ -782,29 +784,6 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
 
   result = LZ4F_freeDecompressionContext (context);
 
-  switch (frame_info.blockSizeID)
-    {
-    case 0:
-    case 4:
-      block_size = 64 KB;
-      break;
-    case 5:
-      block_size = 256 KB;
-      break;
-    case 6:
-      block_size = 1 MB;
-      break;
-    case 7:
-      block_size = 4 MB;
-      break;
-    default:
-      Py_BLOCK_THREADS
-      PyBuffer_Release (&py_source);
-      PyErr_SetString (PyExc_RuntimeError,
-                       "Unrecognized blockSizeID in get_frame_info");
-      return NULL;
-    }
-
   Py_END_ALLOW_THREADS
 
   PyBuffer_Release (&py_source);
@@ -817,12 +796,108 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  return Py_BuildValue ("{s:I,s:i,s:i,s:i,s:i}",
+#define KB *(1<<10)
+#define MB *(1<<20)
+  switch (frame_info.blockSizeID)
+    {
+    case LZ4F_default:
+    case LZ4F_max64KB:
+      block_size = 64 KB;
+      block_size_id = LZ4F_max64KB;
+      break;
+    case LZ4F_max256KB:
+      block_size = 256 KB;
+      block_size_id = LZ4F_max256KB;
+      break;
+    case LZ4F_max1MB:
+      block_size = 1 MB;
+      block_size_id = LZ4F_max1MB;
+      break;
+    case LZ4F_max4MB:
+      block_size = 4 MB;
+      block_size_id = LZ4F_max4MB;
+      break;
+    default:
+      PyErr_Format (PyExc_RuntimeError,
+                    "Unrecognized blockSizeID in get_frame_info: %d",
+                    frame_info.blockSizeID);
+      return NULL;
+    }
+#undef KB
+#undef MB
+
+  if (frame_info.blockMode == LZ4F_blockLinked)
+    {
+      blocks_linked = 1;
+    }
+  else if (frame_info.blockMode == LZ4F_blockIndependent)
+    {
+      blocks_linked = 0;
+    }
+  else
+    {
+      PyErr_Format (PyExc_RuntimeError,
+                    "Unrecognized blockMode in get_frame_info: %d",
+                    frame_info.blockMode);
+      return NULL;
+    }
+
+  if (frame_info.contentChecksumFlag == LZ4F_noContentChecksum)
+    {
+      content_checksum = 0;
+    }
+  else if (frame_info.contentChecksumFlag == LZ4F_contentChecksumEnabled)
+    {
+      content_checksum = 1;
+    }
+  else
+    {
+      PyErr_Format (PyExc_RuntimeError,
+                    "Unrecognized contentChecksumFlag in get_frame_info: %d",
+                    frame_info.contentChecksumFlag);
+      return NULL;
+    }
+
+  if (frame_info.blockChecksumFlag == LZ4F_noBlockChecksum)
+    {
+      block_checksum = 0;
+    }
+  else if (frame_info.blockChecksumFlag == LZ4F_blockChecksumEnabled)
+    {
+      block_checksum = 1;
+    }
+  else
+    {
+      PyErr_Format (PyExc_RuntimeError,
+                    "Unrecognized blockChecksumFlag in get_frame_info: %d",
+                    frame_info.blockChecksumFlag);
+      return NULL;
+    }
+
+  if (frame_info.frameType == LZ4F_frame)
+    {
+      skippable = 0;
+    }
+  else if (frame_info.frameType == LZ4F_skippableFrame)
+    {
+      skippable = 1;
+    }
+  else
+    {
+      PyErr_Format (PyExc_RuntimeError,
+                    "Unrecognized frameType in get_frame_info: %d",
+                    frame_info.frameType);
+      return NULL;
+    }
+
+  return Py_BuildValue ("{s:I,s:I,s:O,s:O,s:O,s:O,s:K}",
                         "block_size", block_size,
-                        "blockMode", frame_info.blockMode,
-                        "contentChecksumFlag", frame_info.contentChecksumFlag,
-                        "frameType", frame_info.frameType,
-                        "contentSize", frame_info.contentSize);
+                        "block_size_id", block_size_id,
+                        "blocks_linked", blocks_linked ? Py_True : Py_False,
+                        "content_checksum", content_checksum ? Py_True : Py_False,
+                        "block_checksum", block_checksum ? Py_True : Py_False,
+                        "skippable", skippable ? Py_True : Py_False,
+                        "content_size", frame_info.contentSize);
 }
 
 /*******************************
