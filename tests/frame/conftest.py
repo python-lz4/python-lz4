@@ -1,57 +1,6 @@
 import pytest
-import os
-import sys
-import random
+# import random
 import lz4.frame as lz4frame
-
-
-test_data=[
-    (b''),
-    (os.urandom(8 * 1024)),
-    (os.urandom(512 * 1024)),
-    (b'0' * 8 * 1024),
-    (bytearray(b'')),
-    (bytearray(os.urandom(8 * 1024))),
-]
-if sys.version_info > (2, 7):
-    test_data += [
-        (memoryview(b'')),
-        (memoryview(os.urandom(8 * 1024)))
-    ]
-
-@pytest.fixture(
-    params=test_data,
-    ids=[
-        'data' + str(i) for i in range(len(test_data))
-    ]
-)
-def data(request):
-    return request.param
-
-
-test_data_chunked=[
-    (b'', 1, 1),
-    (os.urandom(8 * 1024), 8, 1),
-    (os.urandom(8 * 1024), 1, 8),
-    (b'0' * 8 * 1024, 8, 1),
-    (b'0' * 8 * 1024, 8, 1),
-    (bytearray(b''), 1, 1),
-    (bytearray(os.urandom(8 * 1024)), 8, 1),
-]
-if sys.version_info > (2, 7):
-    test_data_chunked += [
-        (memoryview(b''), 1, 1),
-        (memoryview(os.urandom(8 * 1024)), 8, 1)
-    ]
-
-@pytest.fixture(
-    params=test_data_chunked,
-    ids=[
-        'data' + str(i) for i in range(len(test_data_chunked))
-    ]
-)
-def data_chunked(request):
-    return request.param
 
 @pytest.fixture(
     params=[
