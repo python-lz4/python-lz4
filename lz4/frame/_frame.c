@@ -450,8 +450,8 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
                                     &source_size,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
-                                    &preferences.frameInfo.contentChecksumFlag,
-                                    &preferences.frameInfo.blockMode,
+                                    &content_checksum,
+                                    &block_linked,
                                     &preferences.autoFlush,
                                     &return_bytearray
                                     ))
@@ -930,7 +930,7 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
                     frame_info.frameType);
       return NULL;
     }
-
+  printf("%d\n", content_checksum);
   return Py_BuildValue ("{s:I,s:I,s:O,s:O,s:O,s:O,s:K}",
                         "block_size", block_size,
                         "block_size_id", block_size_id,
