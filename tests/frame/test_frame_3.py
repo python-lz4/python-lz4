@@ -27,10 +27,10 @@ def data(request):
     return request.param
 
 
-def test_get_frame_info_1(data, block_size, block_mode,
+def test_get_frame_info_1(data, block_size, block_linked,
                           content_checksum, compression_level,
                           store_size):
-    get_frame_info_1(data, block_size, block_mode,
+    get_frame_info_1(data, block_size, block_linked,
                      content_checksum, compression_level,
                      store_size
     )

@@ -28,11 +28,11 @@ if sys.version_info > (2, 7):
 def data(request):
     return request.param
 
-def test_roundtrip_chunked(data, block_size, block_mode,
+def test_roundtrip_chunked(data, block_size, block_linked,
                            content_checksum, compression_level,
                            auto_flush, store_size):
 
-    roundtrip_chunked(data, block_size, block_mode,
+    roundtrip_chunked(data, block_size, block_linked,
                       content_checksum, compression_level,
                       auto_flush, store_size)
 

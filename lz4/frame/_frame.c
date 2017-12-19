@@ -238,6 +238,8 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
   Py_ssize_t source_size;
   int store_size = 1;
   int return_bytearray = 0;
+  int content_checksum = 0;
+  int block_linked = 1;
   LZ4F_preferences_t preferences;
   size_t compressed_bound;
   size_t compressed_size;
@@ -249,7 +251,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
                             "compression_level",
                             "block_size",
                             "content_checksum",
-                            "block_mode",
+                            "block_linked",
                             "store_size",
                             "return_bytearray",
                             NULL
@@ -259,12 +261,12 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
   memset (&preferences, 0, sizeof preferences);
 
 #if IS_PY3
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|iiiipp", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|iipppp", kwlist,
                                     &source,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
-                                    &preferences.frameInfo.contentChecksumFlag,
-                                    &preferences.frameInfo.blockMode,
+                                    &content_checksum,
+                                    &block_linked,
                                     &store_size,
                                     &return_bytearray))
     {
@@ -275,14 +277,33 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
                                     &source,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
-                                    &preferences.frameInfo.contentChecksumFlag,
-                                    &preferences.frameInfo.blockMode,
+                                    &content_checksum,
+                                    &block_linked,
                                     &store_size,
                                     &return_bytearray))
     {
       return NULL;
     }
 #endif
+
+  if (content_checksum)
+    {
+      preferences.frameInfo.contentChecksumFlag = LZ4F_contentChecksumEnabled;
+    }
+  else
+    {
+      preferences.frameInfo.contentChecksumFlag = LZ4F_noContentChecksum;
+    }
+
+  if (block_linked)
+    {
+      preferences.frameInfo.blockMode = LZ4F_blockLinked;
+    }
+  else
+    {
+      preferences.frameInfo.blockMode = LZ4F_blockIndependent;
+    }
+
   source_size = source.len;
 
   preferences.autoFlush = 0;
@@ -381,6 +402,8 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
   PyObject *py_context = NULL;
   Py_ssize_t source_size = 0;
   int return_bytearray = 0;
+  int content_checksum = 0;
+  int block_linked = 1;
   LZ4F_preferences_t preferences;
   PyObject *py_destination;
   char * destination_buffer;
@@ -395,7 +418,7 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
                             "compression_level",
                             "block_size",
                             "content_checksum",
-                            "block_mode",
+                            "block_linked",
                             "auto_flush",
                             "return_bytearray",
                             NULL
@@ -408,13 +431,13 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
   preferences.autoFlush = 1;
 
 #if IS_PY3
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiiiipp", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiipppp", kwlist,
                                     &py_context,
                                     &source_size,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
-                                    &preferences.frameInfo.contentChecksumFlag,
-                                    &preferences.frameInfo.blockMode,
+                                    &content_checksum,
+                                    &block_linked,
                                     &preferences.autoFlush,
                                     &return_bytearray
                                     ))
@@ -436,6 +459,24 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 #endif
+  if (content_checksum)
+    {
+      preferences.frameInfo.contentChecksumFlag = LZ4F_contentChecksumEnabled;
+    }
+  else
+    {
+      preferences.frameInfo.contentChecksumFlag = LZ4F_noContentChecksum;
+    }
+
+  if (block_linked)
+    {
+      preferences.frameInfo.blockMode = LZ4F_blockLinked;
+    }
+  else
+    {
+      preferences.frameInfo.blockMode = LZ4F_blockIndependent;
+    }
+
   preferences.frameInfo.contentSize = source_size;
 
   context =
@@ -730,7 +771,7 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
   size_t result;
   unsigned int block_size;
   unsigned int block_size_id;
-  int blocks_linked;
+  int block_linked;
   int content_checksum;
   int block_checksum;
   int skippable;
@@ -828,11 +869,11 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
 
   if (frame_info.blockMode == LZ4F_blockLinked)
     {
-      blocks_linked = 1;
+      block_linked = 1;
     }
   else if (frame_info.blockMode == LZ4F_blockIndependent)
     {
-      blocks_linked = 0;
+      block_linked = 0;
     }
   else
     {
@@ -893,7 +934,7 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
   return Py_BuildValue ("{s:I,s:I,s:O,s:O,s:O,s:O,s:K}",
                         "block_size", block_size,
                         "block_size_id", block_size_id,
-                        "blocks_linked", blocks_linked ? Py_True : Py_False,
+                        "block_linked", block_linked ? Py_True : Py_False,
                         "content_checksum", content_checksum ? Py_True : Py_False,
                         "block_checksum", block_checksum ? Py_True : Py_False,
                         "skippable", skippable ? Py_True : Py_False,

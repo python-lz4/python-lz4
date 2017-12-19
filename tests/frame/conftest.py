@@ -16,17 +16,17 @@ def block_size(request):
 
 @pytest.fixture(
     params=[
-        (lz4frame.BLOCKMODE_LINKED),
-        (lz4frame.BLOCKMODE_INDEPENDENT),
+        (True),
+        (False),
     ]
 )
-def block_mode(request):
+def block_linked(request):
     return request.param
 
 @pytest.fixture(
     params=[
-        (lz4frame.CONTENTCHECKSUM_DISABLED),
-        (lz4frame.CONTENTCHECKSUM_ENABLED),
+        (True),
+        (False),
     ]
 )
 def content_checksum(request):

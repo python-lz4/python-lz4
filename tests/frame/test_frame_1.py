@@ -4,6 +4,9 @@ import sys
 import pytest
 from .helpers import roundtrip_1, roundtrip_2
 
+
+
+
 test_data=[
     (b''),
     (os.urandom(8 * 1024)),
@@ -28,18 +31,18 @@ def data(request):
     return request.param
 
 
-def test_roundtrip_1(data, block_size, block_mode,
+def test_roundtrip_1(data, block_size, block_linked,
                      content_checksum, compression_level,
                      store_size):
-    roundtrip_1(data, block_size, block_mode,
+    roundtrip_1(data, block_size, block_linked,
                 content_checksum, compression_level,
                 store_size
     )
 
-def test_roundtrip_2(data, block_size, block_mode,
+def test_roundtrip_2(data, block_size, block_linked,
                      content_checksum, compression_level,
                      auto_flush, store_size):
-    roundtrip_2(data, block_size, block_mode,
+    roundtrip_2(data, block_size, block_linked,
                 content_checksum, compression_level,
                 auto_flush, store_size
     )
