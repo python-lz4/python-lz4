@@ -1,9 +1,42 @@
 import lz4.frame as lz4frame
 import math
 
-def roundtrip_1(data, block_size, block_linked,
-                content_checksum, compression_level,
-                store_size):
+
+def get_frame_info_check(compressed_data,
+                         source_size,
+                         store_size,
+                         block_size,
+                         block_linked,
+                         content_checksum):
+
+    frame_info = lz4frame.get_frame_info(compressed_data)
+
+    assert frame_info["content_checksum"] == content_checksum
+
+    assert frame_info["skippable"] == False
+
+    if store_size is True:
+        assert frame_info["content_size"] == source_size
+    else:
+        assert frame_info["content_size"] == 0
+
+    if source_size > frame_info['block_size']:
+        # More than a single block
+        assert frame_info["block_linked"] == block_linked
+
+        if block_size == lz4frame.BLOCKSIZE_DEFAULT:
+            assert frame_info["block_size_id"] == lz4frame.BLOCKSIZE_MAX64KB
+        else:
+            assert frame_info["block_size_id"] == block_size
+
+
+def roundtrip_1(data,
+                block_size=lz4frame.BLOCKSIZE_DEFAULT,
+                block_linked=True,
+                content_checksum=False,
+                compression_level=5,
+                store_size=True):
+
     compressed = lz4frame.compress(
         data,
         store_size=store_size,
@@ -12,13 +45,26 @@ def roundtrip_1(data, block_size, block_linked,
         block_linked=block_linked,
         content_checksum=content_checksum,
     )
+    get_frame_info_check(
+        compressed,
+        len(data),
+        store_size,
+        block_size,
+        block_linked,
+        content_checksum
+    )
     decompressed, bytes_read = lz4frame.decompress(compressed)
     assert bytes_read == len(compressed)
     assert decompressed == data
 
-def roundtrip_2(data, block_size, block_linked,
-                content_checksum, compression_level,
-                auto_flush, store_size):
+def roundtrip_2(data,
+                block_size=lz4frame.BLOCKSIZE_DEFAULT,
+                block_linked=True,
+                content_checksum=False,
+                compression_level=5,
+                auto_flush=False,
+                store_size=True):
+
     c_context = lz4frame.create_compression_context()
 
     kwargs = {}
@@ -39,6 +85,14 @@ def roundtrip_2(data, block_size, block_linked,
         data
     )
     compressed += lz4frame.compress_end(c_context)
+    get_frame_info_check(
+        compressed,
+        len(data),
+        store_size,
+        block_size,
+        block_linked,
+        content_checksum
+    )
     decompressed, bytes_read = lz4frame.decompress(compressed)
     assert bytes_read == len(compressed)
     assert decompressed == data
@@ -55,9 +109,15 @@ def get_chunked(data, nchunks):
         end += stride
     yield data[start:]
 
-def roundtrip_chunked(data, block_size, block_linked,
-                      content_checksum, compression_level,
-                      auto_flush, store_size):
+
+def roundtrip_chunked(data,
+                      block_size=lz4frame.BLOCKSIZE_DEFAULT,
+                      block_linked=True,
+                      content_checksum=False,
+                      compression_level=5,
+                      auto_flush=False,
+                      store_size=True):
+
     data, c_chunks, d_chunks = data
 
     c_context = lz4frame.create_compression_context()
@@ -89,6 +149,15 @@ def roundtrip_chunked(data, block_size, block_linked,
 
     compressed += lz4frame.compress_end(c_context)
 
+    get_frame_info_check(
+        compressed,
+        len(data),
+        store_size,
+        block_size,
+        block_linked,
+        content_checksum
+    )
+
     d_context = lz4frame.create_decompression_context()
     compressed_in = get_chunked(compressed, d_chunks)
     decompressed = b''
@@ -105,42 +174,3 @@ def roundtrip_chunked(data, block_size, block_linked,
 
     #assert bytes_read == len(compressed)
     assert decompressed == data
-
-
-def get_frame_info_1(data,
-                     block_size=lz4frame.BLOCKSIZE_DEFAULT,
-                     block_linked=True,
-                     content_checksum=False,
-                     compression_level=5,
-                     store_size=True):
-    compressed = lz4frame.compress(
-        data,
-        store_size=store_size,
-        compression_level=compression_level,
-        block_size=block_size,
-        block_linked=block_linked,
-        content_checksum=content_checksum,
-    )
-
-    frame_info = lz4frame.get_frame_info(compressed)
-
-    assert frame_info["content_checksum"] == content_checksum
-
-    assert frame_info["skippable"] == False
-
-    if store_size is True:
-        assert frame_info["content_size"] == len(data)
-    else:
-        assert frame_info["content_size"] == 0
-
-    if len(data) > frame_info['block_size']:
-        assert frame_info["block_linked"] == block_linked
-
-        if block_size == lz4frame.BLOCKSIZE_DEFAULT:
-            assert frame_info["block_size_id"] == lz4frame.BLOCKSIZE_MAX64KB
-        else:
-            assert frame_info["block_size_id"] == block_size
-    else:
-        # If there's only a single block in the frame, then LZ4 lib will set
-        # the block mode to be independent
-        assert frame_info["block_linked"] == False

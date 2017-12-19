@@ -32,18 +32,11 @@ def block_linked(request):
 def content_checksum(request):
     return request.param
 
-compression_levels = list(range(-5, 13)) + [
-        lz4frame.COMPRESSIONLEVEL_MIN,
-        lz4frame.COMPRESSIONLEVEL_MINHC,
-        lz4frame.COMPRESSIONLEVEL_MAX,
-    ]
 compression_levels = [
-    # Although testing with all compression levels is desirable, the number of
-    # tests becomes too large. So, we'll select some compression levels at
-    # random.
-    # (i) for i in random.sample(set(compression_levels), k=2)
-    (i) for i in set(compression_levels)
-]
+        (lz4frame.COMPRESSIONLEVEL_MIN),
+        (lz4frame.COMPRESSIONLEVEL_MINHC),
+        (lz4frame.COMPRESSIONLEVEL_MAX),
+    ]
 @pytest.fixture(
     params=compression_levels
 )
