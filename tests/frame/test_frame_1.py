@@ -4,15 +4,6 @@ import sys
 import pytest
 from .helpers import roundtrip_1, roundtrip_2
 
-def test_create_compression_context():
-    context = lz4frame.create_compression_context()
-    assert context != None
-
-def test_create_decompression_context():
-    context = lz4frame.create_decompression_context()
-    assert context != None
-
-
 test_data=[
     (b''),
     (os.urandom(8 * 1024)),
