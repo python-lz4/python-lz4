@@ -107,9 +107,12 @@ def roundtrip_chunked(data, block_size, block_linked,
     assert decompressed == data
 
 
-def get_frame_info_1(data, block_size, block_linked,
-                     content_checksum, compression_level,
-                     store_size):
+def get_frame_info_1(data,
+                     block_size=lz4frame.BLOCKSIZE_DEFAULT,
+                     block_linked=True,
+                     content_checksum=False,
+                     compression_level=5,
+                     store_size=True):
     compressed = lz4frame.compress(
         data,
         store_size=store_size,
