@@ -243,7 +243,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
   PyObject *py_dest;
   char *dest;
 
-  static char *kwlist[] = { "source",
+  static char *kwlist[] = { "data",
                             "compression_level",
                             "block_size",
                             "content_checksum",
@@ -544,7 +544,7 @@ compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
   size_t result;
   int return_bytearray = 0;
   static char *kwlist[] = { "context",
-                            "source",
+                            "data",
                             "return_bytearray",
                             NULL
   };
@@ -772,7 +772,9 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
   int block_checksum;
   int skippable;
 
-  static char *kwlist[] = { "source", NULL };
+  static char *kwlist[] = { "data",
+                            NULL
+  };
 
 #if IS_PY3
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*", kwlist,
@@ -926,7 +928,7 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
                     frame_info.frameType);
       return NULL;
     }
-  printf("%d\n", content_checksum);
+
   return Py_BuildValue ("{s:I,s:I,s:O,s:O,s:O,s:O,s:K}",
                         "block_size", block_size,
                         "block_size_id", block_size_id,
@@ -1200,7 +1202,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
   size_t source_size;
   PyObject * decompressed;
   int return_bytearray = 0;
-  static char *kwlist[] = { "source",
+  static char *kwlist[] = { "data",
                             "return_bytearray",
                             NULL
                           };
@@ -1278,7 +1280,7 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
   size_t source_size;
   int return_bytearray = 0;
   static char *kwlist[] = { "context",
-                            "source",
+                            "data",
                             "return_bytearray",
                             NULL
                           };
