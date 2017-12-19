@@ -192,11 +192,9 @@ __buff_resize (PyObject ** buff, Py_ssize_t size,
   "        - lz4.frame.BLOCKSIZE_MAX1MB or 6: 1 MB\n"                   \
   "        - lz4.frame.BLOCKSIZE_MAX4MB or 7: 4 MB\n\n"                 \
   "        If unspecified, will default to lz4.frame.BLOCKSIZE_DEFAULT.\n" \
-  "    block_mode (int): Specifies whether to use block-linked\n"       \
-  "        compression. Options:\n\n"                                   \
-  "        - lz4.frame.BLOCKMODE_LINKED or 0: linked mode\n"            \
-  "        - lz4.frame.BLOCKMODE_INDEPENDENT or 1: disable linked mode\n\n" \
-  "        The default is lz4.frame.BLOCKMODE_LINKED.\n"                \
+  "    block_linked (bool): Specifies whether to use block-linked\n"    \
+  "        compression. If True compression ratio is improved, particularly\n" \
+  "        for small block sizes. Default is True.\n"                   \
   "    compression_level (int): Specifies the level of compression used.\n" \
   "        Values between 0-16 are valid, with 0 (default) being the\n"     \
   "        lowest compression (0-2 are the same value), and 16 the highest.\n" \
@@ -206,11 +204,9 @@ __buff_resize (PyObject ** buff, Py_ssize_t size,
   "        - lz4.frame.COMPRESSIONLEVEL_MIN: Minimum compression (0, the default)\n" \
   "        - lz4.frame.COMPRESSIONLEVEL_MINHC: Minimum high-compression mode (3)\n" \
   "        - lz4.frame.COMPRESSIONLEVEL_MAX: Maximum compression (16)\n\n" \
-  "    content_checksum (int): Specifies whether to enable checksumming of\n" \
-  "        the payload content. Options:\n\n"                           \
-  "        - lz4.frame.CONTENTCHECKSUM_DISABLED or 0: disables checksumming\n" \
-  "        - lz4.frame.CONTENTCHECKSUM_ENABLED or 1: enables checksumming\n\n" \
-  "        The default is CONTENTCHECKSUM_DISABLED.\n"                  \
+  "    content_checksum (bool): Specifies whether to enable checksumming of\n" \
+  "        the payload content. If True, a checksum is stored in the frame\n" \
+  "        header, and checked during decompression. Default is False.\n" \
 
 PyDoc_STRVAR(compress__doc,
              "compress(source, compression_level=0, block_size=0, content_checksum=0,\n" \
