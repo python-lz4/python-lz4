@@ -1213,8 +1213,8 @@ PyDoc_STRVAR(
   "        If unspecified, will default to lz4.frame.BLOCKSIZE_DEFAULT\n" \
   "        which is currently equal to lz4.frame.BLOCKSIZE_MAX64KB.\n"  \
   "    block_linked (bool): Specifies whether to use block-linked\n"    \
-  "        compression. If True compression ratio is improved, particularly\n" \
-  "        for small block sizes. Default is True.\n"                   \
+  "        compression. If True, the compression ratio is improved,\n" \
+  "        particularly for small block sizes. Default is True.\n"                   \
   "    compression_level (int): Specifies the level of compression used.\n" \
   "        Values between 0-16 are valid, with 0 (default) being the\n"     \
   "        lowest compression (0-2 are the same value), and 16 the highest.\n" \
