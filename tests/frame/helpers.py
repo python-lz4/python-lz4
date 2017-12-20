@@ -225,3 +225,58 @@ def roundtrip_LZ4FrameCompressor(
     assert data == decompressed
     assert bytes_read == len(compressed)
 
+def roundtrip_LZ4FrameCompressor_LZ4FrameDecompressor(
+        data,
+        chunks=1,
+        block_size=lz4frame.BLOCKSIZE_DEFAULT,
+        block_linked=True,
+        content_checksum=False,
+        compression_level=5,
+        auto_flush=False,
+        store_size=True,
+        reset=False):
+
+    with lz4frame.LZ4FrameCompressor(
+            block_size=block_size,
+            block_linked=block_linked,
+            content_checksum=content_checksum,
+            compression_level=compression_level,
+            auto_flush=auto_flush,
+    ) as compressor:
+        def do_compress():
+            if store_size is True:
+                compressed = compressor.compress_begin(source_size=len(data))
+            else:
+                compressed = compressor.compress_begin()
+
+            for chunk in get_chunked(data, chunks):
+                compressed += compressor.compress(chunk)
+
+            compressed += compressor.flush()
+            return compressed
+
+        compressed = do_compress()
+
+        if reset is True:
+            compressor.reset()
+            compressed = do_compress()
+
+    get_frame_info_check(
+        compressed,
+        len(data),
+        store_size,
+        block_size,
+        block_linked,
+        content_checksum
+    )
+
+    with lz4frame.LZ4FrameDecompressor() as decompressor:
+        decompressed = b''
+        bytes_read = 0
+        for chunk in get_chunked(compressed, chunks):
+            d, b = decompressor.decompress(chunk, full_frame=False)
+            decompressed += d
+            bytes_read += b
+
+    assert data == decompressed
+    assert bytes_read == len(compressed)

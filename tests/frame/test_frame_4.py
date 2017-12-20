@@ -1,4 +1,7 @@
-from . helpers import roundtrip_LZ4FrameCompressor
+from . helpers import (
+    roundtrip_LZ4FrameCompressor,
+    roundtrip_LZ4FrameCompressor_LZ4FrameDecompressor,
+)
 import os
 import pytest
 
@@ -45,6 +48,14 @@ def test_roundtrip_LZ4FrameCompressor(data, chunks, block_size, reset):
         reset=reset
     )
 
+def test_roundtrip_LZ4FrameCompressor_LZ4FrameDecompressor(
+        data, chunks, block_size, reset):
+    roundtrip_LZ4FrameCompressor_LZ4FrameDecompressor(
+        data,
+        chunks=chunks,
+        block_size=block_size,
+        reset=reset
+    )
 
 
 
