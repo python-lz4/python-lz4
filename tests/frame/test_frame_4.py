@@ -27,22 +27,25 @@ def data(request):
 def reset(request):
     return request.param
 
-def test_roundtrip_LZ4FrameCompressor(data, block_size, reset):
+@pytest.fixture(
+    params=[
+        (1),
+        (8)
+    ]
+)
+def chunks(request):
+    return request.param
+
+
+def test_roundtrip_LZ4FrameCompressor(data, chunks, block_size, reset):
     roundtrip_LZ4FrameCompressor(
         data,
+        chunks=chunks,
         block_size=block_size,
         reset=reset
     )
 
 
-#     def test_LZ4FrameCompressor(self):
-#         input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
-#         with lz4frame.LZ4FrameCompressor() as compressor:
-#             compressed = compressor.compress_begin()
-#             compressed += compressor.compress(input_data)
-#             compressed += compressor.flush()
-#         decompressed = lz4frame.decompress(compressed)
-#         self.assertEqual(input_data, decompressed)
 
 #     def test_LZ4FrameCompressor_reset(self):
 #         input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
