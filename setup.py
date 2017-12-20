@@ -27,7 +27,7 @@ def pkgconfig_cmd(cmd, libname):
 
 def library_is_installed(libname):
     ''' Check to see if we have a library called 'libname' installed.
-    
+
     This uses pkg-config to check for existence of the library, and
     returns True if it's found, False otherwise. If pkg-config isn't found,
     False is returned. '''
@@ -153,7 +153,10 @@ setup(
     use_scm_version={
         'write_to': "lz4/version.py",
     },
-    setup_requires=['setuptools_scm'],
+    setup_requires=[
+        'setuptools_scm',
+        'pytest-runner',
+    ],
     description="LZ4 Bindings for Python",
     long_description=open('README.rst', 'r').read(),
     author='Jonathan Underwood',
@@ -165,8 +168,9 @@ setup(
         lz4block,
         lz4frame
     ],
-    tests_require=["nose>=1.0"],
-    test_suite = "nose.collector",
+    tests_require=[
+        'pytest',
+    ],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: BSD License',
