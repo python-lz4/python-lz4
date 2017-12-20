@@ -7,19 +7,23 @@
 environment:
 
   matrix:
-    - PYTHON: "C:\\Python27"
-    - PYTHON: "C:\\Python34"
-    - PYTHON: "C:\\Python35"
+
     - PYTHON: "C:\\Python27-x64"
       DISTUTILS_USE_SDK: "1"
     - PYTHON: "C:\\Python34-x64"
       DISTUTILS_USE_SDK: "1"
     - PYTHON: "C:\\Python35-x64"
     - PYTHON: "C:\\Python36-x64"
+    - PYTHON: "C:\\Python36"
+    - PYTHON: "C:\\Python27"
+    - PYTHON: "C:\\Python34"
+    - PYTHON: "C:\\Python35"
 
 matrix:
   # Immediately finish build once one of the jobs fails.
   fast_finish: true
+
+platform: x64
 
 install:
   # If there is a newer build queued for the same PR, cancel this one.
@@ -52,13 +56,19 @@ install:
   # We need wheel installed to build wheels, and this isn't pulled in by setup.py
   - "build.cmd python -m pip install wheel"
 
+  # We need tox to run tests
+  - "build.cmd python -m pip install tox"
+
 build_script:
   # Build the compiled extension
   - "build.cmd python setup.py build"
 
 test_script:
-  # Run the project tests
-  - "build.cmd python setup.py test"
+  # Run the project tests. Test only for 64 bit Python as the 32 bit tests fail
+  # due to memory fragmentation resulting from many alloc/free cycles
+  # ps: $env:is64bit = $env:PYTHON.Contains("-x64")
+  # IF %is64bit% == True build.cmd tox
+  - "build.cmd tox"
 
 after_test:
   # If tests are successful, create binary packages for the project.

@@ -15,12 +15,12 @@ class LZ4FrameCompressor(object):
             - lz4.frame.BLOCKSIZE_MAX256KB or 5: 256 kB
             - lz4.frame.BLOCKSIZE_MAX1MB or 6: 1 MB
             - lz4.frame.BLOCKSIZE_MAX4MB or 7: 4 MB
-            If unspecified, will default to lz4.frame.BLOCKSIZE_DEFAULT.
-        block_mode (int): Specifies whether to use block-linked
-            compression. Options:
-            - lz4.frame.BLOCKMODE_LINKED or 0: linked mode
-            - lz4.frame.BLOCKMODE_INDEPENDENT or 1: disable linked mode
-            The default is lz4.frame.BLOCKMODE_LINKED.
+            If unspecified, will default to lz4.frame.BLOCKSIZE_DEFAULT which
+            is equal to lz4.frame.BLOCKSIZE_MAX64KB.
+        block_linked (bool): Specifies whether to use block-linked
+            compression. If `True`, the compression ratio is improved, especially
+            for small block sizes. If `False` the blocks are compressed independently.
+            The default is `True`.
         compression_level (int): Specifies the level of compression used.
             Values between 0-16 are valid, with 0 (default) being the
             lowest compression (0-2 are the same value), and 16 the highest.
@@ -30,34 +30,31 @@ class LZ4FrameCompressor(object):
             - lz4.frame.COMPRESSIONLEVEL_MIN: Minimum compression (0)
             - lz4.frame.COMPRESSIONLEVEL_MINHC: Minimum high-compression (3)
             - lz4.frame.COMPRESSIONLEVEL_MAX: Maximum compression (16)
-        content_checksum (int): Specifies whether to enable checksumming of
-            the payload content. Options:
-            - lz4.frame.CONTENTCHECKSUM_DISABLED or 0: disables checksumming
-            - lz4.frame.CONTENTCHECKSUM_ENABLED or 1: enables checksumming
-            The default is CONTENTCHECKSUM_DISABLED.
-        frame_type (int): Specifies whether user data can be injected between
-            frames. Options:
-            - lz4.frame.FRAMETYPE_FRAME or 0: disables user data injection
-            - lz4.frame.FRAMETYPE_SKIPPABLEFRAME or 1: enables user data
-              injection
-        auto_flush (bool): When False, the LZ4 library may buffer data until a
-            block is full. When True no buffering occurs, and partially full
-            blocks may be returned. The default is True.
+        content_checksum (bool): Specifies whether to enable checksumming of
+            the payload content. If `True` a checksum of the uncompressed data
+            is stored at the end of the compressed frame which is checked during
+            decompression. The default is `False`.
+        auto_flush (bool): When `False`, the LZ4 library may buffer data until a
+            block is full. When `True` no buffering occurs, and partially full
+            blocks may be returned. The default is `True`.
+        return_bytearray (bool): When `False` a bytes object is returned from the
+            calls to methods of this class. When `True` a bytearray object will be
+            returned. The default is `False`.
     """
 
     def __init__(self,
                  block_size=BLOCKSIZE_DEFAULT,
-                 block_mode=BLOCKMODE_LINKED,
+                 block_linked=True,
                  compression_level=COMPRESSIONLEVEL_MIN,
-                 content_checksum=CONTENTCHECKSUM_DISABLED,
-                 frame_type=FRAMETYPE_FRAME,
-                 auto_flush=True):
+                 content_checksum=False,
+                 auto_flush=True,
+                 return_bytearray=False):
         self.block_size = block_size
-        self.block_mode = block_mode
+        self.block_linked = block_linked
         self.compression_level = compression_level
         self.content_checksum = content_checksum
-        self.frame_type = frame_type
         self.auto_flush = auto_flush
+        self.return_bytearray = return_bytearray
         self._context = create_compression_context()
         self._started = False
 
@@ -76,32 +73,30 @@ class LZ4FrameCompressor(object):
         should be concatenated with this header.
 
         Args:
-            data (bytes): data to compress
             source_size (int): Optionally specify the total size of the
                 uncompressed data. If specified, will be stored in the
                 compressed frame header as an 8-byte field for later use
-                during decompression.
+                during decompression. Default is 0 (no size stored).
 
         Returns:
-            bytes: frame header data
+            bytes or bytearray: frame header data
         """
 
         if self._started is False:
-            result = compress_begin(self._context,
-                                    block_size=self.block_size,
-                                    block_mode=self.block_mode,
-                                    frame_type=self.frame_type,
-                                    compression_level=self.compression_level,
-                                    content_checksum=self.content_checksum,
-                                    auto_flush=self.auto_flush,
-                                    source_size=source_size)
-
+            result = compress_begin(
+                self._context,
+                block_size=self.block_size,
+                block_linked=self.block_linked,
+                compression_level=self.compression_level,
+                content_checksum=self.content_checksum,
+                auto_flush=self.auto_flush,
+                return_bytearray=self.return_bytearray,
+                source_size=source_size
+            )
             self._started = True
             return result
         else:
             raise RuntimeError('compress_begin called when not already initialized')
-
-
 
     def compress(self, data):
         """Compress ``data`` (a ``bytes`` object), returning a bytes object
@@ -115,10 +110,10 @@ class LZ4FrameCompressor(object):
         ``compress_begin()``.
 
         Args:
-            data (bytes): data to compress
+            data (str, bytes or buffer-compatible object): data to compress
 
         Returns:
-            bytes: compressed data
+            bytes or bytearray: compressed data
 
         """
         if self._context is None:
@@ -127,7 +122,10 @@ class LZ4FrameCompressor(object):
         if self._started is False:
             raise RuntimeError('compress called before compress_begin()')
 
-        result = compress_update(self._context, data)
+        result = compress_chunk(
+            self._context, data,
+            return_bytearray=self.return_bytearray
+        )
 
         return result
 
@@ -139,10 +137,13 @@ class LZ4FrameCompressor(object):
         is necessary to first call the ``reset()`` method.
 
         Returns:
-            bytes: any remaining buffered compressed data and frame footer.
+            bytes or bytearray: any remaining buffered compressed data and frame footer.
 
         """
-        result = compress_end(self._context)
+        result = compress_end(
+            self._context,
+            return_bytearray=self.return_bytearray
+        )
         self._context = None
         self._started = False
         return result
@@ -154,3 +155,57 @@ class LZ4FrameCompressor(object):
         """
         self._context = create_compression_context()
         self._started = False
+
+
+class LZ4FrameDecompressor(object):
+    """Create a LZ4 frame decompressor object, which can be used to decompress data
+    incrementally.
+
+    Args:
+        return_bytearray (bool): When ``False`` a bytes object is returned from the
+            calls to methods of this class. When ``True`` a bytearray object will be
+            returned. The default is ``False``.
+
+    """
+
+    def __init__(self, return_bytearray=False):
+        self.return_bytearray = return_bytearray
+        self._context = create_decompression_context()
+
+    def __enter__(self):
+        # All necessary initialization is done in __init__
+        return self
+
+    def __exit__(self, exception_type, exception, traceback):
+        # The decompression context is created with an appropriate destructor,
+        # so no need to del it here
+        pass
+
+    def decompress(self, data, full_frame=False):
+        """Decompresses part of an LZ4 frame of compressed data. The returned data
+        should be concatenated with the output of any previous calls to
+        ``decompress()``.
+
+        Args:
+            data (str, bytes or buffer-compatible object): data to decompress
+            full_frame (bool): If ``True``, then the ``data`` argument is expected
+                to contain the full LZ4 frame. Default is ``False``.
+
+        Returns:
+            bytes or bytearray: decompressed data
+            int: Number of bytes consumed from input data
+
+        """
+
+        if full_frame is True:
+            return decompress(
+                self._context,
+                data,
+                return_bytearray=self.return_bytearray
+            )
+        else:
+            return decompress_chunk(
+                self._context,
+                data,
+                return_bytearray=self.return_bytearray
+            )

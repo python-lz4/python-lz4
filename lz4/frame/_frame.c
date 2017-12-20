@@ -49,40 +49,33 @@
 #endif
 #endif
 
-static const char * capsule_name = "_frame.LZ4F_cctx";
+static const char * compression_context_capsule_name = "_frame.LZ4F_cctx";
+static const char * decompression_context_capsule_name = "_frame.LZ4F_dctx";
 
 struct compression_context
 {
-  LZ4F_compressionContext_t compression_context;
+  LZ4F_cctx * context;
   LZ4F_preferences_t preferences;
 };
 
 /*****************************
 * create_compression_context *
 ******************************/
-PyDoc_STRVAR(create_compression_context__doc,
-             "create_compression_context()\n\n"                         \
-             "Creates a Compression Context object, which will be used in all\n" \
-             "compression operations.\n\n"                              \
-             "Returns:\n"                                               \
-             "    cCtx: A compression context\n"
-            );
-
 static void
-destruct_compression_context (PyObject * py_context)
+destroy_compression_context (PyObject * py_context)
 {
 #ifndef PyCapsule_Type
   struct compression_context *context =
-    PyCapsule_GetPointer (py_context, capsule_name);
+    PyCapsule_GetPointer (py_context, compression_context_capsule_name);
 #else
   /* Compatibility with 2.6 via capsulethunk. */
   struct compression_context *context =  py_context;
 #endif
   Py_BEGIN_ALLOW_THREADS
-    LZ4F_freeCompressionContext (context->compression_context);
+  LZ4F_freeCompressionContext (context->context);
   Py_END_ALLOW_THREADS
 
-    PyMem_Free (context);
+  PyMem_Free (context);
 }
 
 static PyObject *
@@ -101,16 +94,15 @@ create_compression_context (PyObject * Py_UNUSED (self))
     }
 
   Py_BEGIN_ALLOW_THREADS
-  memset (context, 0, sizeof (*context));
 
   result =
-    LZ4F_createCompressionContext (&context->compression_context,
+    LZ4F_createCompressionContext (&context->context,
                                    LZ4F_VERSION);
   Py_END_ALLOW_THREADS
 
   if (LZ4F_isError (result))
     {
-      LZ4F_freeCompressionContext (context->compression_context);
+      LZ4F_freeCompressionContext (context->context);
       PyMem_Free (context);
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_createCompressionContext failed with code: %s",
@@ -118,103 +110,149 @@ create_compression_context (PyObject * Py_UNUSED (self))
       return NULL;
     }
 
-  return PyCapsule_New (context, capsule_name, destruct_compression_context);
+  return PyCapsule_New (context, compression_context_capsule_name,
+                        destroy_compression_context);
+}
+
+static inline PyObject *
+__buff_alloc (const Py_ssize_t dest_size, const int return_bytearray)
+{
+  PyObject * py_dest;
+
+  if (return_bytearray)
+    {
+      py_dest = PyByteArray_FromStringAndSize (NULL, dest_size);
+    }
+  else
+    {
+      py_dest = PyBytes_FromStringAndSize (NULL, dest_size);
+    }
+
+  if (py_dest == NULL)
+    {
+      return PyErr_NoMemory();
+    }
+  else
+    {
+      return py_dest;
+    }
+}
+
+static inline char *
+__buff_to_string (PyObject const * buff, const int bytearray)
+{
+  if (bytearray)
+    {
+      return PyByteArray_AS_STRING (buff);
+    }
+  else
+    {
+      return PyBytes_AS_STRING (buff);
+    }
+}
+
+static inline void
+__buff_resize (PyObject ** buff, Py_ssize_t size,
+               const int return_bytearray)
+{
+  int ret;
+
+  if (return_bytearray)
+    {
+      ret = PyByteArray_Resize (*buff, size);
+    }
+  else
+    {
+      ret = _PyBytes_Resize (buff, size);
+    }
+  if (ret)
+    {
+      PyErr_SetString (PyExc_RuntimeError,
+                       "Failed to resize buffer size");
+    }
 }
 
 /************
  * compress *
  ************/
-#define __COMPRESS_KWARGS_DOCSTRING \
-  "    block_size (int): Sepcifies the maximum blocksize to use.\n"     \
-  "        Options:\n\n"                                                \
-  "        - lz4.frame.BLOCKSIZE_DEFAULT or 0: the lz4 library default\n" \
-  "        - lz4.frame.BLOCKSIZE_MAX64KB or 4: 64 kB\n"                 \
-  "        - lz4.frame.BLOCKSIZE_MAX256KB or 5: 256 kB\n"               \
-  "        - lz4.frame.BLOCKSIZE_MAX1MB or 6: 1 MB\n"                   \
-  "        - lz4.frame.BLOCKSIZE_MAX4MB or 7: 4 MB\n\n"                 \
-  "        If unspecified, will default to lz4.frame.BLOCKSIZE_DEFAULT.\n" \
-  "    block_mode (int): Specifies whether to use block-linked\n"       \
-  "        compression. Options:\n\n"                                   \
-  "        - lz4.frame.BLOCKMODE_LINKED or 0: linked mode\n"          \
-  "        - lz4.frame.BLOCKMODE_INDEPENDENT or 1: disable linked mode\n\n" \
-  "        The default is lz4.frame.BLOCKMODE_LINKED.\n"           \
-  "    compression_level (int): Specifies the level of compression used.\n" \
-  "        Values between 0-16 are valid, with 0 (default) being the\n"     \
-  "        lowest compression (0-2 are the same value), and 16 the highest.\n" \
-  "        Values above 16 will be treated as 16.\n"             \
-  "        Values between 4-9 are recommended.\n"      \
-  "        The following module constants are provided as a convenience:\n\n" \
-  "        - lz4.frame.COMPRESSIONLEVEL_MIN: Minimum compression (0, the default)\n" \
-  "        - lz4.frame.COMPRESSIONLEVEL_MINHC: Minimum high-compression mode (3)\n" \
-  "        - lz4.frame.COMPRESSIONLEVEL_MAX: Maximum compression (16)\n\n" \
-  "    content_checksum (int): Specifies whether to enable checksumming of\n" \
-  "        the payload content. Options:\n\n"                           \
-  "        - lz4.frame.CONTENTCHECKSUM_DISABLED or 0: disables checksumming\n" \
-  "        - lz4.frame.CONTENTCHECKSUM_ENABLED or 1: enables checksumming\n\n" \
-  "        The default is CONTENTCHECKSUM_DISABLED.\n"                  \
-  "    frame_type (int): Specifies whether user data can be injected between\n" \
-  "        frames. Options:\n\n"                                        \
-  "        - lz4.frame.FRAMETYPE_FRAME or 0: disables user data injection\n" \
-  "        - lz4.frame.FRAMETYPE_SKIPPABLEFRAME or 1: enables user data injection\n\n" \
-  "        The default is lz4.frame.FRAMETYPE_FRAME.\n"                 \
-
-PyDoc_STRVAR(compress__doc,
-             "compress(source, compression_level=0, block_size=0, content_checksum=0, block_mode=0, frame_type=0,  content_size_header=1)\n\n" \
-             "Accepts a string, and compresses the string in one go, returning the\n" \
-             "compressed string as a string of bytes. The compressed string includes\n" \
-             "a header and endmark and so is suitable for writing to a file.\n\n" \
-             "Args:\n"                                                  \
-             "    source (str): String to compress\n\n"                 \
-             "Keyword Args:\n"                                          \
-             __COMPRESS_KWARGS_DOCSTRING                                \
-             "    content_size_header (bool): Specifies whether to include an optional\n" \
-             "        8-byte header field that is the uncompressed size of data included\n" \
-             "        within the frame. Including the content-size header is optional\n" \
-             "        and is enabled by default.\n\n"                   \
-             "Returns:\n"                                               \
-             "    str: Compressed data as a string\n"
-             );
-
 static PyObject *
 compress (PyObject * Py_UNUSED (self), PyObject * args,
           PyObject * keywds)
 {
-  const char *source;
-  int source_size;
-  int content_size_header = 1;
+  Py_buffer source;
+  Py_ssize_t source_size;
+  int store_size = 1;
+  int return_bytearray = 0;
+  int content_checksum = 0;
+  int block_linked = 1;
   LZ4F_preferences_t preferences;
   size_t compressed_bound;
+  size_t compressed_size;
   Py_ssize_t dest_size;
   PyObject *py_dest;
   char *dest;
 
-  static char *kwlist[] = { "source",
+  static char *kwlist[] = { "data",
                             "compression_level",
                             "block_size",
                             "content_checksum",
-                            "block_mode",
-                            "frame_type",
-                            "content_size_header",
+                            "block_linked",
+                            "store_size",
+                            "return_bytearray",
                             NULL
                           };
 
 
-  memset (&preferences, 0, sizeof (preferences));
+  memset (&preferences, 0, sizeof preferences);
 
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s#|iiiiii", kwlist,
-                                    &source, &source_size,
+#if IS_PY3
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|iipppp", kwlist,
+                                    &source,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
-                                    &preferences.frameInfo.contentChecksumFlag,
-                                    &preferences.frameInfo.blockMode,
-                                    &preferences.frameInfo.frameType,
-                                    &content_size_header))
+                                    &content_checksum,
+                                    &block_linked,
+                                    &store_size,
+                                    &return_bytearray))
     {
       return NULL;
     }
+#else
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*|iiiiii", kwlist,
+                                    &source,
+                                    &preferences.compressionLevel,
+                                    &preferences.frameInfo.blockSizeID,
+                                    &content_checksum,
+                                    &block_linked,
+                                    &store_size,
+                                    &return_bytearray))
+    {
+      return NULL;
+    }
+#endif
+
+  if (content_checksum)
+    {
+      preferences.frameInfo.contentChecksumFlag = LZ4F_contentChecksumEnabled;
+    }
+  else
+    {
+      preferences.frameInfo.contentChecksumFlag = LZ4F_noContentChecksum;
+    }
+
+  if (block_linked)
+    {
+      preferences.frameInfo.blockMode = LZ4F_blockLinked;
+    }
+  else
+    {
+      preferences.frameInfo.blockMode = LZ4F_blockIndependent;
+    }
+
+  source_size = source.len;
 
   preferences.autoFlush = 0;
-  if (content_size_header)
+  if (store_size)
     {
       preferences.frameInfo.contentSize = source_size;
     }
@@ -238,42 +276,42 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
 
   dest_size = (Py_ssize_t) compressed_bound;
 
-  py_dest = PyBytes_FromStringAndSize (NULL, dest_size);
+  py_dest = __buff_alloc(dest_size, return_bytearray);
   if (py_dest == NULL)
     {
+      PyBuffer_Release(&source);
+      return PyErr_NoMemory();
+    }
+  dest = __buff_to_string(py_dest, return_bytearray);
+
+  Py_BEGIN_ALLOW_THREADS
+  compressed_size =
+    LZ4F_compressFrame (dest, dest_size, source.buf, source_size,
+                        &preferences);
+  Py_END_ALLOW_THREADS
+
+  PyBuffer_Release(&source);
+
+  if (LZ4F_isError (compressed_size))
+    {
+      Py_DECREF (py_dest);
+      PyErr_Format (PyExc_RuntimeError,
+                    "LZ4F_compressFrame failed with code: %s",
+                    LZ4F_getErrorName (compressed_size));
       return NULL;
     }
 
-  dest = PyBytes_AS_STRING (py_dest);
-  if (source_size > 0)
+  /* The actual compressed size might be less than we allocated (we allocated
+     using a worst case guess). If the actual size is less than 75% of what we
+     allocated, then it's worth performing an expensive resize operation to
+     reclaim some space. */
+  if ((Py_ssize_t) compressed_size < (dest_size / 4) * 3)
     {
-      size_t compressed_size;
-      Py_BEGIN_ALLOW_THREADS
-      compressed_size =
-        LZ4F_compressFrame (dest, dest_size, source, source_size,
-                            &preferences);
-      Py_END_ALLOW_THREADS
-
-      if (LZ4F_isError (compressed_size))
-        {
-          Py_DECREF (py_dest);
-          PyErr_Format (PyExc_RuntimeError,
-                        "LZ4F_compressFrame failed with code: %s",
-                        LZ4F_getErrorName (compressed_size));
-          return NULL;
-        }
-      /* The actual compressed size might be less than we allocated
-         (we allocated using a worst case guess). If the actual size is
-         less than 75% of what we allocated, then it's worth performing an
-         expensive resize operation to reclaim some space. */
-      if ((Py_ssize_t) compressed_size < (dest_size / 4) * 3)
-        {
-          _PyBytes_Resize (&py_dest, (Py_ssize_t) compressed_size);
-        }
-      else
-        {
-          Py_SIZE (py_dest) = (Py_ssize_t) compressed_size;
-        }
+      __buff_resize(&py_dest, (Py_ssize_t) compressed_size, return_bytearray);
+    }
+  else
+    {
+      Py_SIZE (py_dest) = (Py_ssize_t) compressed_size;
     }
 
   return py_dest;
@@ -282,37 +320,22 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
 /******************
  * compress_begin *
  ******************/
-PyDoc_STRVAR(compress_begin__doc,
-             "compress_begin(cCtx, source_size=0, compression_level=0, block_size=0,\n" \
-             "    content_checksum=0, content_size=1, block_mode=0, frame_type=0, auto_flush=1)\n\n"\
-             "Creates a frame header from a compression context.\n\n"   \
-             "Args:\n"                                                  \
-             "    context (cCtx): A compression context.\n\n"           \
-             "Keyword Args:\n"                                          \
-             __COMPRESS_KWARGS_DOCSTRING                                \
-             "    auto_flush (int): Enable (1, default) or disable (0) autoFlush.\n" \
-             "         When autoFlush is disabled, the LZ4 library may buffer data\n" \
-             "         until a block is full\n\n"                       \
-             "    source_size (int): This optionally specifies the uncompressed size\n" \
-             "        of the source content. This arument is optional, but if specified\n" \
-             "        will be stored in the frame header for use during decompression.\n"
-             "Returns:\n"                                               \
-             "    str (str): Frame header.\n"
-             );
-
-#undef __COMPRESS_KWARGS_DOCSTRING
-
 static PyObject *
 compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
                 PyObject * keywds)
 {
   PyObject *py_context = NULL;
-  unsigned long source_size = 0;
+  Py_ssize_t source_size = 0;
+  int return_bytearray = 0;
+  int content_checksum = 0;
+  int block_linked = 1;
   LZ4F_preferences_t preferences;
-  /* Only needs to be large enough for a header, which is 15 bytes.
-   * Unfortunately, the lz4 library doesn't provide a #define for this.
+  PyObject *py_destination;
+  char * destination_buffer;
+  /* The destination buffer needs to be large enough for a header, which is 15
+   * bytes. Unfortunately, the lz4 library doesn't provide a #define for this.
    * We over-allocate to allow for larger headers in the future. */
-  char destination_buffer[64];
+  const size_t header_size = 32;
   struct compression_context *context;
   size_t result;
   static char *kwlist[] = { "context",
@@ -320,49 +343,89 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
                             "compression_level",
                             "block_size",
                             "content_checksum",
-                            "block_mode",
-                            "frame_type",
+                            "block_linked",
                             "auto_flush",
+                            "return_bytearray",
                             NULL
                           };
 
-  memset (&preferences, 0, sizeof (preferences));
+  memset (&preferences, 0, sizeof preferences);
 
   /* Default to having autoFlush enabled unless specified otherwise via keyword
      argument */
   preferences.autoFlush = 1;
 
+#if IS_PY3
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiipppp", kwlist,
+                                    &py_context,
+                                    &source_size,
+                                    &preferences.compressionLevel,
+                                    &preferences.frameInfo.blockSizeID,
+                                    &content_checksum,
+                                    &block_linked,
+                                    &preferences.autoFlush,
+                                    &return_bytearray
+                                    ))
+    {
+      return NULL;
+    }
+#else
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiiiiii", kwlist,
                                     &py_context,
                                     &source_size,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
-                                    &preferences.frameInfo.contentChecksumFlag,
-                                    &preferences.frameInfo.blockMode,
-                                    &preferences.frameInfo.frameType,
-                                    &preferences.autoFlush
+                                    &content_checksum,
+                                    &block_linked,
+                                    &preferences.autoFlush,
+                                    &return_bytearray
                                     ))
     {
       return NULL;
+    }
+#endif
+  if (content_checksum)
+    {
+      preferences.frameInfo.contentChecksumFlag = LZ4F_contentChecksumEnabled;
+    }
+  else
+    {
+      preferences.frameInfo.contentChecksumFlag = LZ4F_noContentChecksum;
+    }
+
+  if (block_linked)
+    {
+      preferences.frameInfo.blockMode = LZ4F_blockLinked;
+    }
+  else
+    {
+      preferences.frameInfo.blockMode = LZ4F_blockIndependent;
     }
 
   preferences.frameInfo.contentSize = source_size;
 
   context =
-    (struct compression_context *) PyCapsule_GetPointer (py_context, capsule_name);
+    (struct compression_context *) PyCapsule_GetPointer (py_context, compression_context_capsule_name);
 
-  if (!context || !context->compression_context)
+  if (!context || !context->context)
     {
-      PyErr_SetString (PyExc_ValueError, "No compression context supplied");
+      PyErr_SetString (PyExc_ValueError, "No valid compression context supplied");
       return NULL;
     }
 
   context->preferences = preferences;
 
+  py_destination = __buff_alloc(header_size, return_bytearray);
+  if (py_destination == NULL)
+    {
+      return PyErr_NoMemory();
+    }
+  destination_buffer = __buff_to_string (py_destination, return_bytearray);
+
   Py_BEGIN_ALLOW_THREADS
-  result = LZ4F_compressBegin (context->compression_context,
+  result = LZ4F_compressBegin (context->context,
                                destination_buffer,
-                               sizeof (destination_buffer),
+                               header_size,
                                &context->preferences);
   Py_END_ALLOW_THREADS
 
@@ -374,51 +437,58 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  return PyBytes_FromStringAndSize (destination_buffer, result);
+  Py_SIZE (py_destination) = result;
+  return py_destination;
 }
 
-/*******************
- * compress_update *
- *******************/
-PyDoc_STRVAR(compress_update__doc,
-             "compress_update(context, source)\n\n" \
-             "Compresses blocks of data and returns the compressed data in a string of bytes.\n" \
-             "Args:\n"                                                  \
-             "    context (cCtx): compression context\n"                \
-             "    source (str): data to compress\n\n"                   \
-             "Returns:\n"                                               \
-             "    str: Compressed data as a string\n\n"                 \
-             "Notes:\n"                                               \
-             "    If autoFlush is disabled (auto_flush=0 when calling compress_begin)\n" \
-             "    this function may return an empty string if LZ4 decides to buffer.\n" \
-             "    the input.\n"
-             );
-
+/******************
+ * compress_chunk *
+ ******************/
 static PyObject *
-compress_update (PyObject * Py_UNUSED (self), PyObject * args,
+compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
                  PyObject * keywds)
 {
   PyObject *py_context = NULL;
-  const char *source = NULL;
-  unsigned long source_size = 0;
+  Py_buffer source;
+  Py_ssize_t source_size;
   struct compression_context *context;
   size_t compressed_bound;
+  PyObject *py_destination;
   char *destination_buffer;
   LZ4F_compressOptions_t compress_options;
   size_t result;
-  PyObject *bytes;
-  static char *kwlist[] = { "context", "source", NULL };
+  int return_bytearray = 0;
+  static char *kwlist[] = { "context",
+                            "data",
+                            "return_bytearray",
+                            NULL
+  };
 
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os#", kwlist,
-                                    &py_context, &source, &source_size))
+#if IS_PY3
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Oy*|p", kwlist,
+                                    &py_context,
+                                    &source,
+                                    &return_bytearray))
     {
       return NULL;
     }
+#else
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os*|i", kwlist,
+                                    &py_context,
+                                    &source,
+                                    &return_bytearray))
+    {
+      return NULL;
+    }
+#endif
+
+  source_size = source.len;
 
   context =
-    (struct compression_context *) PyCapsule_GetPointer (py_context, capsule_name);
-  if (!context || !context->compression_context)
+    (struct compression_context *) PyCapsule_GetPointer (py_context, compression_context_capsule_name);
+  if (!context || !context->context)
     {
+      PyBuffer_Release(&source);
       PyErr_Format (PyExc_ValueError, "No compression context supplied");
       return NULL;
     }
@@ -444,26 +514,31 @@ compress_update (PyObject * Py_UNUSED (self), PyObject * args,
 
   if (compressed_bound > PY_SSIZE_T_MAX)
     {
+      PyBuffer_Release(&source);
       PyErr_Format (PyExc_ValueError,
                     "input data could require %zu bytes, which is larger than the maximum supported size of %zd bytes",
                     compressed_bound, PY_SSIZE_T_MAX);
       return NULL;
     }
 
-  destination_buffer = (char *) PyMem_Malloc (compressed_bound);
-  if (!destination_buffer)
+  py_destination = __buff_alloc((Py_ssize_t) compressed_bound, return_bytearray);
+  if (py_destination == NULL)
     {
-      return PyErr_NoMemory ();
+      PyBuffer_Release(&source);
+      return PyErr_NoMemory();
     }
+  destination_buffer = __buff_to_string (py_destination, return_bytearray);
 
   compress_options.stableSrc = 0;
 
   Py_BEGIN_ALLOW_THREADS
   result =
-    LZ4F_compressUpdate (context->compression_context, destination_buffer,
-                         compressed_bound, source, source_size,
+    LZ4F_compressUpdate (context->context, destination_buffer,
+                         compressed_bound, source.buf, source_size,
                          &compress_options);
   Py_END_ALLOW_THREADS
+
+  PyBuffer_Release(&source);
 
   if (LZ4F_isError (result))
     {
@@ -473,25 +548,22 @@ compress_update (PyObject * Py_UNUSED (self), PyObject * args,
                     LZ4F_getErrorName (result));
       return NULL;
     }
-  bytes = PyBytes_FromStringAndSize (destination_buffer, result);
-  PyMem_Free (destination_buffer);
 
-  return bytes;
+  if (result < (compressed_bound / 4) * 3)
+    {
+      __buff_resize (&py_destination, (Py_ssize_t) result, return_bytearray);
+    }
+  else
+    {
+      Py_SIZE (py_destination) = (Py_ssize_t) result;
+    }
+
+  return py_destination;
 }
 
 /****************
  * compress_end *
  ****************/
-PyDoc_STRVAR(compress_end__doc,
-             "compress_end(context)\n\n" \
-             "Flushes a compression context returning an endmark and optional checksum\n" \
-             "as a string of bytes.\n" \
-             "Args:\n"                                                  \
-             "    context (cCtx): compression context\n"                \
-             "Returns:\n"                                               \
-             "    str: Remaining (buffered) compressed data, end mark and optional checksum as a string\n"
-             );
-
 static PyObject *
 compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
 {
@@ -499,19 +571,32 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   LZ4F_compressOptions_t compress_options;
   struct compression_context *context;
   size_t destination_size;
+  int return_bytearray = 0;
+  PyObject *py_destination;
   char * destination_buffer;
   size_t result;
-  PyObject *bytes;
-  static char *kwlist[] = { "context", NULL };
-
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O", kwlist, &py_context))
+  static char *kwlist[] = { "context",
+                            "return_bytearray",
+                            NULL
+  };
+#if IS_PY3
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|p", kwlist,
+                                    &py_context,
+                                    &return_bytearray))
     {
       return NULL;
     }
-
+#else
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|i", kwlist,
+                                    &py_context,
+                                    &return_bytearray))
+    {
+      return NULL;
+    }
+#endif
   context =
-    (struct compression_context *) PyCapsule_GetPointer (py_context, capsule_name);
-  if (!context || !context->compression_context)
+    (struct compression_context *) PyCapsule_GetPointer (py_context, compression_context_capsule_name);
+  if (!context || !context->context)
     {
       PyErr_SetString (PyExc_ValueError, "No compression context supplied");
       return NULL;
@@ -527,15 +612,16 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   destination_size = LZ4F_compressBound (1, &(context->preferences));
   Py_END_ALLOW_THREADS
 
-  destination_buffer = (char *) PyMem_Malloc(destination_size * sizeof(char));
-  if (destination_buffer == NULL)
+  py_destination = __buff_alloc((Py_ssize_t) destination_size, return_bytearray);
+  if (py_destination == NULL)
     {
-      return PyErr_NoMemory ();
+      return PyErr_NoMemory();
     }
+  destination_buffer = __buff_to_string (py_destination, return_bytearray);
 
   Py_BEGIN_ALLOW_THREADS
   result =
-    LZ4F_compressEnd (context->compression_context, destination_buffer,
+    LZ4F_compressEnd (context->context, destination_buffer,
                       destination_size, &compress_options);
   Py_END_ALLOW_THREADS
 
@@ -548,47 +634,55 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
       return NULL;
     }
 
-  bytes = PyBytes_FromStringAndSize (destination_buffer, result);
-  if (bytes == NULL)
+  if (result < (destination_size / 4) * 3)
     {
-      PyErr_SetString (PyExc_RuntimeError,
-                       "Failed to create Python object from destination_buffer");
+      __buff_resize (&py_destination, (Py_ssize_t) result, return_bytearray);
     }
-  PyMem_Free (destination_buffer);
+  else
+    {
+      Py_SIZE (py_destination) = (Py_ssize_t) result;
+    }
 
-  return bytes;
+  return py_destination;
 }
 
 /******************
  * get_frame_info *
  ******************/
-PyDoc_STRVAR(get_frame_info__doc,
-             "get_frame_info(frame)\n\n"                                \
-             "Given a frame of compressed data, returns information about the frame.\n" \
-             "Args:\n"                                                  \
-             "    frame (str): LZ4 frame as a string\n"                \
-             "Returns:\n"                                               \
-             "    dict: Dictionary with keys blockSizeID, blockMode, contentChecksumFlag\n" \
-             "         frameType and contentSize.\n"
-             );
-
 static PyObject *
 get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
                 PyObject * keywds)
 {
-  const char *source;
-  int source_size;
-  size_t source_size_copy;
+  Py_buffer py_source;
+  char *source;
+  size_t source_size;
   LZ4F_decompressionContext_t context;
   LZ4F_frameInfo_t frame_info;
   size_t result;
-  static char *kwlist[] = { "source", NULL };
+  unsigned int block_size;
+  unsigned int block_size_id;
+  int block_linked;
+  int content_checksum;
+  int block_checksum;
+  int skippable;
 
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s#", kwlist,
-                                    &source, &source_size))
+  static char *kwlist[] = { "data",
+                            NULL
+  };
+
+#if IS_PY3
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*", kwlist,
+                                    &py_source))
     {
       return NULL;
     }
+#else
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*", kwlist,
+                                    &py_source))
+    {
+      return NULL;
+    }
+#endif
 
   Py_BEGIN_ALLOW_THREADS
 
@@ -597,21 +691,24 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
   if (LZ4F_isError (result))
     {
       Py_BLOCK_THREADS
+      PyBuffer_Release (&py_source);
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_createDecompressionContext failed with code: %s",
                     LZ4F_getErrorName (result));
       return NULL;
     }
 
-  source_size_copy = source_size;
+  source = (char *) py_source.buf;
+  source_size = (size_t) py_source.len;
 
   result =
-    LZ4F_getFrameInfo (context, &frame_info, source, &source_size_copy);
+    LZ4F_getFrameInfo (context, &frame_info, source, &source_size);
 
   if (LZ4F_isError (result))
     {
       LZ4F_freeDecompressionContext (context);
       Py_BLOCK_THREADS
+      PyBuffer_Release (&py_source);
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_getFrameInfo failed with code: %s",
                     LZ4F_getErrorName (result));
@@ -622,6 +719,8 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
 
   Py_END_ALLOW_THREADS
 
+  PyBuffer_Release (&py_source);
+
   if (LZ4F_isError (result))
     {
       PyErr_Format (PyExc_RuntimeError,
@@ -630,128 +729,251 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  return Py_BuildValue ("{s:i,s:i,s:i,s:i,s:i}",
-                        "blockSizeID", frame_info.blockSizeID,
-                        "blockMode", frame_info.blockMode,
-                        "contentChecksumFlag", frame_info.contentChecksumFlag,
-                        "frameType", frame_info.frameType,
-                        "contentSize", frame_info.contentSize);
-}
-
-/**************
- * decompress *
- **************/
-PyDoc_STRVAR(decompress__doc,
-             "decompress(source)\n\n"                                   \
-             "Decompressed a frame of data and returns it as a string of bytes.\n" \
-             "Args:\n"                                                  \
-             "    source (str): LZ4 frame as a string\n\n"              \
-             "Returns:\n"                                               \
-             "    str: Uncompressed data as a string.\n"
-             );
-
-static PyObject *
-decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
-{
-  char const *source;
-  int source_size;
-  LZ4F_decompressionContext_t context;
-  LZ4F_frameInfo_t frame_info;
-  LZ4F_decompressOptions_t options;
-  size_t result;
-  size_t source_read;
-  size_t destination_size;
-  char * destination_buffer;
-  size_t destination_write;
-  char * destination_cursor;
-  size_t destination_written;
-  const char * source_cursor;
-  const char * source_end;
-  PyObject *py_dest;
-  static char *kwlist[] = { "source", NULL };
-
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s#", kwlist,
-                                    &source, &source_size))
+#define KB *(1<<10)
+#define MB *(1<<20)
+  switch (frame_info.blockSizeID)
     {
+    case LZ4F_default:
+    case LZ4F_max64KB:
+      block_size = 64 KB;
+      block_size_id = LZ4F_max64KB;
+      break;
+    case LZ4F_max256KB:
+      block_size = 256 KB;
+      block_size_id = LZ4F_max256KB;
+      break;
+    case LZ4F_max1MB:
+      block_size = 1 MB;
+      block_size_id = LZ4F_max1MB;
+      break;
+    case LZ4F_max4MB:
+      block_size = 4 MB;
+      block_size_id = LZ4F_max4MB;
+      break;
+    default:
+      PyErr_Format (PyExc_RuntimeError,
+                    "Unrecognized blockSizeID in get_frame_info: %d",
+                    frame_info.blockSizeID);
+      return NULL;
+    }
+#undef KB
+#undef MB
+
+  if (frame_info.blockMode == LZ4F_blockLinked)
+    {
+      block_linked = 1;
+    }
+  else if (frame_info.blockMode == LZ4F_blockIndependent)
+    {
+      block_linked = 0;
+    }
+  else
+    {
+      PyErr_Format (PyExc_RuntimeError,
+                    "Unrecognized blockMode in get_frame_info: %d",
+                    frame_info.blockMode);
       return NULL;
     }
 
-  Py_BEGIN_ALLOW_THREADS
+  if (frame_info.contentChecksumFlag == LZ4F_noContentChecksum)
+    {
+      content_checksum = 0;
+    }
+  else if (frame_info.contentChecksumFlag == LZ4F_contentChecksumEnabled)
+    {
+      content_checksum = 1;
+    }
+  else
+    {
+      PyErr_Format (PyExc_RuntimeError,
+                    "Unrecognized contentChecksumFlag in get_frame_info: %d",
+                    frame_info.contentChecksumFlag);
+      return NULL;
+    }
 
+  if (frame_info.blockChecksumFlag == LZ4F_noBlockChecksum)
+    {
+      block_checksum = 0;
+    }
+  else if (frame_info.blockChecksumFlag == LZ4F_blockChecksumEnabled)
+    {
+      block_checksum = 1;
+    }
+  else
+    {
+      PyErr_Format (PyExc_RuntimeError,
+                    "Unrecognized blockChecksumFlag in get_frame_info: %d",
+                    frame_info.blockChecksumFlag);
+      return NULL;
+    }
+
+  if (frame_info.frameType == LZ4F_frame)
+    {
+      skippable = 0;
+    }
+  else if (frame_info.frameType == LZ4F_skippableFrame)
+    {
+      skippable = 1;
+    }
+  else
+    {
+      PyErr_Format (PyExc_RuntimeError,
+                    "Unrecognized frameType in get_frame_info: %d",
+                    frame_info.frameType);
+      return NULL;
+    }
+
+  return Py_BuildValue ("{s:I,s:I,s:O,s:O,s:O,s:O,s:K}",
+                        "block_size", block_size,
+                        "block_size_id", block_size_id,
+                        "block_linked", block_linked ? Py_True : Py_False,
+                        "content_checksum", content_checksum ? Py_True : Py_False,
+                        "block_checksum", block_checksum ? Py_True : Py_False,
+                        "skippable", skippable ? Py_True : Py_False,
+                        "content_size", frame_info.contentSize);
+}
+
+/*******************************
+* create_decompression_context *
+********************************/
+static void
+destroy_decompression_context (PyObject * py_context)
+{
+#ifndef PyCapsule_Type
+  LZ4F_dctx * context =
+    PyCapsule_GetPointer (py_context, decompression_context_capsule_name);
+#else
+  /* Compatibility with 2.6 via capsulethunk. */
+  LZ4F_dctx * context =  py_context;
+#endif
+  Py_BEGIN_ALLOW_THREADS
+  LZ4F_freeDecompressionContext (context);
+  Py_END_ALLOW_THREADS
+}
+
+static PyObject *
+create_decompression_context (PyObject * Py_UNUSED (self))
+{
+  LZ4F_dctx * context;
+  LZ4F_errorCode_t result;
+
+  Py_BEGIN_ALLOW_THREADS
   result = LZ4F_createDecompressionContext (&context, LZ4F_VERSION);
   if (LZ4F_isError (result))
     {
       Py_BLOCK_THREADS
+      LZ4F_freeDecompressionContext (context);
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_createDecompressionContext failed with code: %s",
                     LZ4F_getErrorName (result));
       return NULL;
     }
-
-  source_read = source_size;
-
-  result =
-    LZ4F_getFrameInfo (context, &frame_info, source, &source_read);
-
-  if (LZ4F_isError (result))
-    {
-      LZ4F_freeDecompressionContext (context);
-      Py_BLOCK_THREADS
-      PyErr_Format (PyExc_RuntimeError,
-                    "LZ4F_getFrameInfo failed with code: %s",
-                    LZ4F_getErrorName (result));
-      return NULL;
-    }
-
-  /* Advance the source pointer past the header - the call to getFrameInfo above
-     replaces the passed source_read value with the number of bytes
-     read. Also reduce source_size accordingly. */
-  source += source_read;
-  source_size -= source_read;
-
-  if (frame_info.contentSize == 0)
-    {
-      /* We'll allocate twice the source buffer size as the output size, and
-         later increase it if needed. */
-      destination_size = 2 * source_size;
-    }
-  else
-    {
-      destination_size = frame_info.contentSize;
-    }
-
   Py_END_ALLOW_THREADS
 
-  destination_buffer = (char *) PyMem_Malloc (destination_size);
-  if (!destination_buffer)
-    {
-      LZ4F_freeDecompressionContext (context);
-      return PyErr_NoMemory ();
-    }
+  return PyCapsule_New (context, decompression_context_capsule_name,
+                        destroy_decompression_context);
+}
+
+static inline PyObject *
+__decompress(LZ4F_dctx * context, char * source, size_t source_size,
+             int full_frame, int return_bytearray)
+{
+  size_t source_remain;
+  size_t source_read;
+  char * source_cursor;
+  char * source_end;
+  char * destination_buffer;
+  size_t destination_write;
+  char * destination_cursor;
+  size_t destination_written;
+  size_t destination_buffer_size;
+  PyObject *py_destination;
+  size_t result = 0;
+  LZ4F_frameInfo_t frame_info;
+  LZ4F_decompressOptions_t options;
 
   Py_BEGIN_ALLOW_THREADS
 
-  options.stableDst = 1;
-
-  source_read = source_size;
   source_cursor = source;
   source_end = source + source_size;
+  source_remain = source_size;
 
-  destination_write = destination_size;
+  if (full_frame)
+    {
+      source_read = source_size;
+
+      result =
+        LZ4F_getFrameInfo (context, &frame_info,
+                           source_cursor, &source_read);
+
+      if (LZ4F_isError (result))
+        {
+          Py_BLOCK_THREADS
+          PyErr_Format (PyExc_RuntimeError,
+                        "LZ4F_getFrameInfo failed with code: %s",
+                        LZ4F_getErrorName (result));
+          return NULL;
+        }
+
+      /* Advance the source_cursor pointer past the header - the call to
+         getFrameInfo above replaces the passed source_read value with the
+         number of bytes read. Also reduce source_remain accordingly. */
+      source_cursor += source_read;
+      source_remain -= source_read;
+      if (frame_info.contentSize > 0)
+        {
+          destination_buffer_size = frame_info.contentSize;
+        }
+      else
+        {
+          destination_buffer_size = 2 * source_remain;
+        }
+    }
+  else
+    {
+      /* Choose an initial destination size as either twice the source size, and
+         we'll grow the allocation as needed. */
+      destination_buffer_size = 2 * source_remain;
+    }
+
+  Py_BLOCK_THREADS
+
+  py_destination = __buff_alloc ((Py_ssize_t) destination_buffer_size, return_bytearray);
+  if (py_destination == NULL)
+    {
+      return PyErr_NoMemory();
+    }
+  destination_buffer = __buff_to_string (py_destination, return_bytearray);
+
+  Py_UNBLOCK_THREADS
+
+  if (full_frame)
+    {
+      options.stableDst = 1;
+    }
+  else
+    {
+      options.stableDst = 0;
+    }
+
+  source_read = source_remain;
+
+  destination_write = destination_buffer_size;
   destination_cursor = destination_buffer;
   destination_written = 0;
 
-  while (source_cursor < source_end)
+  while (1)
     {
       /* Decompress from the source string and write to the destination_buffer
-         until there's no more source string to read.
+         until there's no more source string to read, or until we've reached the
+         frame end.
 
          On calling LZ4F_decompress, source_read is set to the remaining length
          of source available to read. On return, source_read is set to the
          actual number of bytes read from source, which may be less than
          available. NB: LZ4F_decompress does not explicitly fail on empty input.
 
-         On calling LZ4F_decompres, destination_write is the number of bytes in
+         On calling LZ4F_decompress, destination_write is the number of bytes in
          destination available for writing. On exit, destination_write is set to
          the actual number of bytes written to destination. */
       result = LZ4F_decompress (context,
@@ -763,91 +985,398 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
 
       if (LZ4F_isError (result))
         {
-          LZ4F_freeDecompressionContext (context);
           Py_BLOCK_THREADS
           PyErr_Format (PyExc_RuntimeError,
                         "LZ4F_decompress failed with code: %s",
                         LZ4F_getErrorName (result));
-          PyMem_Free (destination_buffer);
           return NULL;
         }
 
       destination_written += destination_write;
       source_cursor += source_read;
+      source_read = source_end - source_cursor;
 
       if (result == 0)
         {
+          /* We've reached the end of the frame. */
           break;
         }
-
-      if (destination_written == destination_size)
+      else if (source_cursor == source_end)
+        {
+          /* We've reached end of input. */
+          break;
+        }
+      else if (destination_written == destination_buffer_size)
         {
           /* Destination_buffer is full, so need to expand it. result is an
              indication of number of source bytes remaining, so we'll use this
              to estimate the new size of the destination buffer. */
-          char * destination_buffer_new;
-          destination_size += 3 * result;
+          destination_buffer_size += 3 * result;
+
           Py_BLOCK_THREADS
-          destination_buffer_new = PyMem_Realloc(destination_buffer, destination_size);
-          if (!destination_buffer_new)
+          __buff_resize (&py_destination, (Py_ssize_t) destination_buffer_size,
+                         return_bytearray);
+          if (py_destination == NULL)
             {
-              LZ4F_freeDecompressionContext (context);
-              PyErr_SetString (PyExc_RuntimeError,
-                               "Failed to increase destination buffer size");
-              PyMem_Free (destination_buffer);
+              /* PyErr_SetString already called in __buff_resize */
               return NULL;
             }
+          destination_buffer = __buff_to_string (py_destination, return_bytearray);
           Py_UNBLOCK_THREADS
-          destination_buffer = destination_buffer_new;
         }
-      /* Data still remaining to be decompressed, so increment the source and
-         destination cursor locations, and reset source_read and
-         destination_write ready for the next iteration. Important to
-         re-initialize destination_cursor here (as opposed to simply
-         incrementing it) so we're pointing to the realloc'd memory location. */
+      /* Data still remaining to be decompressed, so increment the destination
+         cursor location, and reset destination_write ready for the next
+         iteration. Important to re-initialize destination_cursor here (as
+         opposed to simply incrementing it) so we're pointing to the realloc'd
+         memory location. */
       destination_cursor = destination_buffer + destination_written;
-      destination_write = destination_size - destination_written;
-      source_read = source_end - source_cursor;
+      destination_write = destination_buffer_size - destination_written;
     }
-
-  result = LZ4F_freeDecompressionContext (context);
 
   Py_END_ALLOW_THREADS
 
+  if (result != 0 && full_frame)
+    {
+      PyErr_Format (PyExc_RuntimeError,
+                    "full_frame=True specified, but data did not contain complete frame. LZ4F_decompress returned: %zu", result);
+      Py_DECREF(py_destination);
+      return NULL;
+    }
+
   if (LZ4F_isError (result))
     {
-      PyMem_Free (destination_buffer);
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_freeDecompressionContext failed with code: %s",
                     LZ4F_getErrorName (result));
-      return NULL;
-    }
-  else if (result != 0)
-    {
-      PyMem_Free (destination_buffer);
-      PyErr_Format (PyExc_RuntimeError,
-                    "LZ4F_freeDecompressionContext reported unclean decompressor state (truncated frame?): %zu", result);
-      return NULL;
-    }
-  else if (source_cursor != source_end)
-    {
-      PyMem_Free (destination_buffer);
-      PyErr_Format (PyExc_ValueError,
-                    "Extra data: %zd trailing bytes", source_end - source_cursor);
+      Py_DECREF(py_destination);
       return NULL;
     }
 
-  py_dest = PyBytes_FromStringAndSize (destination_buffer, destination_written);
-
-  if (py_dest == NULL)
+  if (destination_written < (destination_buffer_size / 4) * 3)
     {
-      PyErr_SetString (PyExc_RuntimeError,
-                       "Failed to create Python object from destination_buffer");
+      __buff_resize (&py_destination, (Py_ssize_t) destination_written,
+                     return_bytearray);
+    }
+  else
+    {
+      Py_SIZE (py_destination) = destination_written;
     }
 
-  PyMem_Free (destination_buffer);
-  return py_dest;
+  return Py_BuildValue ("Oi", py_destination, source_cursor - source);
 }
+
+/**************
+ * decompress *
+ **************/
+static PyObject *
+decompress (PyObject * Py_UNUSED (self), PyObject * args,
+            PyObject * keywds)
+{
+  LZ4F_dctx * context;
+  LZ4F_errorCode_t result;
+  Py_buffer py_source;
+  char * source;
+  size_t source_size;
+  PyObject * decompressed;
+  int return_bytearray = 0;
+  static char *kwlist[] = { "data",
+                            "return_bytearray",
+                            NULL
+                          };
+
+#if IS_PY3
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|p", kwlist,
+                                    &py_source,
+                                    &return_bytearray
+                                    ))
+    {
+      return NULL;
+    }
+#else
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*|i", kwlist,
+                                    &py_source,
+                                    &return_bytearray
+                                    ))
+    {
+      return NULL;
+    }
+#endif
+
+  Py_BEGIN_ALLOW_THREADS
+  result = LZ4F_createDecompressionContext (&context, LZ4F_VERSION);
+  if (LZ4F_isError (result))
+    {
+      LZ4F_freeDecompressionContext (context);
+      Py_BLOCK_THREADS
+      PyBuffer_Release(&py_source);
+      PyErr_Format (PyExc_RuntimeError,
+                    "LZ4F_createDecompressionContext failed with code: %s",
+                    LZ4F_getErrorName (result));
+      return NULL;
+    }
+  Py_END_ALLOW_THREADS
+
+  /* MSVC can't do pointer arithmetic on void * pointers, so cast to char * */
+  source = (char *) py_source.buf;
+  source_size = py_source.len;
+
+  decompressed = __decompress (context, source, source_size, 1, return_bytearray);
+
+  PyBuffer_Release(&py_source);
+
+  Py_BEGIN_ALLOW_THREADS
+  LZ4F_freeDecompressionContext (context);
+  Py_END_ALLOW_THREADS
+
+  return decompressed;
+}
+
+/********************
+ * decompress_chunk *
+ ********************/
+static PyObject *
+decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
+                  PyObject * keywds)
+{
+  PyObject * py_context = NULL;
+  PyObject * decompressed;
+  LZ4F_dctx * context;
+  Py_buffer py_source;
+  char * source;
+  size_t source_size;
+  int return_bytearray = 0;
+  static char *kwlist[] = { "context",
+                            "data",
+                            "return_bytearray",
+                            NULL
+                          };
+
+#if IS_PY3
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Oy*|p", kwlist,
+                                    &py_context,
+                                    &py_source,
+                                    &return_bytearray
+                                    ))
+    {
+      return NULL;
+    }
+#else
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os*|i", kwlist,
+                                    &py_context,
+                                    &py_source,
+                                    &return_bytearray
+                                    ))
+    {
+      return NULL;
+    }
+#endif
+
+  context = (LZ4F_dctx *)
+    PyCapsule_GetPointer (py_context, decompression_context_capsule_name);
+
+  if (!context)
+    {
+      PyBuffer_Release(&py_source);
+      PyErr_SetString (PyExc_ValueError,
+                       "No valid decompression context supplied");
+      return NULL;
+    }
+
+  /* MSVC can't do pointer arithmetic on void * pointers, so cast to char * */
+  source = (char *) py_source.buf;
+  source_size = py_source.len;
+
+  decompressed = __decompress (context, source, source_size, 0, return_bytearray);
+
+  PyBuffer_Release(&py_source);
+
+  return decompressed;
+}
+
+PyDoc_STRVAR(
+ create_compression_context__doc,
+ "create_compression_context()\n\n"                                     \
+ "Creates a Compression Context object, which will be used in all\n"    \
+ "compression operations.\n\n"                                          \
+ "Returns:\n"                                                           \
+ "    cCtx: A compression context\n"
+ );
+
+#define COMPRESS_KWARGS_DOCSTRING                                     \
+  "    block_size (int): Sepcifies the maximum blocksize to use.\n"     \
+  "        Options:\n\n"                                                \
+  "        - lz4.frame.BLOCKSIZE_DEFAULT or 0: the lz4 library default\n" \
+  "        - lz4.frame.BLOCKSIZE_MAX64KB or 4: 64 kB\n"                 \
+  "        - lz4.frame.BLOCKSIZE_MAX256KB or 5: 256 kB\n"               \
+  "        - lz4.frame.BLOCKSIZE_MAX1MB or 6: 1 MB\n"                   \
+  "        - lz4.frame.BLOCKSIZE_MAX4MB or 7: 4 MB\n\n"                 \
+  "        If unspecified, will default to lz4.frame.BLOCKSIZE_DEFAULT\n" \
+  "        which is currently equal to lz4.frame.BLOCKSIZE_MAX64KB.\n"  \
+  "    block_linked (bool): Specifies whether to use block-linked\n"    \
+  "        compression. If True, the compression ratio is improved,\n" \
+  "        particularly for small block sizes. Default is True.\n"                   \
+  "    compression_level (int): Specifies the level of compression used.\n" \
+  "        Values between 0-16 are valid, with 0 (default) being the\n"     \
+  "        lowest compression (0-2 are the same value), and 16 the highest.\n" \
+  "        Values below 0 will enable \"fast acceleration\", proportional\n" \
+  "        to the value. Values above 16 will be treated as 16.\n"             \
+  "        The following module constants are provided as a convenience:\n\n" \
+  "        - lz4.frame.COMPRESSIONLEVEL_MIN: Minimum compression (0, the default)\n" \
+  "        - lz4.frame.COMPRESSIONLEVEL_MINHC: Minimum high-compression mode (3)\n" \
+  "        - lz4.frame.COMPRESSIONLEVEL_MAX: Maximum compression (16)\n\n" \
+  "    content_checksum (bool): Specifies whether to enable checksumming of\n" \
+  "        the payload content. If True, a checksum is stored at the end of\n" \
+  "        the frame, and checked during decompression. Default is False.\n" \
+  "    return_bytearray (bool): If True a bytearray object will be returned.\n" \
+  "        If False, a string of bytes is returned. The default is False.\n" \
+
+PyDoc_STRVAR(
+ compress__doc,
+ "compress(data, compression_level=0, block_size=0, content_checksum=0,\n" \
+ "         block_linked=True, store_size=True, return_bytearray=False)\n\n" \
+ "Compresses `data` returning the compressed data as a complete frame.\n" \
+ "The returned data includes a header and endmark and so is suitable\n" \
+ "for writing to a file.\n\n"                                           \
+ "Args:\n"                                                              \
+ "    data (str, bytes or buffer-compatible object): data to compress\n\n" \
+ "Keyword Args:\n"                                                      \
+ COMPRESS_KWARGS_DOCSTRING                                              \
+ "    store_size (bool): If True then the frame will include an 8-byte\n" \
+ "        header field that is the uncompressed size of data included\n" \
+ "        within the frame. Default is True.\n\n"                       \
+ "Returns:\n"                                                           \
+ "    str or bytearray: Compressed data\n"
+ );
+PyDoc_STRVAR
+(
+ compress_begin__doc,
+ "compress_begin(context, source_size=0, compression_level=0, block_size=0,\n" \
+ "    content_checksum=0, content_size=1, block_mode=0, frame_type=0,\n" \
+ "    auto_flush=1)\n\n"                                                \
+ "Creates a frame header from a compression context.\n\n"               \
+ "Args:\n"                                                              \
+ "    context (cCtx): A compression context.\n\n"                       \
+ "Keyword Args:\n"                                                      \
+ COMPRESS_KWARGS_DOCSTRING                                              \
+ "    auto_flush (int): Enable (1, default) or disable (0) autoFlush.\n" \
+ "         When autoFlush is disabled, the LZ4 library may buffer data\n" \
+ "         until a block is full\n\n"                                   \
+ "    source_size (int): This optionally specifies the uncompressed size\n" \
+ "        of the source data to be compressed. If specified, the size\n" \
+ "        will be stored in the frame header for use during decompression.\n" \
+ "    return_bytearray (bool): If True a bytearray object will be returned.\n" \
+ "        If False, a string of bytes is returned. The default is False.\n\n" \
+ "Returns:\n"                                                           \
+ "    str or bytearray: Frame header.\n"
+ );
+
+#undef COMPRESS_KWARGS_DOCSTRING
+
+PyDoc_STRVAR
+(
+ compress_chunk__doc,
+ "compress_chunk(context, data)\n\n"                                    \
+ "Compresses blocks of data and returns the compressed data. The returned\n" \
+ "data should be concatenated with the data returned from `compress_begin`\n" \
+ " and any previous calls to `compress`. \n"                            \
+ "Args:\n"                                                              \
+ "    context (cCtx): compression context\n"                            \
+ "    data (str, bytes or buffer-compatible object): data to compress\n\n" \
+ "Keyword Args:\n"                                                      \
+ "    return_bytearray (bool): If True a bytearray object will be returned.\n" \
+ "        If False, a string of bytes is returned. The default is False.\n\n" \
+ "Returns:\n"                                                           \
+ "    str or bytearray: Compressed data as a string\n\n"                \
+ "Notes:\n"                                                             \
+ "    If auto flush is disabled (`auto_flush`=False when calling\n"     \
+ "    compress_begin) this function may buffer and retain some or all of\n" \
+ "    the compressed data for future calls to `compress`.\n"
+ );
+
+PyDoc_STRVAR
+(
+ compress_end__doc,
+ "compress_end(context, return_bytearray=False)\n\n"                    \
+ "Flushes a compression context returning an endmark and optional checksum.\n" \
+ "The returned data should be appended to the output of previous calls to.\n" \
+ "`compress`\n\n"                                                       \
+ "Args:\n"                                                              \
+ "    context (cCtx): compression context\n\n"                          \
+ "Keyword Args:\n"                                                      \
+ "    return_bytearray (bool): If True a bytearray object will be returned.\n" \
+ "        If False, a string of bytes is returned. The default is False.\n\n" \
+ "Returns:\n"                                                           \
+ "    str or bytearray: Remaining (buffered) compressed data, end mark and\n" \
+ "        optional checksum.\n"
+ );
+
+PyDoc_STRVAR
+(
+ get_frame_info__doc,
+ "get_frame_info(frame)\n\n"                                            \
+ "Given a frame of compressed data, returns information about the frame.\n" \
+ "Args:\n"                                                              \
+ "    frame (str, bytes or buffer-compatible object): LZ4 compressed frame\n\n"                            \
+ "Returns:\n"                                                           \
+ "    dict: Dictionary with keys:\n"                                    \
+ "    - block_size (int): the maximum size (in bytes) of each block\n"  \
+ "    - block_size_id (int): identifier for maximum block size\n"       \
+ "    - content_checksum (bool): specifies whether the frame\n"         \
+ "         contains a checksum of the uncompressed content\n"           \
+ "    - content_size (int): uncompressed size in bytes of\n"            \
+ "         frame content\n"                                             \
+ "    - block_linked (bool): specifies whether the frame contains\n"    \
+ "         blocks which are independently compressed (False) or\n"      \
+ "         linked\n"                                                    \
+ "    - block_checksum (bool): specifies whether each block\n"          \
+ "         contains a checksum of its contents\n"                       \
+ "    - skippable (bool): whether the block is skippable (True)\n"      \
+ "         or not\n"
+ );
+
+PyDoc_STRVAR
+(
+ create_decompression_context__doc,
+ "create_decompression_context()\n\n"                                 \
+ "Creates a decompression context object, which will be used for\n"   \
+ "decompression operations.\n\n"                                      \
+ "Returns:\n"                                                         \
+ "    dCtx: A decompression context\n"
+ );
+
+PyDoc_STRVAR
+(
+ decompress__doc,
+ "decompress(data)\n\n"                                                 \
+ "Decompresses a frame of data and returns it as a string of bytes.\n"  \
+ "Args:\n"                                                              \
+ "    data (str, bytes or buffer-compatible object): data to decompress.\n" \
+ "       This should contain a complete LZ4 frame of compressed data.\n\n" \
+ "Keyword Args:\n"                                                      \
+ "    return_bytearray (bool): If True a bytearray object will be returned.\n" \
+ "        If False, a string of bytes is returned. The default is False.\n\n" \
+ "Returns:\n"                                                           \
+ "    str or bytearray: Uncompressed data\n"                            \
+ );
+
+PyDoc_STRVAR
+(
+ decompress_chunk__doc,
+ "decompress(context, data)\n\n"                                        \
+ "Decompresses part of a frame of data. The returned uncompressed data\n" \
+ "should be catenated with the data returned from previous calls to\n"  \
+ "`decompress_chunk`\n\n"                                               \
+ "Args:\n"                                                              \
+ "    context (dCtx): decompression context\n"                          \
+ "    data (str, bytes or buffer-compatible object): part of a LZ4\n"   \
+ "        frame of compressed data\n\n"                                 \
+ "Keyword Args:\n"                                                      \
+ "    return_bytearray (bool): If True a bytearray object will be returned.\n" \
+ "        If False, a string of bytes is returned. The default is False.\n\n" \
+ "Returns:\n"                                                           \
+ "    str or bytearray: Uncompressed data\n"                            \
+ "    int: Number of bytes consumed from source\n"
+ );
 
 static PyMethodDef module_methods[] =
 {
@@ -864,8 +1393,8 @@ static PyMethodDef module_methods[] =
     METH_VARARGS | METH_KEYWORDS, compress_begin__doc
   },
   {
-    "compress_update", (PyCFunction) compress_update,
-    METH_VARARGS | METH_KEYWORDS, compress_update__doc
+    "compress_chunk", (PyCFunction) compress_chunk,
+    METH_VARARGS | METH_KEYWORDS, compress_chunk__doc
   },
   {
     "compress_end", (PyCFunction) compress_end,
@@ -876,8 +1405,16 @@ static PyMethodDef module_methods[] =
     METH_VARARGS | METH_KEYWORDS, get_frame_info__doc
   },
   {
+    "create_decompression_context", (PyCFunction) create_decompression_context,
+    METH_NOARGS, create_decompression_context__doc
+  },
+  {
     "decompress", (PyCFunction) decompress,
     METH_VARARGS | METH_KEYWORDS, decompress__doc
+  },
+  {
+    "decompress_chunk", (PyCFunction) decompress_chunk,
+    METH_VARARGS | METH_KEYWORDS, decompress_chunk__doc
   },
   {NULL, NULL, 0, NULL}		/* Sentinel */
 };
