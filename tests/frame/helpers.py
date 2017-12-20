@@ -174,3 +174,49 @@ def roundtrip_chunked(data,
 
     #assert bytes_read == len(compressed)
     assert decompressed == data
+
+
+def roundtrip_LZ4FrameCompressor(
+        data,
+        block_size=lz4frame.BLOCKSIZE_DEFAULT,
+        block_linked=True,
+        content_checksum=False,
+        compression_level=5,
+        auto_flush=False,
+        store_size=True,
+        reset=False):
+
+    with lz4frame.LZ4FrameCompressor(
+            block_size=block_size,
+            block_linked=block_linked,
+            content_checksum=content_checksum,
+            compression_level=compression_level,
+            auto_flush=auto_flush,
+    ) as compressor:
+        if store_size is True:
+            compressed = compressor.compress_begin(source_size=len(data))
+        else:
+            compressed = compressor.compress_begin()
+        compressed += compressor.compress(data)
+        compressed += compressor.flush()
+        if reset is True:
+            compressor.reset()
+            if store_size is True:
+                compressed = compressor.compress_begin(source_size=len(data))
+            else:
+                compressed = compressor.compress_begin()
+            compressed += compressor.compress(data)
+            compressed += compressor.flush()
+
+    get_frame_info_check(
+        compressed,
+        len(data),
+        store_size,
+        block_size,
+        block_linked,
+        content_checksum
+    )
+
+    decompressed, bytes_read = lz4frame.decompress(compressed)
+    assert data == decompressed
+    assert bytes_read == len(compressed)
