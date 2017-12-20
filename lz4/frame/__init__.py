@@ -73,7 +73,6 @@ class LZ4FrameCompressor(object):
         should be concatenated with this header.
 
         Args:
-            data (bytes): data to compress
             source_size (int): Optionally specify the total size of the
                 uncompressed data. If specified, will be stored in the
                 compressed frame header as an 8-byte field for later use
@@ -84,21 +83,20 @@ class LZ4FrameCompressor(object):
         """
 
         if self._started is False:
-            result = compress_begin(self._context,
-                                    block_size=self.block_size,
-                                    block_linked=self.block_linked,
-                                    compression_level=self.compression_level,
-                                    content_checksum=self.content_checksum,
-                                    auto_flush=self.auto_flush,
-                                    return_bytearray=self.return_bytearray,
-                                    source_size=source_size)
-
+            result = compress_begin(
+                self._context,
+                block_size=self.block_size,
+                block_linked=self.block_linked,
+                compression_level=self.compression_level,
+                content_checksum=self.content_checksum,
+                auto_flush=self.auto_flush,
+                return_bytearray=self.return_bytearray,
+                source_size=source_size
+            )
             self._started = True
             return result
         else:
             raise RuntimeError('compress_begin called when not already initialized')
-
-
 
     def compress(self, data):
         """Compress ``data`` (a ``bytes`` object), returning a bytes object
@@ -112,7 +110,7 @@ class LZ4FrameCompressor(object):
         ``compress_begin()``.
 
         Args:
-            data (bytes): data to compress
+            data (str, bytes or buffer-compatible object): data to compress
 
         Returns:
             bytes or bytearray: compressed data
@@ -160,14 +158,18 @@ class LZ4FrameCompressor(object):
 
 
 class LZ4FrameDecompressor(object):
-    def __init__(self):
-        """Create a LZ4 compressor object, which can be used to compress data
-        incrementally.
+    """Create a LZ4 frame decompressor object, which can be used to decompress data
+    incrementally.
 
-        Args:
-            (No arguments)
-        """
+    Args:
+        return_bytearray (bool): When ``False`` a bytes object is returned from the
+            calls to methods of this class. When ``True`` a bytearray object will be
+            returned. The default is ``False``.
 
+    """
+
+    def __init__(self, return_bytearray=False):
+        self.return_bytearray = return_bytearray
         self._context = create_decompression_context()
 
     def __enter__(self):
@@ -180,4 +182,30 @@ class LZ4FrameDecompressor(object):
         pass
 
     def decompress(self, data, full_frame=False):
-        return decompress2(self._context, data, full_frame=full_frame)
+        """Decompresses part of an LZ4 frame of compressed data. The returned data
+        should be concatenated with the output of any previous calls to
+        ``decompress()``.
+
+        Args:
+            data (str, bytes or buffer-compatible object): data to decompress
+            full_frame (bool): If ``True``, then the ``data`` argument is expected
+                to contain the full LZ4 frame. Default is ``False``.
+
+        Returns:
+            bytes or bytearray: decompressed data
+            int: Number of bytes consumed from input data
+
+        """
+
+        if full_frame is True:
+            return decompress(
+                self._context,
+                data,
+                return_bytearray=self.return_bytearray
+            )
+        else:
+            return decompress_chunk(
+                self._context,
+                data,
+                return_bytearray=self.return_bytearray
+            )
