@@ -249,13 +249,21 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   /* Resizes are expensive; tolerate some slop to avoid. */
   if (output_size < (dest_size / 4) * 3)
     {
+      int ret;
       if (return_bytearray)
         {
-          PyByteArray_Resize (py_dest, output_size);
+          ret = PyByteArray_Resize (py_dest, output_size);
         }
       else
         {
-          _PyBytes_Resize (&py_dest, output_size);
+          ret = _PyBytes_Resize (&py_dest, output_size);
+        }
+
+      if (ret)
+        {
+          PyErr_SetString (PyExc_RuntimeError,
+                           "Failed to resize buffer");
+          return NULL;
         }
     }
   else
