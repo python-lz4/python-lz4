@@ -53,7 +53,7 @@ def roundtrip_1(data,
         block_linked,
         content_checksum
     )
-    decompressed, bytes_read = lz4frame.decompress(compressed)
+    decompressed, bytes_read = lz4frame.decompress(compressed, return_bytes_read=True)
     assert bytes_read == len(compressed)
     assert decompressed == data
 
@@ -93,7 +93,7 @@ def roundtrip_2(data,
         block_linked,
         content_checksum
     )
-    decompressed, bytes_read = lz4frame.decompress(compressed)
+    decompressed, bytes_read = lz4frame.decompress(compressed, return_bytes_read=True)
     assert bytes_read == len(compressed)
     assert decompressed == data
 
@@ -164,7 +164,11 @@ def roundtrip_chunked(data,
     bytes_read = 0
     try:
         while True:
-            d, b = lz4frame.decompress_chunk(d_context, next(compressed_in))
+            d, b = lz4frame.decompress_chunk(
+                d_context,
+                next(compressed_in),
+                return_bytes_read=True
+            )
             decompressed += d
             bytes_read += b
     except StopIteration:
@@ -172,7 +176,7 @@ def roundtrip_chunked(data,
     finally:
         del compressed_in
 
-    #assert bytes_read == len(compressed)
+    assert bytes_read == len(compressed)
     assert decompressed == data
 
 
@@ -221,7 +225,7 @@ def roundtrip_LZ4FrameCompressor(
         content_checksum
     )
 
-    decompressed, bytes_read = lz4frame.decompress(compressed)
+    decompressed, bytes_read = lz4frame.decompress(compressed, return_bytes_read=True)
     assert data == decompressed
     assert bytes_read == len(compressed)
 
@@ -270,7 +274,7 @@ def roundtrip_LZ4FrameCompressor_LZ4FrameDecompressor(
         content_checksum
     )
 
-    with lz4frame.LZ4FrameDecompressor() as decompressor:
+    with lz4frame.LZ4FrameDecompressor(return_bytes_read=True) as decompressor:
         decompressed = b''
         bytes_read = 0
         for chunk in get_chunked(compressed, chunks):

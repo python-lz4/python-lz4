@@ -876,7 +876,7 @@ create_decompression_context (PyObject * Py_UNUSED (self))
 
 static inline PyObject *
 __decompress(LZ4F_dctx * context, char * source, size_t source_size,
-             int full_frame, int return_bytearray)
+             int full_frame, int return_bytearray, int return_bytes_read)
 {
   size_t source_remain;
   size_t source_read;
@@ -1062,7 +1062,14 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
       Py_SIZE (py_destination) = destination_written;
     }
 
-  return Py_BuildValue ("Oi", py_destination, source_cursor - source);
+  if (return_bytes_read)
+    {
+      return Py_BuildValue ("Oi", py_destination, source_cursor - source);
+    }
+  else
+    {
+      return Py_BuildValue ("O", py_destination);
+    }
 }
 
 /**************
@@ -1079,23 +1086,27 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
   size_t source_size;
   PyObject * decompressed;
   int return_bytearray = 0;
+  int return_bytes_read = 0;
   static char *kwlist[] = { "data",
                             "return_bytearray",
+                            "return_bytes_read",
                             NULL
                           };
 
 #if IS_PY3
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|p", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|pp", kwlist,
                                     &py_source,
-                                    &return_bytearray
+                                    &return_bytearray,
+                                    &return_bytes_read
                                     ))
     {
       return NULL;
     }
 #else
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*|i", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*|ii", kwlist,
                                     &py_source,
-                                    &return_bytearray
+                                    &return_bytearray,
+                                    &return_bytes_read
                                     ))
     {
       return NULL;
@@ -1120,7 +1131,8 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
   source = (char *) py_source.buf;
   source_size = py_source.len;
 
-  decompressed = __decompress (context, source, source_size, 1, return_bytearray);
+  decompressed = __decompress (context, source, source_size, 1, return_bytearray,
+                               return_bytes_read);
 
   PyBuffer_Release(&py_source);
 
@@ -1145,26 +1157,30 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
   char * source;
   size_t source_size;
   int return_bytearray = 0;
+  int return_bytes_read = 0;
   static char *kwlist[] = { "context",
                             "data",
                             "return_bytearray",
+                            "return_bytes_read",
                             NULL
                           };
 
 #if IS_PY3
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Oy*|p", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Oy*|pp", kwlist,
                                     &py_context,
                                     &py_source,
-                                    &return_bytearray
+                                    &return_bytearray,
+                                    &return_bytes_read
                                     ))
     {
       return NULL;
     }
 #else
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os*|i", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os*|ii", kwlist,
                                     &py_context,
                                     &py_source,
-                                    &return_bytearray
+                                    &return_bytearray,
+                                    &return_bytes_read
                                     ))
     {
       return NULL;
@@ -1186,7 +1202,8 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
   source = (char *) py_source.buf;
   source_size = py_source.len;
 
-  decompressed = __decompress (context, source, source_size, 0, return_bytearray);
+  decompressed = __decompress (context, source, source_size, 0, return_bytearray,
+                               return_bytes_read);
 
   PyBuffer_Release(&py_source);
 
@@ -1354,9 +1371,14 @@ PyDoc_STRVAR
  "       This should contain a complete LZ4 frame of compressed data.\n\n" \
  "Keyword Args:\n"                                                      \
  "    return_bytearray (bool): If True a bytearray object will be returned.\n" \
- "        If False, a string of bytes is returned. The default is False.\n\n" \
+ "        If False, a string of bytes is returned. The default is False.\n" \
+ "    return_bytes_read (bool): If ``True`` then the number of bytes read\n" \
+ "        from ``data`` will also be returned.\n"                        \
+ "\n"                                                                   \
  "Returns:\n"                                                           \
  "    str or bytearray: Uncompressed data\n"                            \
+ "    int: (Optional) Number of bytes consumed from source. See\n"      \
+ "        ``return_bytes_read`` keyword argument\n"
  );
 
 PyDoc_STRVAR
@@ -1373,9 +1395,13 @@ PyDoc_STRVAR
  "Keyword Args:\n"                                                      \
  "    return_bytearray (bool): If True a bytearray object will be returned.\n" \
  "        If False, a string of bytes is returned. The default is False.\n\n" \
+ "    return_bytes_read (bool): If ``True`` then the number of bytes read\n" \
+ "        from ``data`` will also be returned.\n"                        \
+ "\n"                                                                   \
  "Returns:\n"                                                           \
  "    str or bytearray: Uncompressed data\n"                            \
- "    int: Number of bytes consumed from source\n"
+ "    int: (Optional) Number of bytes consumed from source. See\n"      \
+ "        ``return_bytes_read`` keyword argument\n"
  );
 
 static PyMethodDef module_methods[] =
