@@ -39,6 +39,7 @@
 #include <py3c/capsulethunk.h>
 
 #include <stdlib.h>
+#include <lz4.h> /* Needed for LZ4_VERSION_NUMBER only. */
 #include <lz4frame.h>
 
 #ifndef Py_UNUSED		/* This is already defined for Python 3.4 onwards */
@@ -833,9 +834,9 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
                         "content_size", frame_info.contentSize);
 }
 
-/*******************************
-* create_decompression_context *
-********************************/
+/********************************
+ * create_decompression_context *
+ ********************************/
 static void
 destroy_decompression_context (PyObject * py_context)
 {
@@ -873,6 +874,44 @@ create_decompression_context (PyObject * Py_UNUSED (self))
   return PyCapsule_New (context, decompression_context_capsule_name,
                         destroy_decompression_context);
 }
+
+/*******************************
+ * reset_decompression_context *
+ *******************************/
+#if LZ4_VERSION_NUMBER >= 10800 /* LZ4 v1.8.0 */
+static PyObject *
+reset_decompression_context (PyObject * Py_UNUSED (self), PyObject * args,
+                             PyObject * keywds)
+{
+  LZ4F_dctx * context;
+  PyObject * py_context = NULL;
+  static char *kwlist[] = { "context",
+                            NULL
+  };
+
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O", kwlist,
+                                    &py_context
+                                    ))
+    {
+      return NULL;
+    }
+
+  context = (LZ4F_dctx *)
+    PyCapsule_GetPointer (py_context, decompression_context_capsule_name);
+
+  if (!context)
+    {
+      PyErr_SetString (PyExc_ValueError,
+                       "No valid decompression context supplied");
+      return NULL;
+    }
+
+  /* No error checking possible here - this is always successful. */
+  LZ4F_resetDecompressionContext(context);
+
+  Py_RETURN_NONE;
+}
+#endif
 
 static inline PyObject *
 __decompress(LZ4F_dctx * context, char * source, size_t source_size,
@@ -1361,6 +1400,20 @@ PyDoc_STRVAR
  "    dCtx: A decompression context\n"
  );
 
+#if LZ4_VERSION_NUMBER >= 10800 /* LZ4 v1.8.0 */
+PyDoc_STRVAR
+(
+ reset_decompression_context__doc,
+ "reset_decompression_context(context)\n\n"                             \
+ "Resets a decompression context object. This is useful for recovering\n" \
+ "from an error or for stopping an unfinished decompression and starting\n" \
+ "a new one with the same context\n"                                      \
+ "\n"                                        \
+ "Args:\n"                                                           \
+ "    context (dCtx): A decompression context\n"
+ );
+#endif
+
 PyDoc_STRVAR
 (
  decompress__doc,
@@ -1433,6 +1486,10 @@ static PyMethodDef module_methods[] =
   {
     "create_decompression_context", (PyCFunction) create_decompression_context,
     METH_NOARGS, create_decompression_context__doc
+  },
+  {
+    "reset_decompression_context", (PyCFunction) reset_decompression_context,
+    METH_VARARGS | METH_KEYWORDS, reset_decompression_context__doc
   },
   {
     "decompress", (PyCFunction) decompress,
