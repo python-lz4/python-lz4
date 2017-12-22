@@ -143,6 +143,16 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 
   source_size = (size_t) source.len;
 
+  /* We're using 4 bytes for the size of the content in the header. This means
+     we can store a size as large as the maximum value of an unsinged int. */
+  if (store_size && source_size > UINT_MAX)
+    {
+      PyBuffer_Release(&source);
+      PyErr_Format(PyExc_OverflowError,
+                   "Input too large for storing size in 4 byte header");
+      return NULL;
+    }
+
   if (!strncmp (mode, "default", sizeof ("default")))
     {
       comp = DEFAULT;
