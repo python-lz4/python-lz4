@@ -1,6 +1,11 @@
 import lz4.frame as lz4frame
 import lz4
 
+def test_lz4version():
+    v = lz4.lz4version()
+    assert isinstance(v, int)
+    assert v > 10000
+
 def test_create_compression_context():
     context = lz4frame.create_compression_context()
     assert context is not None
