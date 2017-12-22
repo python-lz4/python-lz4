@@ -165,11 +165,15 @@ class LZ4FrameDecompressor(object):
         return_bytearray (bool): When ``False`` a bytes object is returned from the
             calls to methods of this class. When ``True`` a bytearray object will be
             returned. The default is ``False``.
+        return_bytes_read (bool): When ``True``, calls to ``decompress`` will return
+            the number of bytes read from the input data as well as the uncompressed
+            data. The default is ``False``.
 
     """
 
-    def __init__(self, return_bytearray=False):
+    def __init__(self, return_bytearray=False, return_bytes_read=False):
         self.return_bytearray = return_bytearray
+        self.return_bytes_read = return_bytes_read
         self._context = create_decompression_context()
 
     def __enter__(self):
@@ -193,7 +197,9 @@ class LZ4FrameDecompressor(object):
 
         Returns:
             bytes or bytearray: decompressed data
-            int: Number of bytes consumed from input data
+            int: Number of bytes consumed from input data. This is only returned if
+                ``return_bytes_read`` is ``True`` when ``LZ4FrameDecompressor`` is
+                instantiated.
 
         """
 
@@ -201,11 +207,13 @@ class LZ4FrameDecompressor(object):
             return decompress(
                 self._context,
                 data,
-                return_bytearray=self.return_bytearray
+                return_bytearray=self.return_bytearray,
+                return_bytes_read=self.return_bytes_read,
             )
         else:
             return decompress_chunk(
                 self._context,
                 data,
-                return_bytearray=self.return_bytearray
+                return_bytearray=self.return_bytearray,
+                return_bytes_read=self.return_bytes_read,
             )

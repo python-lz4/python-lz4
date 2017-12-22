@@ -2,11 +2,6 @@
 from .version import version as __version__
 VERSION = __version__
 
-try:
-    from .lz4version import LZ4_VERSION
-except ImportError:
-    LZ4_VERSION = None
-
 from ._version import lz4version
 
 # The following definitions are for backwards compatibility, and will
