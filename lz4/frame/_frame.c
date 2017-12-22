@@ -1371,9 +1371,14 @@ PyDoc_STRVAR
  "       This should contain a complete LZ4 frame of compressed data.\n\n" \
  "Keyword Args:\n"                                                      \
  "    return_bytearray (bool): If True a bytearray object will be returned.\n" \
- "        If False, a string of bytes is returned. The default is False.\n\n" \
+ "        If False, a string of bytes is returned. The default is False.\n" \
+ "    return_bytes_read (bool): If ``True`` then the number of bytes read\n" \
+ "        from ``data`` will also be returned.\n"                        \
+ "\n"                                                                   \
  "Returns:\n"                                                           \
  "    str or bytearray: Uncompressed data\n"                            \
+ "    int: (Optional) Number of bytes consumed from source. See\n"      \
+ "        ``return_bytes_read`` keyword argument\n"
  );
 
 PyDoc_STRVAR
@@ -1390,9 +1395,13 @@ PyDoc_STRVAR
  "Keyword Args:\n"                                                      \
  "    return_bytearray (bool): If True a bytearray object will be returned.\n" \
  "        If False, a string of bytes is returned. The default is False.\n\n" \
+ "    return_bytes_read (bool): If ``True`` then the number of bytes read\n" \
+ "        from ``data`` will also be returned.\n"                        \
+ "\n"                                                                   \
  "Returns:\n"                                                           \
  "    str or bytearray: Uncompressed data\n"                            \
- "    int: Number of bytes consumed from source\n"
+ "    int: (Optional) Number of bytes consumed from source. See\n"      \
+ "        ``return_bytes_read`` keyword argument\n"
  );
 
 static PyMethodDef module_methods[] =
