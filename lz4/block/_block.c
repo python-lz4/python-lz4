@@ -97,7 +97,7 @@ static PyObject *
 compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 {
   const char *mode = "default";
-  int dest_size, total_size;
+  size_t dest_size, total_size;
   int acceleration = 1;
 #if LZ4_VERSION_NUMBER >= 10705 /* LZ4 v1.7.5 */
   int compression = 9;
@@ -108,9 +108,9 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   PyObject *py_dest;
   char *dest, *dest_start;
   compression_type comp;
-  int output_size;
+  size_t output_size;
   Py_buffer source;
-  int source_size;
+  size_t source_size;
   int return_bytearray = 0;
   static char *argnames[] = {
     "source",
@@ -141,11 +141,15 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     }
 #endif
 
-  source_size = (int) source.len;
-  if (source.len != (Py_ssize_t) source_size)
+  source_size = (size_t) source.len;
+
+  /* We're using 4 bytes for the size of the content in the header. This means
+     we can store a size as large as the maximum value of an unsinged int. */
+  if (store_size && source_size > UINT_MAX)
     {
       PyBuffer_Release(&source);
-      PyErr_Format(PyExc_OverflowError, "Input too large for C 'int'");
+      PyErr_Format(PyExc_OverflowError,
+                   "Input too large for storing size in 4 byte header");
       return NULL;
     }
 
@@ -249,13 +253,21 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   /* Resizes are expensive; tolerate some slop to avoid. */
   if (output_size < (dest_size / 4) * 3)
     {
+      int ret;
       if (return_bytearray)
         {
-          PyByteArray_Resize (py_dest, output_size);
+          ret = PyByteArray_Resize (py_dest, output_size);
         }
       else
         {
-          _PyBytes_Resize (&py_dest, output_size);
+          ret = _PyBytes_Resize (&py_dest, output_size);
+        }
+
+      if (ret)
+        {
+          PyErr_SetString (PyExc_RuntimeError,
+                           "Failed to resize buffer");
+          return NULL;
         }
     }
   else
@@ -271,10 +283,10 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 {
   Py_buffer source;
   const char * source_start;
-  int source_size;
+  size_t source_size;
   PyObject *py_dest;
   char *dest;
-  int output_size;
+  size_t output_size;
   size_t dest_size;
   int uncompressed_size = -1;
   int return_bytearray = 0;
@@ -301,13 +313,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     }
 #endif
   source_start = (const char *) source.buf;
-  source_size = (int) source.len;
-  if (source.len != (Py_ssize_t) source_size)
-    {
-      PyBuffer_Release(&source);
-      PyErr_Format(PyExc_OverflowError, "Input too large for C 'int'");
-      return NULL;
-    }
+  source_size = (size_t) source.len;
 
   if (uncompressed_size >= 0)
     {
