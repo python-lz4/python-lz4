@@ -9,13 +9,15 @@ import pkgconfig
 LZ4_REQUIRED_VERSION = '>= 1.7.5'
 PY3C_REQUIRED_VERSION = '>= 1.0'
 
-# Check to see if we have a lz4 library installed on the system and
-# use it if so. If not, we'll use the bundled library.
-liblz4_found = pkgconfig.installed ('liblz4', LZ4_REQUIRED_VERSION)
-
-# Check to see if we have the py3c headers installed on the system and
-# use it if so. If not, we'll use the bundled library.
-py3c_found = pkgconfig.installed('py3c', PY3C_REQUIRED_VERSION)
+# Check to see if we have a lz4 and py3c libraries installed on the system, and
+# of suitable versions, and use if so. If not, we'll use the bundled libraries.
+try:
+    liblz4_found = pkgconfig.installed ('liblz4', LZ4_REQUIRED_VERSION)
+    py3c_found = pkgconfig.installed('py3c', PY3C_REQUIRED_VERSION)
+except EnvironmentError:
+    # Windows, no pkg-config present
+    liblz4_found = False
+    py3c_found = False
 
 # Set up the extension modules. If a system wide lz4 library is found, and is
 # recent enough, we'll use that. Otherwise we'll build with the bundled one. If
