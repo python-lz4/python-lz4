@@ -605,12 +605,15 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
 
   compress_options.stableSrc = 0;
 
-  /* Calling LZ4F_compressBound with srcSize equal to 1 returns a size
+  /* Calling LZ4F_compressBound with srcSize equal to 0 returns a size
      sufficient to fit (i) any remaining buffered data (when autoFlush is
      disabled) and the footer size, which is either 4 or 8 bytes depending on
-     whether checksums are enabled. https://github.com/lz4/lz4/issues/280 */
+     whether checksums are enabled. See: https://github.com/lz4/lz4/issues/280
+     and https://github.com/lz4/lz4/issues/290. Prior to 1.7.5, it was necessary
+     to call LZ4F_compressBound with srcSize equal to 1. Since we now require a
+     minimum version to 1.7.5 we'll call this with srcSize equal to 0. */
   Py_BEGIN_ALLOW_THREADS
-  destination_size = LZ4F_compressBound (1, &(context->preferences));
+  destination_size = LZ4F_compressBound (0, &(context->preferences));
   Py_END_ALLOW_THREADS
 
   py_destination = __buff_alloc((Py_ssize_t) destination_size, return_bytearray);
