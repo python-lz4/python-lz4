@@ -129,7 +129,7 @@ class LZ4FrameCompressor(object):
 
         return result
 
-    def flush(self):
+    def finalize(self):
         """Finish the compression process, returning a bytes object containing any data
         stored in the compressor's internal buffers and a frame footer.
 
