@@ -39,7 +39,6 @@
 #include <py3c/capsulethunk.h>
 
 #include <stdlib.h>
-#include <lz4.h> /* Needed for LZ4_VERSION_NUMBER only. */
 #include <lz4frame.h>
 
 #ifndef Py_UNUSED		/* This is already defined for Python 3.4 onwards */
