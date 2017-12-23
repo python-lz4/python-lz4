@@ -50,22 +50,57 @@
 #endif
 #endif
 
-PyDoc_STRVAR(lz4version__doc,
-             "lz4version()\n\n"                                         \
-             "Returns the version number of the LZ4 library");
-
 static PyObject *
-lz4version (PyObject * Py_UNUSED (self), PyObject * Py_UNUSED (args))
+library_version_number (PyObject * Py_UNUSED (self), PyObject * Py_UNUSED (args))
 {
   return Py_BuildValue ("i", LZ4_versionNumber ());
 }
 
+static PyObject *
+library_version_string (PyObject * Py_UNUSED (self), PyObject * Py_UNUSED (args))
+{
+  return Py_BuildValue ("s", LZ4_versionString ());
+}
+
+PyDoc_STRVAR
+(
+ library_version_number__doc,
+ "library_version_number()\n\n"                       \
+ "Returns the version number of the LZ4 library.\n"   \
+ "\n"                                                 \
+ "Args:\n"                                            \
+ "    None\n"                                         \
+ "\n"                                                 \
+ "Returns:\n"                                         \
+ "    int: version number eg. 10705"
+ );
+
+PyDoc_STRVAR
+(
+ library_version_string__doc,
+ "library_version_dtring()\n\n"                                \
+ "Returns the version number of the LZ4 library as a string\n" \
+ "containing the semantic version.\n"                          \
+ "\n"                                                          \
+ "Args:\n"                                                     \
+ "    None\n"                                                  \
+ "\n"                                                          \
+ "Returns:\n"                                                  \
+ "    str: version number eg. \"1.7.5\""
+ );
+
 static PyMethodDef module_methods[] = {
   {
-    "lz4version",
-    (PyCFunction) lz4version,
+    "library_version_number",
+    (PyCFunction) library_version_number,
     METH_VARARGS,
-    lz4version__doc
+    library_version_number__doc
+  },
+  {
+    "library_version_string",
+    (PyCFunction) library_version_string,
+    METH_VARARGS,
+    library_version_string__doc
   },
   {
     /* Sentinel */

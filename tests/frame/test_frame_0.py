@@ -1,10 +1,18 @@
 import lz4.frame as lz4frame
 import lz4
+import re
 
-def test_lz4version():
-    v = lz4.lz4version()
+def test_library_version_number():
+    v = lz4.library_version_number()
     assert isinstance(v, int)
     assert v > 10000
+
+def test_library_version_string():
+    v = lz4.library_version_string()
+    assert isinstance(v, str)
+    assert v.count('.') == 2
+    r=re.compile(r'^[0-9]*\.[0-9]*\.[0-9]*$')
+    assert r.match(v) is not None
 
 def test_create_compression_context():
     context = lz4frame.create_compression_context()
@@ -15,7 +23,7 @@ def test_create_decompression_context():
     assert context is not None
 
 def test_reset_decompression_context_1():
-    if lz4.lz4version() >= 10800:
+    if lz4.library_version_number() >= 10800:
         context = lz4frame.create_decompression_context()
         r = lz4frame.reset_decompression_context(context)
         assert r is None
@@ -23,7 +31,7 @@ def test_reset_decompression_context_1():
         pass
 
 def test_reset_decompression_context_2():
-    if lz4.lz4version() >= 10800:
+    if lz4.library_version_number() >= 10800:
         c = lz4frame.compress(b'1234', return_bytearray=False)
         context = lz4frame.create_decompression_context()
         try:
