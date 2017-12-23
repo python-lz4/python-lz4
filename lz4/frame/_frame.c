@@ -878,7 +878,6 @@ create_decompression_context (PyObject * Py_UNUSED (self))
 /*******************************
  * reset_decompression_context *
  *******************************/
-#if LZ4_VERSION_NUMBER >= 10800 /* LZ4 v1.8.0 */
 static PyObject *
 reset_decompression_context (PyObject * Py_UNUSED (self), PyObject * args,
                              PyObject * keywds)
@@ -906,12 +905,46 @@ reset_decompression_context (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  /* No error checking possible here - this is always successful. */
-  LZ4F_resetDecompressionContext(context);
+  if (LZ4_versionNumber() >= 10800) /* LZ4 >= v1.8.0 has LZ4F_resetDecompressionContext */
+    {
+      /* No error checking possible here - this is always successful. */
+      Py_BEGIN_ALLOW_THREADS
+      LZ4F_resetDecompressionContext (context);
+      Py_END_ALLOW_THREADS
+    }
+  else
+    {
+      /* No resetDecompressionContext available, so we'll destroy the context
+         and create a new one. */
+      int result;
+
+      Py_BEGIN_ALLOW_THREADS
+      LZ4F_freeDecompressionContext (context);
+
+      result = LZ4F_createDecompressionContext (&context, LZ4F_VERSION);
+      if (LZ4F_isError (result))
+        {
+          LZ4F_freeDecompressionContext (context);
+          Py_BLOCK_THREADS
+          PyErr_Format (PyExc_RuntimeError,
+                        "LZ4F_createDecompressionContext failed with code: %s",
+                        LZ4F_getErrorName (result));
+          return NULL;
+        }
+      Py_END_ALLOW_THREADS
+
+      result = PyCapsule_SetPointer(py_context, context);
+      if (result)
+        {
+          LZ4F_freeDecompressionContext (context);
+          PyErr_SetString (PyExc_RuntimeError,
+                           "PyCapsule_SetPointer failed with code: %s");
+          return NULL;
+        }
+    }
 
   Py_RETURN_NONE;
 }
-#endif
 
 static inline PyObject *
 __decompress(LZ4F_dctx * context, char * source, size_t source_size,
@@ -1400,7 +1433,6 @@ PyDoc_STRVAR
  "    dCtx: A decompression context\n"
  );
 
-#if LZ4_VERSION_NUMBER >= 10800 /* LZ4 v1.8.0 */
 PyDoc_STRVAR
 (
  reset_decompression_context__doc,
@@ -1412,7 +1444,6 @@ PyDoc_STRVAR
  "Args:\n"                                                           \
  "    context (dCtx): A decompression context\n"
  );
-#endif
 
 PyDoc_STRVAR
 (
