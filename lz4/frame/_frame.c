@@ -39,6 +39,7 @@
 #include <py3c/capsulethunk.h>
 
 #include <stdlib.h>
+#include <lz4.h> /* Needed for LZ4_VERSION_NUMBER only. */
 #include <lz4frame.h>
 
 #ifndef Py_UNUSED		/* This is already defined for Python 3.4 onwards */
@@ -794,6 +795,7 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
+#if LZ4_VERSION_NUMBER >= 10800 /* LZ4 v1.8.0 */
   if (frame_info.blockChecksumFlag == LZ4F_noBlockChecksum)
     {
       block_checksum = 0;
@@ -809,6 +811,12 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
                     frame_info.blockChecksumFlag);
       return NULL;
     }
+#else
+  /* Prior to LZ4 1.8.0 the blockChecksum functionality wasn't exposed in the
+     frame API, and blocks weren't checksummed, so we'll always return 0
+     here. */
+  block_checksum = 0;
+#endif
 
   if (frame_info.frameType == LZ4F_frame)
     {
