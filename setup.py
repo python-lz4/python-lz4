@@ -144,6 +144,9 @@ setup(
         'setuptools_scm',
         'pytest-runner',
     ],
+    install_requires=[
+        'deprecation',
+    ],
     description="LZ4 Bindings for Python",
     long_description=open('README.rst', 'r').read(),
     author='Jonathan Underwood',
