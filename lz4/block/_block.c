@@ -84,7 +84,7 @@ load_le32 (const char *c)
 #undef inline
 #endif
 
-static const int hdr_size = sizeof (uint32_t);
+static const size_t hdr_size = sizeof (uint32_t);
 
 typedef enum
 {
