@@ -99,11 +99,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   const char *mode = "default";
   size_t dest_size, total_size;
   int acceleration = 1;
-#if LZ4_VERSION_NUMBER >= 10705 /* LZ4 v1.7.5 */
   int compression = 9;
-#else
-  int compression = 0;
-#endif
   int store_size = 1;
   PyObject *py_dest;
   char *dest, *dest_start;
@@ -387,19 +383,6 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   return py_dest;
 }
 
-#if LZ4_VERSION_NUMBER >= 10705 /* LZ4 v1.7.5 */
-#define __COMPRESSION_DOCSTRING \
-  "    compression (int): When mode is set to `high_compression` this\n" \
-  "        argument specifies the compression. Valid values are between\n" \
-  "        1 and 12. Values between 4-9 are recommended, and 9 is the\n" \
-  "        default.\n"
-#else
-#define __COMPRESSION_DOCSTRING                                         \
-  "    compression (int): When mode is set to `high_compression` this\n" \
-  "        argument specifies the compression. Valid values are between\n" \
-  "        0 and 16. Values between 4-9 are recommended, and 0 is the\n" \
-  "        default.\n"
-#endif
 PyDoc_STRVAR(compress__doc,
              "compress(source, mode='default', acceleration=1, compression=0)\n\n" \
              "Compress source, returning the compressed data as a string.\n" \
@@ -415,7 +398,10 @@ PyDoc_STRVAR(compress__doc,
              "        specifies the acceleration. The larger the acceleration, the\n" \
              "        faster the but the lower the compression. The default\n" \
              "        compression corresponds to a value of 1.\n"       \
-             __COMPRESSION_DOCSTRING                                         \
+             "    compression (int): When mode is set to `high_compression` this\n" \
+             "        argument specifies the compression. Valid values are between\n" \
+             "        1 and 12. Values between 4-9 are recommended, and 9 is the\n" \
+             "        default.\n"
              "    store_size (bool): If True (the default) then the size of the\n" \
              "        uncompressed data is stored at the start of the compressed\n" \
              "        block.\n"                                         \
@@ -481,11 +467,11 @@ MODULE_INIT_FUNC (_block)
 
   if (module == NULL)
     return NULL;
-#if LZ4_VERSION_NUMBER >= 10705 /* LZ4 v1.7.5 */
+
   PyModule_AddIntConstant (module, "HC_LEVEL_MIN", LZ4HC_CLEVEL_MIN);
   PyModule_AddIntConstant (module, "HC_LEVEL_DEFAULT", LZ4HC_CLEVEL_DEFAULT);
   PyModule_AddIntConstant (module, "HC_LEVEL_OPT_MIN", LZ4HC_CLEVEL_OPT_MIN);
   PyModule_AddIntConstant (module, "HC_LEVEL_MAX", LZ4HC_CLEVEL_MAX);
-#endif
+
   return module;
 }
