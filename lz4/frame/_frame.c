@@ -185,6 +185,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
   int store_size = 1;
   int return_bytearray = 0;
   int content_checksum = 0;
+  int block_checksum = 0;
   int block_linked = 1;
   LZ4F_preferences_t preferences;
   size_t compressed_bound;
@@ -197,6 +198,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
                             "compression_level",
                             "block_size",
                             "content_checksum",
+                            "block_checksum",
                             "block_linked",
                             "store_size",
                             "return_bytearray",
@@ -207,11 +209,12 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
   memset (&preferences, 0, sizeof preferences);
 
 #if IS_PY3
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|iipppp", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|iippppp", kwlist,
                                     &source,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
                                     &content_checksum,
+                                    &block_checksum,
                                     &block_linked,
                                     &store_size,
                                     &return_bytearray))
@@ -219,11 +222,12 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 #else
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*|iiiiii", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*|iiiiiii", kwlist,
                                     &source,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
                                     &content_checksum,
+                                    &block_checksum,
                                     &block_linked,
                                     &store_size,
                                     &return_bytearray))
@@ -248,6 +252,24 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
   else
     {
       preferences.frameInfo.blockMode = LZ4F_blockIndependent;
+    }
+
+  if (LZ4_versionNumber() >= 10800)
+    {
+      if (block_checksum)
+        {
+          preferences.frameInfo.blockChecksumFlag = LZ4F_blockChecksumEnabled;
+        }
+      else
+        {
+          preferences.frameInfo.blockChecksumFlag = LZ4F_noBlockChecksum;
+        }
+    }
+  else if (block_checksum)
+    {
+      PyErr_SetString (PyExc_RuntimeError,
+                       "block_checksum specified but not supported by LZ4 library version");
+      return NULL;
     }
 
   source_size = source.len;
@@ -329,6 +351,7 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
   Py_ssize_t source_size = 0;
   int return_bytearray = 0;
   int content_checksum = 0;
+  int block_checksum = 0;
   int block_linked = 1;
   LZ4F_preferences_t preferences;
   PyObject *py_destination;
@@ -344,6 +367,7 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
                             "compression_level",
                             "block_size",
                             "content_checksum",
+                            "block_checksum",
                             "block_linked",
                             "auto_flush",
                             "return_bytearray",
@@ -357,12 +381,13 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
   preferences.autoFlush = 1;
 
 #if IS_PY3
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiipppp", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiippppp", kwlist,
                                     &py_context,
                                     &source_size,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
                                     &content_checksum,
+                                    &block_checksum,
                                     &block_linked,
                                     &preferences.autoFlush,
                                     &return_bytearray
@@ -371,12 +396,13 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 #else
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiiiiii", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiiiiiii", kwlist,
                                     &py_context,
                                     &source_size,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
                                     &content_checksum,
+                                    &block_checksum,
                                     &block_linked,
                                     &preferences.autoFlush,
                                     &return_bytearray
@@ -402,6 +428,34 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
     {
       preferences.frameInfo.blockMode = LZ4F_blockIndependent;
     }
+
+  if (LZ4_versionNumber() >= 10800)
+    {
+      if (block_checksum)
+        {
+          preferences.frameInfo.blockChecksumFlag = LZ4F_blockChecksumEnabled;
+        }
+      else
+        {
+          preferences.frameInfo.blockChecksumFlag = LZ4F_noBlockChecksum;
+        }
+    }
+  else if (block_checksum)
+    {
+      PyErr_SetString (PyExc_RuntimeError,
+                       "block_checksum specified but not supported by LZ4 library version");
+      return NULL;
+    }
+
+  if (block_linked)
+    {
+      preferences.frameInfo.blockMode = LZ4F_blockLinked;
+    }
+  else
+    {
+      preferences.frameInfo.blockMode = LZ4F_blockIndependent;
+    }
+
 
   preferences.frameInfo.contentSize = source_size;
 
@@ -1326,6 +1380,10 @@ PyDoc_STRVAR(
   "    content_checksum (bool): Specifies whether to enable checksumming of\n" \
   "        the payload content. If True, a checksum is stored at the end of\n" \
   "        the frame, and checked during decompression. Default is False.\n" \
+  "    block_checksum (bool): Specifies whether to enable checksumming of\n" \
+  "        the contents of each block in the frame. If True, a checksum is\n" \
+  "        stored at the end of each block and verified during decompression.\n" \
+  "        Default is False.\n"                                         \
   "    return_bytearray (bool): If True a bytearray object will be returned.\n" \
   "        If False, a string of bytes is returned. The default is False.\n" \
 
