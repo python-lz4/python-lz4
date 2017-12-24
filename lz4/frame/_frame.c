@@ -1385,11 +1385,17 @@ PyDoc_STRVAR(
   "    content_checksum (bool): Specifies whether to enable checksumming\n" \
   "        of the payload content. If True, a checksum is stored at the\n" \
   "        end of the frame, and checked during decompression. Default is\n" \
-  "        False."                                                      \
+  "        False.\n"                                                    \
   "    block_checksum (bool): Specifies whether to enable checksumming of\n" \
-  "        the contents of each block in the frame. If True, a checksum is\n" \
-  "        stored at the end of each block and verified during decompression.\n" \
-  "        Default is False.\n"                                         \
+  "        the uncompressed content of each block. If `True` a checksum of\n" \
+  "        the uncompressed data in each block in the frame is stored at\n\n" \
+  "        the end of each block. If present, these checksums will be used\n\n" \
+  "        to validate the data during decompression. The default is\n" \
+  "        `False` meaning block checksums are not calculated and stored.\n" \
+  "        This functionality is only supported if the underlying LZ4\n" \
+  "        library has version >= 1.8.0. Attempting to set this value\n" \
+  "        to `True` with a version of LZ4 < 1.8.0 will cause a `RuntimeError`\n" \
+  "        to be raised.\n"                                             \
   "    return_bytearray (bool): If True a bytearray object will be returned.\n" \
   "        If False, a string of bytes is returned. The default is False.\n" \
 
