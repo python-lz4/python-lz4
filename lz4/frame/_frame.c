@@ -616,39 +616,50 @@ compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
   return py_destination;
 }
 
-/****************
- * compress_end *
- ****************/
+/******************
+ * compress_flush *
+ ******************/
 static PyObject *
-compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
+compress_flush (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
 {
   PyObject *py_context = NULL;
   LZ4F_compressOptions_t compress_options;
   struct compression_context *context;
   size_t destination_size;
   int return_bytearray = 0;
+  int end_frame = 1;
   PyObject *py_destination;
   char * destination_buffer;
   size_t result;
   static char *kwlist[] = { "context",
+                            "end_frame",
                             "return_bytearray",
                             NULL
   };
 #if IS_PY3
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|p", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|pp", kwlist,
                                     &py_context,
+                                    &end_frame,
                                     &return_bytearray))
     {
       return NULL;
     }
 #else
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|i", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|ii", kwlist,
                                     &py_context,
+                                    &end_frame,
                                     &return_bytearray))
     {
       return NULL;
     }
 #endif
+  if (!end_frame && LZ4_versionNumber() < 10800)
+    {
+      PyErr_SetString (PyExc_RuntimeError,
+                       "Flush without ending a frame is not supported with this version of the LZ4 library");
+      return NULL;
+    }
+
   context =
     (struct compression_context *) PyCapsule_GetPointer (py_context, compression_context_capsule_name);
   if (!context || !context->context)
@@ -678,9 +689,18 @@ compress_end (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   destination_buffer = __buff_to_string (py_destination, return_bytearray);
 
   Py_BEGIN_ALLOW_THREADS
-  result =
-    LZ4F_compressEnd (context->context, destination_buffer,
-                      destination_size, &compress_options);
+  if (end_frame)
+    {
+      result =
+        LZ4F_compressEnd (context->context, destination_buffer,
+                          destination_size, &compress_options);
+    }
+  else
+    {
+      result =
+        LZ4F_flush (context->context, destination_buffer,
+                    destination_size, &compress_options);
+    }
   Py_END_ALLOW_THREADS
 
   if (LZ4F_isError (result))
@@ -1464,19 +1484,30 @@ PyDoc_STRVAR
 
 PyDoc_STRVAR
 (
- compress_end__doc,
- "compress_end(context, return_bytearray=False)\n\n"                    \
- "Flushes a compression context returning an endmark and optional checksum.\n" \
- "The returned data should be appended to the output of previous calls to\n" \
- "`compress`\n\n"                                                       \
+ compress_flush__doc,
+ "compress_flush(context, return_bytearray=False)\n\n"                    \
+ "Flushes a compression context returning any data buffed in the context as\n" \
+ "compressed data. If ``end_frame`` is ``True`` an endmark and optional\n" \
+ "checksum are appended, and the compression context is reset for re-use\n" \
+ "for creating a new frame. The returned data should be appended to the\n" \
+ "output of previous calls to ``compress``.\n"                           \
+ "\n"                                                                   \
  "Args:\n"                                                              \
- "    context (cCtx): compression context\n\n"                          \
+ "    context (cCtx): Compression context\n"                            \
+ "    end_frame (bool): If ``True``, in addition to flushing any buffered\n" \
+ "        data, an end frame marker (and possibly a checksum) will be\n" \
+ "        appended to the data, and the compression context reset. If\n" \
+ "        ``end_frame`` is ``False`` but the underlying LZ4 library doesn't" \
+ "        support flushing without ending the frame, a ``RuntimeError``\n" \
+ "        will be raised. Default is ``True``.\n"                                           \
+ "\n"                                                                   \
  "Keyword Args:\n"                                                      \
  "    return_bytearray (bool): If True a bytearray object will be returned.\n" \
- "        If False, a string of bytes is returned. The default is False.\n\n" \
+ "        If False, a string of bytes is returned. The default is False.\n" \
+ "\n"                                                                   \
  "Returns:\n"                                                           \
- "    str or bytearray: Remaining (buffered) compressed data, end mark and\n" \
- "        optional checksum.\n"
+ "    str or bytearray: Remaining (buffered) compressed data, and\n"    \
+ "        optionally an end frame marker and frame content checksum.\n"
  );
 
 PyDoc_STRVAR
@@ -1587,8 +1618,8 @@ static PyMethodDef module_methods[] =
     METH_VARARGS | METH_KEYWORDS, compress_chunk__doc
   },
   {
-    "compress_end", (PyCFunction) compress_end,
-    METH_VARARGS | METH_KEYWORDS, compress_end__doc
+    "compress_flush", (PyCFunction) compress_flush,
+    METH_VARARGS | METH_KEYWORDS, compress_flush__doc
   },
   {
     "get_frame_info", (PyCFunction) get_frame_info,
