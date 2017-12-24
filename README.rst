@@ -25,9 +25,11 @@ This package provides python bindings for the `lz4 compression library
 At this time the project contains bindings for the LZ4 block format, which are
 considered stable.
 
-Support for the LZ4 frame format is a work-in-progress and available as a
-technology preview. A future relase will implement support for the LZ4 stream
-format.
+Support for the LZ4 frame format is a work-in-progress and is considered beta
+quality. It should work fine, but changes to the API may happen prior to the 1.0
+release.
+
+A future relase will implement support for the LZ4 stream format.
 
 Documenation
 ============
