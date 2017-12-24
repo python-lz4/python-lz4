@@ -4,51 +4,27 @@ import subprocess
 import os
 import sys
 from distutils import ccompiler
+import pkgconfig
 
-def pkgconfig_cmd(cmd, libname):
-    try:
-        pkg_config_exe = os.environ.get('PKG_CONFIG', None) or 'pkg-config'
-        # poor-man's check_output (for Python 2.6 compat)
-        p = subprocess.Popen([pkg_config_exe, cmd, libname], stdout=subprocess.PIPE)
-        stdout, _ = p.communicate()
-        res = p.wait() # communicate already waits for us so this shouldn't block
-        if res != 0:
-            # pkg-config failed
-            return None
-        return stdout.decode('utf-8')
-    except OSError:
-        # pkg-config not present
-        return None
+LZ4_REQUIRED_VERSION = '>= 1.7.5'
+PY3C_REQUIRED_VERSION = '>= 1.0'
 
-def library_is_installed(libname):
-    ''' Check to see if we have a library called 'libname' installed.
+# Check to see if we have a lz4 and py3c libraries installed on the system, and
+# of suitable versions, and use if so. If not, we'll use the bundled libraries.
+try:
+    liblz4_found = pkgconfig.installed ('liblz4', LZ4_REQUIRED_VERSION)
+    py3c_found = pkgconfig.installed('py3c', PY3C_REQUIRED_VERSION)
+except EnvironmentError:
+    # Windows, no pkg-config present
+    liblz4_found = False
+    py3c_found = False
 
-    This uses pkg-config to check for existence of the library, and
-    returns True if it's found, False otherwise. If pkg-config isn't found,
-    False is returned. '''
-    return pkgconfig_cmd('--exists', libname) is not None
-
-def get_cflags(libname):
-    return pkgconfig_cmd('--cflags', libname).split()
-
-def get_ldflags(libname):
-    return pkgconfig_cmd('--libs', libname).split()
-
-# Check to see if we have a lz4 library installed on the system and
-# use it if so. If not, we'll use the bundled library.
-liblz4_found = library_is_installed('liblz4')
-
-# Check to see if we have the py3c headers installed on the system and
-# use it if so. If not, we'll use the bundled library.
-py3c_found = library_is_installed('py3c')
-
-# Set up the extension modules. If a system wide lz4 library is found, we'll
-# use that. Otherwise we'll build with the bundled one. If we're building
-# against the system lz4 library we don't set the compiler flags, so they'll be
-# picked up from the environment. If we're building against the bundled lz4
-# files, we'll set the compiler flags to be consistent with what upstream lz4
-# recommends. In addition, if we're building against the bundled library files,
-# we'll set LZ4_VERSION for legacy compatibility.
+# Set up the extension modules. If a system wide lz4 library is found, and is
+# recent enough, we'll use that. Otherwise we'll build with the bundled one. If
+# we're building against the system lz4 library we don't set the compiler
+# flags, so they'll be picked up from the environment. If we're building
+# against the bundled lz4 files, we'll set the compiler flags to be consistent
+# with what upstream lz4 recommends.
 
 include_dirs = []
 libraries = []
@@ -66,10 +42,9 @@ lz4frame_sources = [
 ]
 
 if liblz4_found is True:
-    extra_link_args = get_ldflags('liblz4')
+    libraries.append('lz4')
 else:
     include_dirs.append('lz4libs')
-    extra_link_args = []
     lz4version_sources.extend(
         [
             'lz4libs/lz4.c',
@@ -95,11 +70,16 @@ if py3c_found is False:
 
 compiler = ccompiler.get_default_compiler()
 
+extra_link_args = []
+extra_compile_args = []
+
 if compiler == 'msvc':
     extra_compile_args = ['/Ot', '/Wall']
 elif compiler in ('unix', 'mingw32'):
     if liblz4_found:
-        extra_compile_args = get_cflags('liblz4')
+        extra_link_args.append(pkgconfig.libs('liblz4'))
+        if pkgconfig.cflags('liblz4'):
+            extra_compile_args.append(pkgconfig.cflags('liblz4'))
     else:
         extra_compile_args = [
             '-O3',
@@ -143,6 +123,10 @@ setup(
     setup_requires=[
         'setuptools_scm',
         'pytest-runner',
+        'pkgconfig',
+    ],
+    install_requires=[
+        'deprecation',
     ],
     description="LZ4 Bindings for Python",
     long_description=open('README.rst', 'r').read(),

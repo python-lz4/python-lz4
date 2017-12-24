@@ -1,6 +1,7 @@
 import pytest
 # import random
 import lz4.frame as lz4frame
+import lz4
 
 @pytest.fixture(
     params=[
@@ -31,6 +32,20 @@ def block_linked(request):
 )
 def content_checksum(request):
     return request.param
+
+if lz4.library_version_number() >= 10800:
+    p = [True, False]
+else:
+    p = [False, ]
+@pytest.fixture(
+    params=[
+        (pp) for pp in p
+     ]
+)
+def block_checksum(request):
+    return request.param
+
+
 
 compression_levels = [
         (lz4frame.COMPRESSIONLEVEL_MIN),

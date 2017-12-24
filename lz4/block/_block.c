@@ -84,7 +84,7 @@ load_le32 (const char *c)
 #undef inline
 #endif
 
-static const int hdr_size = sizeof (uint32_t);
+static const size_t hdr_size = sizeof (uint32_t);
 
 typedef enum
 {
@@ -97,20 +97,16 @@ static PyObject *
 compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 {
   const char *mode = "default";
-  int dest_size, total_size;
+  size_t dest_size, total_size;
   int acceleration = 1;
-#if LZ4_VERSION_NUMBER >= 10705 /* LZ4 v1.7.5 */
   int compression = 9;
-#else
-  int compression = 0;
-#endif
   int store_size = 1;
   PyObject *py_dest;
   char *dest, *dest_start;
   compression_type comp;
-  int output_size;
+  size_t output_size;
   Py_buffer source;
-  int source_size;
+  size_t source_size;
   int return_bytearray = 0;
   static char *argnames[] = {
     "source",
@@ -141,11 +137,15 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     }
 #endif
 
-  source_size = (int) source.len;
-  if (source.len != (Py_ssize_t) source_size)
+  source_size = (size_t) source.len;
+
+  /* We're using 4 bytes for the size of the content in the header. This means
+     we can store a size as large as the maximum value of an unsinged int. */
+  if (store_size && source_size > UINT_MAX)
     {
       PyBuffer_Release(&source);
-      PyErr_Format(PyExc_OverflowError, "Input too large for C 'int'");
+      PyErr_Format(PyExc_OverflowError,
+                   "Input too large for storing size in 4 byte header");
       return NULL;
     }
 
@@ -249,13 +249,21 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   /* Resizes are expensive; tolerate some slop to avoid. */
   if (output_size < (dest_size / 4) * 3)
     {
+      int ret;
       if (return_bytearray)
         {
-          PyByteArray_Resize (py_dest, output_size);
+          ret = PyByteArray_Resize (py_dest, output_size);
         }
       else
         {
-          _PyBytes_Resize (&py_dest, output_size);
+          ret = _PyBytes_Resize (&py_dest, output_size);
+        }
+
+      if (ret)
+        {
+          PyErr_SetString (PyExc_RuntimeError,
+                           "Failed to resize buffer");
+          return NULL;
         }
     }
   else
@@ -271,10 +279,10 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 {
   Py_buffer source;
   const char * source_start;
-  int source_size;
+  size_t source_size;
   PyObject *py_dest;
   char *dest;
-  int output_size;
+  size_t output_size;
   size_t dest_size;
   int uncompressed_size = -1;
   int return_bytearray = 0;
@@ -301,13 +309,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     }
 #endif
   source_start = (const char *) source.buf;
-  source_size = (int) source.len;
-  if (source.len != (Py_ssize_t) source_size)
-    {
-      PyBuffer_Release(&source);
-      PyErr_Format(PyExc_OverflowError, "Input too large for C 'int'");
-      return NULL;
-    }
+  source_size = (size_t) source.len;
 
   if (uncompressed_size >= 0)
     {
@@ -366,14 +368,14 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 
   if (output_size < 0)
     {
-      PyErr_Format (PyExc_ValueError, "Corrupt input at byte %d", -output_size);
+      PyErr_Format (PyExc_ValueError, "Corrupt input at byte %zu", -output_size);
       Py_CLEAR (py_dest);
     }
   else if ((size_t)output_size != dest_size)
     {
       /* Better to fail explicitly than to allow fishy data to pass through. */
       PyErr_Format (PyExc_ValueError,
-                    "Decompressor wrote %d bytes, but %zu bytes expected from header",
+                    "Decompressor wrote %zu bytes, but %zu bytes expected from header",
                     output_size, dest_size);
       Py_CLEAR (py_dest);
     }
@@ -381,19 +383,6 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   return py_dest;
 }
 
-#if LZ4_VERSION_NUMBER >= 10705 /* LZ4 v1.7.5 */
-#define __COMPRESSION_DOCSTRING \
-  "    compression (int): When mode is set to `high_compression` this\n" \
-  "        argument specifies the compression. Valid values are between\n" \
-  "        1 and 12. Values between 4-9 are recommended, and 9 is the\n" \
-  "        default.\n"
-#else
-#define __COMPRESSION_DOCSTRING                                         \
-  "    compression (int): When mode is set to `high_compression` this\n" \
-  "        argument specifies the compression. Valid values are between\n" \
-  "        0 and 16. Values between 4-9 are recommended, and 0 is the\n" \
-  "        default.\n"
-#endif
 PyDoc_STRVAR(compress__doc,
              "compress(source, mode='default', acceleration=1, compression=0)\n\n" \
              "Compress source, returning the compressed data as a string.\n" \
@@ -409,7 +398,10 @@ PyDoc_STRVAR(compress__doc,
              "        specifies the acceleration. The larger the acceleration, the\n" \
              "        faster the but the lower the compression. The default\n" \
              "        compression corresponds to a value of 1.\n"       \
-             __COMPRESSION_DOCSTRING                                         \
+             "    compression (int): When mode is set to `high_compression` this\n" \
+             "        argument specifies the compression. Valid values are between\n" \
+             "        1 and 12. Values between 4-9 are recommended, and 9 is the\n" \
+             "        default.\n"
              "    store_size (bool): If True (the default) then the size of the\n" \
              "        uncompressed data is stored at the start of the compressed\n" \
              "        block.\n"                                         \
@@ -475,11 +467,11 @@ MODULE_INIT_FUNC (_block)
 
   if (module == NULL)
     return NULL;
-#if LZ4_VERSION_NUMBER >= 10705 /* LZ4 v1.7.5 */
+
   PyModule_AddIntConstant (module, "HC_LEVEL_MIN", LZ4HC_CLEVEL_MIN);
   PyModule_AddIntConstant (module, "HC_LEVEL_DEFAULT", LZ4HC_CLEVEL_DEFAULT);
   PyModule_AddIntConstant (module, "HC_LEVEL_OPT_MIN", LZ4HC_CLEVEL_OPT_MIN);
   PyModule_AddIntConstant (module, "HC_LEVEL_MAX", LZ4HC_CLEVEL_MAX);
-#endif
+
   return module;
 }

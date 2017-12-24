@@ -1,3 +1,4 @@
+import lz4
 from ._frame import *
 from ._frame import __doc__ as _doc
 __doc__ = _doc
@@ -34,6 +35,15 @@ class LZ4FrameCompressor(object):
             the payload content. If `True` a checksum of the uncompressed data
             is stored at the end of the compressed frame which is checked during
             decompression. The default is `False`.
+        block_checksum (bool): Specifies whether to enable checksumming of
+            the content of each block. If `True` a checksum of the uncompressed
+            data in each block in the frame is stored at the end of each block.
+            If present, these checksums will be used to validate the data during
+            decompression. The default is `False`, meaning block checksums are not
+            calculated and stored. This functionality is only supported if the
+            underlying LZ4 library has version >= 1.8.0. Attempting to set this
+            value to `True` with a version of LZ4 < 1.8.0 will cause a RuntimeError
+            to be raised.
         auto_flush (bool): When `False`, the LZ4 library may buffer data until a
             block is full. When `True` no buffering occurs, and partially full
             blocks may be returned. The default is `True`.
@@ -47,12 +57,18 @@ class LZ4FrameCompressor(object):
                  block_linked=True,
                  compression_level=COMPRESSIONLEVEL_MIN,
                  content_checksum=False,
+                 block_checksum=False,
                  auto_flush=True,
                  return_bytearray=False):
         self.block_size = block_size
         self.block_linked = block_linked
         self.compression_level = compression_level
         self.content_checksum = content_checksum
+        if block_checksum and lz4.library_version_number() < 10800:
+            raise RuntimeError(
+                'Attempt to set block_checksum to True with LZ4 library version < 10800'
+            )
+        self.block_checksum = block_checksum
         self.auto_flush = auto_flush
         self.return_bytearray = return_bytearray
         self._context = create_compression_context()
@@ -89,6 +105,7 @@ class LZ4FrameCompressor(object):
                 block_linked=self.block_linked,
                 compression_level=self.compression_level,
                 content_checksum=self.content_checksum,
+                block_checksum=self.block_checksum,
                 auto_flush=self.auto_flush,
                 return_bytearray=self.return_bytearray,
                 source_size=source_size
@@ -129,7 +146,7 @@ class LZ4FrameCompressor(object):
 
         return result
 
-    def flush(self):
+    def finalize(self):
         """Finish the compression process, returning a bytes object containing any data
         stored in the compressor's internal buffers and a frame footer.
 
@@ -140,8 +157,9 @@ class LZ4FrameCompressor(object):
             bytes or bytearray: any remaining buffered compressed data and frame footer.
 
         """
-        result = compress_end(
+        result = compress_flush(
             self._context,
+            end_frame=True,
             return_bytearray=self.return_bytearray
         )
         self._context = None
@@ -149,8 +167,7 @@ class LZ4FrameCompressor(object):
         return result
 
     def reset(self):
-        """Reset the LZ4FrameCompressor instance (after a call to ``flush``) allowing
-        it to be re-used
+        """Reset the LZ4FrameCompressor instance allowing it to be re-used
 
         """
         self._context = create_compression_context()
