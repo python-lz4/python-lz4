@@ -39,6 +39,7 @@
 #include <py3c/capsulethunk.h>
 
 #include <stdlib.h>
+#include <lz4.h> /* Needed for LZ4_VERSION_NUMBER only. */
 #include <lz4frame.h>
 
 #ifndef Py_UNUSED		/* This is already defined for Python 3.4 onwards */
@@ -833,9 +834,9 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
                         "content_size", frame_info.contentSize);
 }
 
-/*******************************
-* create_decompression_context *
-********************************/
+/********************************
+ * create_decompression_context *
+ ********************************/
 static void
 destroy_decompression_context (PyObject * py_context)
 {
@@ -872,6 +873,77 @@ create_decompression_context (PyObject * Py_UNUSED (self))
 
   return PyCapsule_New (context, decompression_context_capsule_name,
                         destroy_decompression_context);
+}
+
+/*******************************
+ * reset_decompression_context *
+ *******************************/
+static PyObject *
+reset_decompression_context (PyObject * Py_UNUSED (self), PyObject * args,
+                             PyObject * keywds)
+{
+  LZ4F_dctx * context;
+  PyObject * py_context = NULL;
+  static char *kwlist[] = { "context",
+                            NULL
+  };
+
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O", kwlist,
+                                    &py_context
+                                    ))
+    {
+      return NULL;
+    }
+
+  context = (LZ4F_dctx *)
+    PyCapsule_GetPointer (py_context, decompression_context_capsule_name);
+
+  if (!context)
+    {
+      PyErr_SetString (PyExc_ValueError,
+                       "No valid decompression context supplied");
+      return NULL;
+    }
+
+  if (LZ4_versionNumber() >= 10800) /* LZ4 >= v1.8.0 has LZ4F_resetDecompressionContext */
+    {
+      /* No error checking possible here - this is always successful. */
+      Py_BEGIN_ALLOW_THREADS
+      LZ4F_resetDecompressionContext (context);
+      Py_END_ALLOW_THREADS
+    }
+  else
+    {
+      /* No resetDecompressionContext available, so we'll destroy the context
+         and create a new one. */
+      int result;
+
+      Py_BEGIN_ALLOW_THREADS
+      LZ4F_freeDecompressionContext (context);
+
+      result = LZ4F_createDecompressionContext (&context, LZ4F_VERSION);
+      if (LZ4F_isError (result))
+        {
+          LZ4F_freeDecompressionContext (context);
+          Py_BLOCK_THREADS
+          PyErr_Format (PyExc_RuntimeError,
+                        "LZ4F_createDecompressionContext failed with code: %s",
+                        LZ4F_getErrorName (result));
+          return NULL;
+        }
+      Py_END_ALLOW_THREADS
+
+      result = PyCapsule_SetPointer(py_context, context);
+      if (result)
+        {
+          LZ4F_freeDecompressionContext (context);
+          PyErr_SetString (PyExc_RuntimeError,
+                           "PyCapsule_SetPointer failed with code: %s");
+          return NULL;
+        }
+    }
+
+  Py_RETURN_NONE;
 }
 
 static inline PyObject *
@@ -1363,6 +1435,18 @@ PyDoc_STRVAR
 
 PyDoc_STRVAR
 (
+ reset_decompression_context__doc,
+ "reset_decompression_context(context)\n\n"                             \
+ "Resets a decompression context object. This is useful for recovering\n" \
+ "from an error or for stopping an unfinished decompression and starting\n" \
+ "a new one with the same context\n"                                      \
+ "\n"                                        \
+ "Args:\n"                                                           \
+ "    context (dCtx): A decompression context\n"
+ );
+
+PyDoc_STRVAR
+(
  decompress__doc,
  "decompress(data)\n\n"                                                 \
  "Decompresses a frame of data and returns it as a string of bytes.\n"  \
@@ -1433,6 +1517,10 @@ static PyMethodDef module_methods[] =
   {
     "create_decompression_context", (PyCFunction) create_decompression_context,
     METH_NOARGS, create_decompression_context__doc
+  },
+  {
+    "reset_decompression_context", (PyCFunction) reset_decompression_context,
+    METH_VARARGS | METH_KEYWORDS, reset_decompression_context__doc
   },
   {
     "decompress", (PyCFunction) decompress,
