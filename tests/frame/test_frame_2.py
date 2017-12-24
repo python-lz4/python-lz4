@@ -29,9 +29,11 @@ def data(request):
     return request.param
 
 def test_roundtrip_chunked(data, block_size, block_linked,
-                           content_checksum, compression_level,
+                           content_checksum, block_checksum,
+                           compression_level,
                            auto_flush, store_size):
 
     roundtrip_chunked(data, block_size, block_linked,
-                      content_checksum, compression_level,
+                      content_checksum, block_checksum,
+                      compression_level,
                       auto_flush, store_size)

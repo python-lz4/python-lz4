@@ -6,10 +6,10 @@ import os
 import pytest
 
 test_data=[
-    (os.urandom(128 * 1024)),
-    (os.urandom(256 * 1024)),
-    (os.urandom(512 * 1024)),
-    (os.urandom(1024 * 1024)),
+    (128 * (32 * os.urandom(32))),
+    (256 * (32 * os.urandom(32))),
+    (512 * (32 * os.urandom(32))),
+    (1024 * (32 * os.urandom(32))),
 ]
 
 @pytest.fixture(
@@ -40,21 +40,25 @@ def chunks(request):
     return request.param
 
 
-def test_roundtrip_LZ4FrameCompressor(data, chunks, block_size, reset):
+def test_roundtrip_LZ4FrameCompressor(data, chunks, block_size, reset, block_checksum, content_checksum):
     roundtrip_LZ4FrameCompressor(
         data,
         chunks=chunks,
         block_size=block_size,
-        reset=reset
+        reset=reset,
+        block_checksum=block_checksum,
+        content_checksum=content_checksum,
     )
 
 def test_roundtrip_LZ4FrameCompressor_LZ4FrameDecompressor(
-        data, chunks, block_size, reset):
+        data, chunks, block_size, reset, block_checksum, content_checksum):
     roundtrip_LZ4FrameCompressor_LZ4FrameDecompressor(
         data,
         chunks=chunks,
         block_size=block_size,
-        reset=reset
+        reset=reset,
+        block_checksum=block_checksum,
+        content_checksum=content_checksum,
     )
 
 
