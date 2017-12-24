@@ -1461,7 +1461,7 @@ PyDoc_STRVAR
  compress_end__doc,
  "compress_end(context, return_bytearray=False)\n\n"                    \
  "Flushes a compression context returning an endmark and optional checksum.\n" \
- "The returned data should be appended to the output of previous calls to.\n" \
+ "The returned data should be appended to the output of previous calls to\n" \
  "`compress`\n\n"                                                       \
  "Args:\n"                                                              \
  "    context (cCtx): compression context\n\n"                          \
