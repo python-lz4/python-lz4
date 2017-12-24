@@ -849,28 +849,31 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-#if LZ4_VERSION_NUMBER >= 10800 /* LZ4 v1.8.0 */
-  if (frame_info.blockChecksumFlag == LZ4F_noBlockChecksum)
+  if (LZ4_versionNumber() >= 10800)
     {
-      block_checksum = 0;
-    }
-  else if (frame_info.blockChecksumFlag == LZ4F_blockChecksumEnabled)
-    {
-      block_checksum = 1;
+      if (frame_info.blockChecksumFlag == LZ4F_noBlockChecksum)
+        {
+          block_checksum = 0;
+        }
+      else if (frame_info.blockChecksumFlag == LZ4F_blockChecksumEnabled)
+        {
+          block_checksum = 1;
+        }
+      else
+        {
+          PyErr_Format (PyExc_RuntimeError,
+                        "Unrecognized blockChecksumFlag in get_frame_info: %d",
+                        frame_info.blockChecksumFlag);
+          return NULL;
+        }
     }
   else
     {
-      PyErr_Format (PyExc_RuntimeError,
-                    "Unrecognized blockChecksumFlag in get_frame_info: %d",
-                    frame_info.blockChecksumFlag);
-      return NULL;
+      /* Prior to LZ4 1.8.0 the blockChecksum functionality wasn't exposed in the
+         frame API, and blocks weren't checksummed, so we'll always return 0
+         here. */
+      block_checksum = 0;
     }
-#else
-  /* Prior to LZ4 1.8.0 the blockChecksum functionality wasn't exposed in the
-     frame API, and blocks weren't checksummed, so we'll always return 0
-     here. */
-  block_checksum = 0;
-#endif
 
   if (frame_info.frameType == LZ4F_frame)
     {
