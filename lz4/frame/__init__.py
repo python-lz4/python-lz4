@@ -157,8 +157,9 @@ class LZ4FrameCompressor(object):
             bytes or bytearray: any remaining buffered compressed data and frame footer.
 
         """
-        result = compress_end(
+        result = compress_flush(
             self._context,
+            end_frame=True,
             return_bytearray=self.return_bytearray
         )
         self._context = None
@@ -166,8 +167,7 @@ class LZ4FrameCompressor(object):
         return result
 
     def reset(self):
-        """Reset the LZ4FrameCompressor instance (after a call to ``flush``) allowing
-        it to be re-used
+        """Reset the LZ4FrameCompressor instance allowing it to be re-used
 
         """
         self._context = create_compression_context()

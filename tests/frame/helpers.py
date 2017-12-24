@@ -91,7 +91,7 @@ def roundtrip_2(data,
         c_context,
         data
     )
-    compressed += lz4frame.compress_end(c_context)
+    compressed += lz4frame.compress_flush(c_context)
     get_frame_info_check(
         compressed,
         len(data),
@@ -157,7 +157,7 @@ def roundtrip_chunked(data,
     finally:
         del data_in
 
-    compressed += lz4frame.compress_end(c_context)
+    compressed += lz4frame.compress_flush(c_context)
 
     get_frame_info_check(
         compressed,
