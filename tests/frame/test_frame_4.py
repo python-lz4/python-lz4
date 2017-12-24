@@ -6,10 +6,10 @@ import os
 import pytest
 
 test_data=[
-    (os.urandom(128 * 1024)),
-    (os.urandom(256 * 1024)),
-    (os.urandom(512 * 1024)),
-    (os.urandom(1024 * 1024)),
+    (128 * (32 * os.urandom(32))),
+    (256 * (32 * os.urandom(32))),
+    (512 * (32 * os.urandom(32))),
+    (1024 * (32 * os.urandom(32))),
 ]
 
 @pytest.fixture(
