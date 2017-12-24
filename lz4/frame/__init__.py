@@ -1,4 +1,4 @@
-from lz4 import library_version_number
+import lz4
 from ._frame import *
 from ._frame import __doc__ as _doc
 __doc__ = _doc
