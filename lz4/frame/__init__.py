@@ -11,11 +11,13 @@ class LZ4FrameCompressor(object):
     Args:
         block_size (int): Sepcifies the maximum blocksize to use.
             Options:
-            - lz4.frame.BLOCKSIZE_DEFAULT or 0: the lz4 library default
-            - lz4.frame.BLOCKSIZE_MAX64KB or 4: 64 kB
-            - lz4.frame.BLOCKSIZE_MAX256KB or 5: 256 kB
-            - lz4.frame.BLOCKSIZE_MAX1MB or 6: 1 MB
-            - lz4.frame.BLOCKSIZE_MAX4MB or 7: 4 MB
+
+                - lz4.frame.BLOCKSIZE_DEFAULT or 0: the lz4 library default
+                - lz4.frame.BLOCKSIZE_MAX64KB or 4: 64 kB
+                - lz4.frame.BLOCKSIZE_MAX256KB or 5: 256 kB
+                - lz4.frame.BLOCKSIZE_MAX1MB or 6: 1 MB
+                - lz4.frame.BLOCKSIZE_MAX4MB or 7: 4 MB
+
             If unspecified, will default to lz4.frame.BLOCKSIZE_DEFAULT which
             is equal to lz4.frame.BLOCKSIZE_MAX64KB.
         block_linked (bool): Specifies whether to use block-linked
@@ -28,9 +30,11 @@ class LZ4FrameCompressor(object):
             Values above 16 will be treated as 16.
             Values between 4-9 are recommended. 0 is the default.
             The following module constants are provided as a convenience:
-            - lz4.frame.COMPRESSIONLEVEL_MIN: Minimum compression (0)
-            - lz4.frame.COMPRESSIONLEVEL_MINHC: Minimum high-compression (3)
-            - lz4.frame.COMPRESSIONLEVEL_MAX: Maximum compression (16)
+
+                - lz4.frame.COMPRESSIONLEVEL_MIN: Minimum compression (0)
+                - lz4.frame.COMPRESSIONLEVEL_MINHC: Minimum high-compression (3)
+                - lz4.frame.COMPRESSIONLEVEL_MAX: Maximum compression (16)
+
         content_checksum (bool): Specifies whether to enable checksumming of
             the payload content. If `True` a checksum of the uncompressed data
             is stored at the end of the compressed frame which is checked during
@@ -213,10 +217,13 @@ class LZ4FrameDecompressor(object):
                 to contain the full LZ4 frame. Default is ``False``.
 
         Returns:
-            bytes or bytearray: decompressed data
-            int: Number of bytes consumed from input data. This is only returned if
-                ``return_bytes_read`` is ``True`` when ``LZ4FrameDecompressor`` is
-                instantiated.
+             bytes/bytearray or tuple: Uncompressed data
+
+             If the ``return_bytes_read`` argument is ``True`` this function
+             returns a tuple consisting of:
+
+                 - bytes or bytearray: Uncompressed data
+                 - int: Number of bytes consumed from ``data``
 
         """
 
