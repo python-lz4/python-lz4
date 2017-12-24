@@ -1422,8 +1422,8 @@ PyDoc_STRVAR(
 PyDoc_STRVAR(
  compress__doc,
  "compress(data, compression_level=0, block_size=0, content_checksum=0,\n" \
- "         block_linked=True, store_size=True, return_bytearray=False)\n\n" \
- "Compresses `data` returning the compressed data as a complete frame.\n" \
+ "    block_linked=True, store_size=True, return_bytearray=False)\n\n"      \
+ "Compresses ``data`` returning the compressed data as a complete frame.\n\n" \
  "The returned data includes a header and endmark and so is suitable\n" \
  "for writing to a file.\n\n"                                           \
  "Args:\n"                                                              \
@@ -1465,9 +1465,11 @@ PyDoc_STRVAR
 (
  compress_chunk__doc,
  "compress_chunk(context, data)\n\n"                                    \
- "Compresses blocks of data and returns the compressed data. The returned\n" \
- "data should be concatenated with the data returned from `compress_begin`\n" \
- " and any previous calls to `compress`. \n"                            \
+ "Compresses blocks of data and returns the compressed data.\n"         \
+ "\n"                                                                   \
+ "The returned data should be concatenated with the data returned from\n" \
+ "`compress_begin` and any previous calls to `compress`.\n"             \
+ "\n"                                                                   \
  "Args:\n"                                                              \
  "    context (cCtx): compression context\n"                            \
  "    data (str, bytes or buffer-compatible object): data to compress\n\n" \
@@ -1515,23 +1517,26 @@ PyDoc_STRVAR
  get_frame_info__doc,
  "get_frame_info(frame)\n\n"                                            \
  "Given a frame of compressed data, returns information about the frame.\n" \
+ "\n"                                                                   \
  "Args:\n"                                                              \
- "    frame (str, bytes or buffer-compatible object): LZ4 compressed frame\n\n"                            \
+ "    frame (str, bytes or buffer-compatible object): LZ4 compressed frame\n" \
+ "\n"                                                                   \
  "Returns:\n"                                                           \
  "    dict: Dictionary with keys:\n"                                    \
- "    - block_size (int): the maximum size (in bytes) of each block\n"  \
- "    - block_size_id (int): identifier for maximum block size\n"       \
- "    - content_checksum (bool): specifies whether the frame\n"         \
- "         contains a checksum of the uncompressed content\n"           \
- "    - content_size (int): uncompressed size in bytes of\n"            \
- "         frame content\n"                                             \
- "    - block_linked (bool): specifies whether the frame contains\n"    \
- "         blocks which are independently compressed (False) or\n"      \
- "         linked\n"                                                    \
- "    - block_checksum (bool): specifies whether each block\n"          \
- "         contains a checksum of its contents\n"                       \
- "    - skippable (bool): whether the block is skippable (True)\n"      \
- "         or not\n"
+ "\n"                                                                   \
+ "        - block_size (int): the maximum size (in bytes) of each block\n" \
+ "        - block_size_id (int): identifier for maximum block size\n"   \
+ "        - content_checksum (bool): specifies whether the frame\n"     \
+ "          contains a checksum of the uncompressed content\n"          \
+ "        - content_size (int): uncompressed size in bytes of\n"        \
+ "          frame content\n"                                            \
+ "        - block_linked (bool): specifies whether the frame contains\n" \
+ "          blocks which are independently compressed (``False``) or\n" \
+ "          linked (``True``)\n"                                                   \
+ "        - block_checksum (bool): specifies whether each block\n"      \
+ "          contains a checksum of its contents\n"                      \
+ "        - skippable (bool): whether the block is skippable (``True``)\n" \
+ "          or not (``False``)\n"
  );
 
 PyDoc_STRVAR
@@ -1561,19 +1566,25 @@ PyDoc_STRVAR
  decompress__doc,
  "decompress(data)\n\n"                                                 \
  "Decompresses a frame of data and returns it as a string of bytes.\n"  \
+ "\n"                                                                   \
  "Args:\n"                                                              \
  "    data (str, bytes or buffer-compatible object): data to decompress.\n" \
- "       This should contain a complete LZ4 frame of compressed data.\n\n" \
+ "       This should contain a complete LZ4 frame of compressed data.\n" \
+ "\n"                                                                   \
  "Keyword Args:\n"                                                      \
  "    return_bytearray (bool): If True a bytearray object will be returned.\n" \
  "        If False, a string of bytes is returned. The default is False.\n" \
  "    return_bytes_read (bool): If ``True`` then the number of bytes read\n" \
- "        from ``data`` will also be returned.\n"                        \
+ "        from ``data`` will also be returned.\n"                       \
  "\n"                                                                   \
  "Returns:\n"                                                           \
- "    str or bytearray: Uncompressed data\n"                            \
- "    int: (Optional) Number of bytes consumed from source. See\n"      \
- "        ``return_bytes_read`` keyword argument\n"
+ "    bytes/bytearray or tuple: Uncompressed data\n"                    \
+ "\n"                                                                   \
+ "    If the ``return_bytes_read`` argument is ``True`` this function\n" \
+ "    returns a tuple consisting of:\n"                                 \
+ "\n"                                                                   \
+ "        - bytes or bytearray: Uncompressed data\n"                    \
+ "        - int: Number of bytes consumed from ``data``\n"
  );
 
 PyDoc_STRVAR
@@ -1594,9 +1605,13 @@ PyDoc_STRVAR
  "        from ``data`` will also be returned.\n"                        \
  "\n"                                                                   \
  "Returns:\n"                                                           \
- "    str or bytearray: Uncompressed data\n"                            \
- "    int: (Optional) Number of bytes consumed from source. See\n"      \
- "        ``return_bytes_read`` keyword argument\n"
+ "    bytes/bytearray or tuple: Uncompressed data\n"                    \
+ "\n"                                                                   \
+ "    If the ``return_bytes_read`` argument is ``True`` this function\n" \
+ "    returns a tuple consisting of:\n"                                 \
+ "\n"                                                                   \
+ "        - bytes or bytearray: Uncompressed data\n"                    \
+ "        - int: Number of bytes consumed from ``data``\n"
  );
 
 static PyMethodDef module_methods[] =
