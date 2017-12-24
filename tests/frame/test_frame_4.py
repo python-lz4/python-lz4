@@ -40,21 +40,25 @@ def chunks(request):
     return request.param
 
 
-def test_roundtrip_LZ4FrameCompressor(data, chunks, block_size, reset):
+def test_roundtrip_LZ4FrameCompressor(data, chunks, block_size, reset, block_checksum, content_checksum):
     roundtrip_LZ4FrameCompressor(
         data,
         chunks=chunks,
         block_size=block_size,
-        reset=reset
+        reset=reset,
+        block_checksum=block_checksum,
+        content_checksum=content_checksum,
     )
 
 def test_roundtrip_LZ4FrameCompressor_LZ4FrameDecompressor(
-        data, chunks, block_size, reset):
+        data, chunks, block_size, reset, block_checksum, content_checksum):
     roundtrip_LZ4FrameCompressor_LZ4FrameDecompressor(
         data,
         chunks=chunks,
         block_size=block_size,
-        reset=reset
+        reset=reset,
+        block_checksum=block_checksum,
+        content_checksum=content_checksum,
     )
 
 
