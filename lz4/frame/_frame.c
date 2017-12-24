@@ -1367,19 +1367,22 @@ PyDoc_STRVAR(
   "        which is currently equal to lz4.frame.BLOCKSIZE_MAX64KB.\n"  \
   "    block_linked (bool): Specifies whether to use block-linked\n"    \
   "        compression. If True, the compression ratio is improved,\n" \
-  "        particularly for small block sizes. Default is True.\n"                   \
+  "        particularly for small block sizes. Default is True.\n"      \
   "    compression_level (int): Specifies the level of compression used.\n" \
   "        Values between 0-16 are valid, with 0 (default) being the\n"     \
   "        lowest compression (0-2 are the same value), and 16 the highest.\n" \
   "        Values below 0 will enable \"fast acceleration\", proportional\n" \
-  "        to the value. Values above 16 will be treated as 16.\n"             \
+  "        to the value. Values above 16 will be treated as 16.\n"      \
   "        The following module constants are provided as a convenience:\n\n" \
-  "        - lz4.frame.COMPRESSIONLEVEL_MIN: Minimum compression (0, the default)\n" \
-  "        - lz4.frame.COMPRESSIONLEVEL_MINHC: Minimum high-compression mode (3)\n" \
+  "        - lz4.frame.COMPRESSIONLEVEL_MIN: Minimum compression (0, the\n" \
+  "          default)\n"                                                \
+  "        - lz4.frame.COMPRESSIONLEVEL_MINHC: Minimum high-compression\n" \
+  "          mode (3)\n"                                                \
   "        - lz4.frame.COMPRESSIONLEVEL_MAX: Maximum compression (16)\n\n" \
-  "    content_checksum (bool): Specifies whether to enable checksumming of\n" \
-  "        the payload content. If True, a checksum is stored at the end of\n" \
-  "        the frame, and checked during decompression. Default is False.\n" \
+  "    content_checksum (bool): Specifies whether to enable checksumming\n" \
+  "        of the payload content. If True, a checksum is stored at the\n" \
+  "        end of the frame, and checked during decompression. Default is\n" \
+  "        False."                                                      \
   "    block_checksum (bool): Specifies whether to enable checksumming of\n" \
   "        the contents of each block in the frame. If True, a checksum is\n" \
   "        stored at the end of each block and verified during decompression.\n" \
