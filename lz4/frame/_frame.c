@@ -1447,9 +1447,9 @@ PyDoc_STRVAR
  "    context (cCtx): A compression context.\n\n"                       \
  "Keyword Args:\n"                                                      \
  COMPRESS_KWARGS_DOCSTRING                                              \
- "    auto_flush (int): Enable (1, default) or disable (0) autoFlush.\n" \
- "         When autoFlush is disabled, the LZ4 library may buffer data\n" \
- "         until a block is full\n\n"                                   \
+ "    auto_flush (bool): Enable or disable autoFlush. When autoFlush is\n"                \
+ "         disabled, the LZ4 library may buffer data internally until a\n" \
+ "         block is full. Default is ``True`` (autoFlush enabled).\n\n" \
  "    source_size (int): This optionally specifies the uncompressed size\n" \
  "        of the source data to be compressed. If specified, the size\n" \
  "        will be stored in the frame header for use during decompression.\n" \
