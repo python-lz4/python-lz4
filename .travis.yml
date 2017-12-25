@@ -10,7 +10,7 @@ script:
 
 deploy:
   - provider: pypi
-    server: https://testpypi.python.org/pypi
+    server: https://test.pypi.org/legacy
     user: jgu
     password:
       secure: SS5kSQtsfHIYG5gLKC9jQ23bnNBgoejVgdrDxfaccNqojrIy5CtuUo+a7/P16bObWp1jCnlwUyX6mQj1S+abDsUHr+2+pNjl5MP8pWdREu19fBTcwMkZLXlUdSuWwcBjmZjaVpuKQRCKwajHrGjOE4s3vO1h/IOLETEX0d1rmuavSUftqYcea/TO/MNzDuxnUe7pkGsPkfbMxHY5oXNmx5zOvtG2h0eZowjwgE5YVZfTZ82fqfCfbqmoytwmQKd3rTmo/hpYvNcGweHizKouzLArw0+DDtkJt/jT459zM3lnUEh+TfaCSeqd+cTWmEZDiMR8MxnSJkpN3RGHcvxreF+HZjCAKhvAbZcWIpRC0cNp4VxWyVGZN/dLZA0WM3gJJKCjgCA70eslC+ccZh6WyG93effiVLhHYB9vyt7SfwsUzDrZo3++Czi6drCVNyI6pBdb587yfkuJYdomNIQ2DCesUKjuoFFt34VZC5bJOK82F81jMXYGaQn3BCWPdfMTmqJ3maimfji7KXts6bbyQUzgc+610Yd8eIRGvDQwmeBjovRT5uyYDJtXfDOIYXiv3n79wtDt+ygZzLOXNMvEt6/Wsy/xrWEsHFfA5bknSenurfgQoYCkLOjgKJEqxDV4nXdwhJxwbC740Fea/cGwem5L0mfz8SGtd7giFHDpgkg=
