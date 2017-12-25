@@ -376,10 +376,6 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
 
   memset (&preferences, 0, sizeof preferences);
 
-  /* Default to having autoFlush enabled unless specified otherwise via keyword
-     argument */
-  preferences.autoFlush = 1;
-
 #if IS_PY3
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiippppp", kwlist,
                                     &py_context,
@@ -1449,7 +1445,7 @@ PyDoc_STRVAR
  COMPRESS_KWARGS_DOCSTRING                                              \
  "    auto_flush (bool): Enable or disable autoFlush. When autoFlush is\n"                \
  "         disabled, the LZ4 library may buffer data internally until a\n" \
- "         block is full. Default is ``True`` (autoFlush enabled).\n\n" \
+ "         block is full. Default is ``False`` (autoFlush disabled).\n\n" \
  "    source_size (int): This optionally specifies the uncompressed size\n" \
  "        of the source data to be compressed. If specified, the size\n" \
  "        will be stored in the frame header for use during decompression.\n" \
