@@ -87,7 +87,7 @@ class LZ4FrameCompressor(object):
         # no need to del it here
         pass
 
-    def compress_begin(self, source_size=0):
+    def begin(self, source_size=0):
         """Begin a compression frame. The returned data contains frame header
         information. The data returned from subsequent calls to ``compress()``
         should be concatenated with this header.
