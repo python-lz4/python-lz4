@@ -6,6 +6,8 @@ import sys
 from distutils import ccompiler
 import pkgconfig
 
+# Note: if updating LZ4_REQUIRED_VERSION you need to update docs/install.rst as
+# well.
 LZ4_REQUIRED_VERSION = '>= 1.7.5'
 PY3C_REQUIRED_VERSION = '>= 1.0'
 
