@@ -19,13 +19,15 @@ Contents
 
 .. automodule:: lz4.frame
    :members:
+      decompress,
       compress,
       create_compression_context,
       compress_begin,
       compress_chunk,
       compress_flush,
       get_frame_info,
-      decompress,
       create_decompression_context,
-      decompress_chunk
+      decompress_chunk,
+      LZ4FrameCompressor,
+      LZ4FrameDecompressor
 
