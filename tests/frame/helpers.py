@@ -213,9 +213,9 @@ def roundtrip_LZ4FrameCompressor(
     ) as compressor:
         def do_compress():
             if store_size is True:
-                compressed = compressor.compress_begin(source_size=len(data))
+                compressed = compressor.begin(source_size=len(data))
             else:
-                compressed = compressor.compress_begin()
+                compressed = compressor.begin()
 
             for chunk in get_chunked(data, chunks):
                 compressed += compressor.compress(chunk)
@@ -265,9 +265,9 @@ def roundtrip_LZ4FrameCompressor_LZ4FrameDecompressor(
     ) as compressor:
         def do_compress():
             if store_size is True:
-                compressed = compressor.compress_begin(source_size=len(data))
+                compressed = compressor.begin(source_size=len(data))
             else:
-                compressed = compressor.compress_begin()
+                compressed = compressor.begin()
 
             for chunk in get_chunked(data, chunks):
                 compressed += compressor.compress(chunk)
