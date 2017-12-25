@@ -65,8 +65,8 @@ is more convenient to use the ``LZ4FrameCompressor`` and
   ...     compressed += compressor.compress(input_data[:10 * 128 * 1024])
   ...     compressed += compressor.compress(input_data[10 * 128 * 1024:])
   ...     compressed += compressor.finalize()
-  >>> with lz4.frame.LZ4FrameDecompressor as decompressor:
+  >>> with lz4.frame.LZ4FrameDecompressor() as decompressor:
   ...     decompressed = decompressor.decompress(compressed[:len(compressed)//2])
-  ...     decompressed = decompressor.decompress(compressed[len(compressed)//2:])
+  ...     decompressed += decompressor.decompress(compressed[len(compressed)//2:])
   >>> decompressed == input_data
   Out[13]: True
