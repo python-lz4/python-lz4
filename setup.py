@@ -131,7 +131,6 @@ setup(
     },
     setup_requires=[
         'setuptools_scm',
-        'pytest-runner',
         'pkgconfig',
     ],
     install_requires=[
@@ -150,6 +149,7 @@ setup(
     ],
     tests_require=[
         'pytest',
+        'pytest-runner',
     ],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
