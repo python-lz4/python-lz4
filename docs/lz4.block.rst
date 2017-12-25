@@ -1,4 +1,3 @@
-.. _lz4.block:
 
 lz4.block sub-package
 =====================
@@ -26,22 +25,4 @@ Contents
 
 .. automodule:: lz4.block
     :members: compress, decompress
-    :undoc-members:
-    :show-inheritance:
 
-
-Is it fast ?
-------------
-Yes. Here are the results on my 2011 Macbook Pro i7 with lz4.c as input data: ::
-
-    $ python tests/bench.py
-    Data Size:
-      Input: 24779
-      LZ4: 10152 (0.41)
-      Snappy: 9902 (0.40)
-      LZ4 / Snappy: 1.025247
-    Benchmark: 200000 calls
-      LZ4 Compression: 9.737272s
-      Snappy Compression: 18.012336s
-      LZ4 Decompression: 2.686854s
-      Snappy Decompression : 5.146867s

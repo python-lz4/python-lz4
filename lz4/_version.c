@@ -78,7 +78,7 @@ PyDoc_STRVAR
 PyDoc_STRVAR
 (
  library_version_string__doc,
- "library_version_dtring()\n\n"                                \
+ "library_version_string()\n\n"                                \
  "Returns the version number of the LZ4 library as a string\n" \
  "containing the semantic version.\n"                          \
  "\n"                                                          \
