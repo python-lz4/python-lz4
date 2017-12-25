@@ -18,4 +18,3 @@ deploy:
     on:
       all_branches: true
       tags: false
-      repo: python-lz4/python-lz4
