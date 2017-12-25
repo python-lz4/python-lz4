@@ -50,7 +50,7 @@ class LZ4FrameCompressor(object):
             to be raised.
         auto_flush (bool): When `False`, the LZ4 library may buffer data until a
             block is full. When `True` no buffering occurs, and partially full
-            blocks may be returned. The default is `True`.
+            blocks may be returned. The default is `False`.
         return_bytearray (bool): When `False` a bytes object is returned from the
             calls to methods of this class. When `True` a bytearray object will be
             returned. The default is `False`.
@@ -62,7 +62,7 @@ class LZ4FrameCompressor(object):
                  compression_level=COMPRESSIONLEVEL_MIN,
                  content_checksum=False,
                  block_checksum=False,
-                 auto_flush=True,
+                 auto_flush=False,
                  return_bytearray=False):
         self.block_size = block_size
         self.block_linked = block_linked
