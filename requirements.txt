@@ -1,5 +1,4 @@
 sphinx >= 1.4.8
-pkgconfig
 tox
 pytest
 setuptools_scm

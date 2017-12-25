@@ -59,9 +59,6 @@ install:
   # We need wheel installed to build wheels, and this isn't pulled in by setup.py
   - "build.cmd python -m pip install wheel"
 
-  # We need pkgconfig installed installed to run setup.py
-  - "build.cmd python -m pip install pkgconfig"
-
   # We need tox to run tests
   - "build.cmd python -m pip install tox"
 
