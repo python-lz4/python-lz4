@@ -6,6 +6,11 @@
 
 environment:
 
+
+environment:
+  PYPI_PASSWORD:
+    secure: LGlG50Ta854XC2pxoPRxxQ==
+
   matrix:
 
     - PYTHON: "C:\\Python27-x64"
@@ -82,6 +87,24 @@ artifacts:
   # Archive the generated packages in the ci.appveyor.com build report.
   - path: dist\*
 
-#on_success:
-#  - TODO: upload the content of dist/*.whl to a public wheelhouse
-#
+deploy_script:
+  # Inspiration: https://github.com/AndrewAnnex/SpiceyPy/blob/master/appveyor.yml
+  - echo "Starting Artifact Deployment"
+  # populate pypirc file for twine
+  - echo [distutils] > %USERPROFILE%\\.pypirc
+  - echo index-servers = >> %USERPROFILE%\\.pypirc
+  - echo     pypi >> %USERPROFILE%\\.pypirc
+  - echo [pypi] >> %USERPROFILE%\\.pypirc
+  - echo username=jgu >> %USERPROFILE%\\.pypirc
+  - echo password=%PYPI_PASSWORD% >> %USERPROFILE%\\.pypirc
+  # upload to pypi for windows
+  - set PATH=%BK_PATH%
+  - set HOME=%USERPROFILE%
+  - ps: >-
+      If ($env:APPVEYOR_REPO_TAG -eq "true" -And $env:APPVEYOR_REPO_BRANCH -eq "master") {
+          Invoke-Expression "twine upload --skip-existing dist/*" 2>$null
+      }
+      Else {
+          write-output "Not on a tag on master, won't deploy to pypi"
+      }
+  - echo "Finished Artifact Deployment"
