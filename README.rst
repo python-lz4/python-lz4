@@ -41,8 +41,9 @@ Documenation
 Full documentation is included with the project. The documentation is
 generated using Sphinx. Documentation is also hosted on readthedocs.
 
-:master: http://python-lz4.readthedocs.io/en/latest/
-
+:master: http://python-lz4.readthedocs.io/en/stable/
+:development: http://python-lz4.readthedocs.io/en/latest/
+   
 Licensing
 =========
 Code specific to this project is covered by the `BSD 3-Clause License
