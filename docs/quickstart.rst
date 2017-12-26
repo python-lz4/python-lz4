@@ -71,75 +71,109 @@ is more convenient to use the ``LZ4FrameCompressor`` and
   >>> decompressed == input_data
   Out[13]: True
 
+Controlling the compression
+---------------------------
 Beyond the basics, there are a number of options to play with to tune and
 control the compression. A few of the key ones are listed below, please see the
 documentation for full details of options.
 
-:``compression_level``: Specifies the level of compression used with 0 (default)
-   being the lowest compression (0-2 are the same value), and 16 the highest
-   compression. Values below 0 will enable "fast acceleration", proportional to
-   the value. Values above 16 will be treated as 16. The following module
-   constants are provided as a convenience:
 
-   - ``lz4.frame.COMPRESSIONLEVEL_MIN``: Minimum compression (0, default)
-   - ``lz4.frame.COMPRESSIONLEVEL_MINHC``: Minimum high-compression mode (3)
-   - ``lz4.frame.COMPRESSIONLEVEL_MAX``: Maximum compression (16)
-:Availability: ``lz4.frame.LZ4FrameCompressor()``,
-   ``lz4.frame.compress()``, ``lz4.frame.compress_begin()``
+``compression_level``
+~~~~~~~~~~~~~~~~~~~~~
 
+This specifies the level of compression used with 0 (default) being the lowest
+compression (0-2 are the same value), and 16 the highest compression. Values
+below 0 will enable "fast acceleration", proportional to the value. Values above
+16 will be treated as 16. The following module constants are provided as a
+convenience:
 
-:``block_size``: Specifies the maximum blocksize to use for the blocks in a frame.
-  Options:
+- ``lz4.frame.COMPRESSIONLEVEL_MIN``: Minimum compression (0, default)
+- ``lz4.frame.COMPRESSIONLEVEL_MINHC``: Minimum high-compression mode (3)
+- ``lz4.frame.COMPRESSIONLEVEL_MAX``: Maximum compression (16)
 
-  - ``lz4.frame.BLOCKSIZE_DEFAULT`` or 0: the lz4 library default
-  - ``lz4.frame.BLOCKSIZE_MAX64KB`` or 4: 64 kB
-  - ``lz4.frame.BLOCKSIZE_MAX256KB`` or 5: 256 kB
-  - ``lz4.frame.BLOCKSIZE_MAX1MB`` or 6: 1 MB
-  - ``lz4.frame.BLOCKSIZE_MAX4MB`` or 7: 4 MB
-
-  If unspecified, will default to ``lz4.frame.BLOCKSIZE_DEFAULT`` which is
-  currently equal to ``lz4.frame.BLOCKSIZE_MAX64KB``
-:Availability: ``lz4.frame.LZ4FrameCompressor()``,
-   ``lz4.frame.compress()``, ``lz4.frame.compress_begin()``
+Availability: ``lz4.frame.LZ4FrameCompressor()``, ``lz4.frame.compress()``,
+``lz4.frame.compress_begin()``
 
 
-:``block_linked``: Specifies whether to use block-linked compression. If
-   ``True``, the compression ratio is improved, particularly for small block
-   sizes. Default is ``True``.
-:Availability: ``lz4.frame.LZ4FrameCompressor()``,
-   ``lz4.frame.compress()``, ``lz4.frame.compress_begin()``
+``block_size``
+~~~~~~~~~~~~~~
+This specifies the maximum blocksize to use for the blocks in a frame. Options:
 
+- ``lz4.frame.BLOCKSIZE_DEFAULT`` or 0: the lz4 library default
+- ``lz4.frame.BLOCKSIZE_MAX64KB`` or 4: 64 kB
+- ``lz4.frame.BLOCKSIZE_MAX256KB`` or 5: 256 kB
+- ``lz4.frame.BLOCKSIZE_MAX1MB`` or 6: 1 MB
+- ``lz4.frame.BLOCKSIZE_MAX4MB`` or 7: 4 MB
 
-:``content_checksum``: Specifies whether to enable checksumming of the
-  uncompressed content. If ``True``, a checksum is stored at the end of the frame,
-  and checked during decompression. Default is ``False``.
-:Availability: ``lz4.frame.LZ4FrameCompressor()``,
-   ``lz4.frame.compress()``, ``lz4.frame.compress_begin()``
+If unspecified, will default to ``lz4.frame.BLOCKSIZE_DEFAULT`` which is
+currently equal to ``lz4.frame.BLOCKSIZE_MAX64KB``
 
-
-:``block_checksum``: Specifies whether to enable checksumming of the
-  uncompressed content of each block in the frame. If ``True``, a checksum is
-  stored at the end of each block in the frame, and checked during
-  decompression. Default is ``False``.
-:Availability: ``lz4.frame.LZ4FrameCompressor()``,
-   ``lz4.frame.compress()``, ``lz4.frame.compress_begin()``
-
-
-:``auto_flush``: Enable or disable autoFlush. When autoFlush is disabled, the
-  LZ4 library may buffer data internally until block is full. Default is
-  ``False`` (autoFlush disabled).
-:Availability: ``lz4.frame.LZ4FrameCompressor()``,
+Availability: ``lz4.frame.LZ4FrameCompressor()``, ``lz4.frame.compress()``,
    ``lz4.frame.compress_begin()``
 
 
-:``store_size``: If ``True`` the size of the uncompressed data will be stored in
- the frame header for use during decompression. Default is ``True``.
-:Availability: ``lz4.frame.compress()``
+``block_linked``
+~~~~~~~~~~~~~~~~
+
+This specifies whether to use block-linked compression. If ``True``, the
+compression ratio is improved, particularly for small block sizes. Default is
+``True``.
+
+Availability: ``lz4.frame.LZ4FrameCompressor()``, ``lz4.frame.compress()``,
+``lz4.frame.compress_begin()``
 
 
-:``source_size``: This optionally specifies the uncompressed size of the source
+``content_checksum``
+~~~~~~~~~~~~~~~~~~~~
+
+This specifies whether to enable checksumming of the uncompressed content. If
+``True``, a checksum is stored at the end of the frame, and checked during
+decompression. Default is ``False``.
+
+Availability: ``lz4.frame.LZ4FrameCompressor()``, ``lz4.frame.compress()``,
+``lz4.frame.compress_begin()``
+
+
+``block_checksum``
+~~~~~~~~~~~~~~~~~~
+
+This specifies whether to enable checksumming of the uncompressed content of
+each block in the frame. If ``True``, a checksum is stored at the end of each
+block in the frame, and checked during decompression. Default is ``False``.
+
+Availability: ``lz4.frame.LZ4FrameCompressor()``, ``lz4.frame.compress()``,
+``lz4.frame.compress_begin()``
+
+
+``auto_flush``
+~~~~~~~~~~~~~~
+
+Enable or disable autoFlush. When autoFlush is disabled, the LZ4 library may
+buffer data internally until block is full. Default is ``False`` (autoFlush
+disabled).
+
+Availability: ``lz4.frame.LZ4FrameCompressor()``, ``lz4.frame.compress_begin()``
+
+
+``store_size`` and ``source_size``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These allow for storing the size of the uncompressed data in the frame header.
+Storing the source size in the frame header adds an extra 8 bytes to the size of
+the compressed frame, but allows the decompression functions to better size
+memory buffers.
+
+**``store_size``**
+If ``store_size`` is ``True`` the size of the uncompressed data will be stored in
+the frame header for use during decompression. Default is ``True``.
+
+Availability: ``lz4.frame.compress()``
+
+
+**``source_size``** This optionally specifies the uncompressed size of the source
  data to be compressed. If specified, the size will be stored in the frame
  header for use during decompression.
-:Availability: ``lz4.frame.LZ4FrameCompressor.begin()``,
+
+Availability: ``lz4.frame.LZ4FrameCompressor.begin()``,
    ``lz4.frame.compress_begin()``
 
