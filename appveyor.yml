@@ -99,10 +99,9 @@ deploy_script:
   # set HOME=%USERPROFILE%
   - ps: >-
       If ($env:APPVEYOR_REPO_TAG -eq "true" -And $env:APPVEYOR_REPO_BRANCH -eq "master") {
-          $env:pypi_upload = 'true'
+          Invoke-Expression "twine upload --skip-existing dist/*"
       }
       Else {
           write-output "Not on a tag on master, won't deploy to pypi"
       }
-  - cmd: IF "%pypi_upload%"=="true" twine upload --skip-existing dist/*
   - echo "Finished Artifact Deployment"
