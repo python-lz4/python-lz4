@@ -58,8 +58,8 @@ install:
   # We need wheel installed to build wheels, and this isn't pulled in by setup.py
   - "build.cmd python -m pip install wheel"
 
-  # We need wheel installed to build wheels, and this isn't pulled in by setup.py
-  - "build.cmd python -m pip install wheel"
+  # We need twine installed to push wheels to PyPi
+  - "build.cmd python -m pip install twine"
 
   # We need tox to run tests
   - "build.cmd python -m pip install tox"
