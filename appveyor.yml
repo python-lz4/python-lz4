@@ -95,8 +95,8 @@ deploy_script:
   - echo username=jgu >> %USERPROFILE%\\.pypirc
   - echo password=%PYPI_PASSWORD% >> %USERPROFILE%\\.pypirc
   # upload to pypi for windows
-  - set PATH=%BK_PATH%
-  - set HOME=%USERPROFILE%
+  # set PATH=%BK_PATH%
+  # set HOME=%USERPROFILE%
   - ps: >-
       If ($env:APPVEYOR_REPO_TAG -eq "true" -And $env:APPVEYOR_REPO_BRANCH -eq "master") {
           Invoke-Expression "twine upload --skip-existing dist/*" 2>$null
