@@ -306,6 +306,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
       return PyErr_NoMemory();
     }
   dest = __buff_to_string(py_dest, return_bytearray);
+  dest[0] = '\0';
 
   Py_BEGIN_ALLOW_THREADS
   compressed_size =
@@ -472,6 +473,7 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
       return PyErr_NoMemory();
     }
   destination_buffer = __buff_to_string (py_destination, return_bytearray);
+  destination_buffer[0] = '\0';
 
   Py_BEGIN_ALLOW_THREADS
   result = LZ4F_compressBegin (context->context,
@@ -579,6 +581,7 @@ compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
       return PyErr_NoMemory();
     }
   destination_buffer = __buff_to_string (py_destination, return_bytearray);
+  destination_buffer[0] = '\0';
 
   compress_options.stableSrc = 0;
 
@@ -683,6 +686,7 @@ compress_flush (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
       return PyErr_NoMemory();
     }
   destination_buffer = __buff_to_string (py_destination, return_bytearray);
+  destination_buffer[0] = '\0';
 
   Py_BEGIN_ALLOW_THREADS
   if (end_frame)
@@ -1099,6 +1103,7 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
       return PyErr_NoMemory();
     }
   destination_buffer = __buff_to_string (py_destination, return_bytearray);
+  destination_buffer[0] = '\0';
 
   Py_UNBLOCK_THREADS
 
