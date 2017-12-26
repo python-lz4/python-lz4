@@ -19,17 +19,17 @@ Status
 
 Introduction
 ============
-This package provides python bindings for the `lz4 compression library
-<https://cyan4973.github.io/lz4//>`_ by Yann Collet.
+This package provides python bindings for the `LZ4 compression library
+<https://cyan4973.github.io/lz4//>`_.
 
-At this time the project contains bindings for the LZ4 block format, which are
-considered stable.
+The bindings provided in this package cover the `frame format
+<http://lz4.github.io/lz4/lz4_Frame_format.html>`_ and the `block format
+<http://lz4.github.io/lz4/lz4_Block_format.html>`_ specifications. The frame
+format bindings are the recommended ones to use, as this guarantees
+interoperability with other implementations and language bindings.
 
-Support for the LZ4 frame format is a work-in-progress and is considered beta
-quality. It should work fine, but changes to the API may happen prior to the 1.0
-release.
-
-A future relase will implement support for the LZ4 stream format.
+A future release may implement support for the LZ4 stream format. Patches and
+help are welcome.
 
 Documenation
 ============
