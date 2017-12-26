@@ -132,6 +132,7 @@ setup(
     setup_requires=[
         'setuptools_scm',
         'pkgconfig',
+        'pytest-runner',
     ],
     install_requires=[
         'deprecation',
@@ -149,7 +150,6 @@ setup(
     ],
     tests_require=[
         'pytest',
-        'pytest-runner',
     ],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
