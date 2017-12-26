@@ -1377,16 +1377,16 @@ PyDoc_STRVAR(
 #define COMPRESS_KWARGS_DOCSTRING                                     \
   "    block_size (int): Sepcifies the maximum blocksize to use.\n"     \
   "        Options:\n\n"                                                \
-  "        - lz4.frame.BLOCKSIZE_DEFAULT or 0: the lz4 library default\n" \
-  "        - lz4.frame.BLOCKSIZE_MAX64KB or 4: 64 kB\n"                 \
-  "        - lz4.frame.BLOCKSIZE_MAX256KB or 5: 256 kB\n"               \
-  "        - lz4.frame.BLOCKSIZE_MAX1MB or 6: 1 MB\n"                   \
-  "        - lz4.frame.BLOCKSIZE_MAX4MB or 7: 4 MB\n\n"                 \
-  "        If unspecified, will default to lz4.frame.BLOCKSIZE_DEFAULT\n" \
-  "        which is currently equal to lz4.frame.BLOCKSIZE_MAX64KB.\n"  \
+  "        - ``lz4.frame.BLOCKSIZE_DEFAULT`` or 0: the lz4 library default\n" \
+  "        - ``lz4.frame.BLOCKSIZE_MAX64KB`` or 4: 64 kB\n"             \
+  "        - ``lz4.frame.BLOCKSIZE_MAX256KB`` or 5: 256 kB\n"           \
+  "        - ``lz4.frame.BLOCKSIZE_MAX1MB`` or 6: 1 MB\n"               \
+  "        - ``lz4.frame.BLOCKSIZE_MAX4MB`` or 7: 4 MB\n\n"             \
+  "        If unspecified, will default to ``lz4.frame.BLOCKSIZE_DEFAULT``\n" \
+  "        which is currently equal to ``lz4.frame.BLOCKSIZE_MAX64KB``.\n" \
   "    block_linked (bool): Specifies whether to use block-linked\n"    \
-  "        compression. If True, the compression ratio is improved,\n" \
-  "        particularly for small block sizes. Default is True.\n"      \
+  "        compression. If ``True``, the compression ratio is improved,\n" \
+  "        particularly for small block sizes. Default is ``True``.\n"  \
   "    compression_level (int): Specifies the level of compression used.\n" \
   "        Values between 0-16 are valid, with 0 (default) being the\n"     \
   "        lowest compression (0-2 are the same value), and 16 the highest.\n" \
@@ -1399,21 +1399,21 @@ PyDoc_STRVAR(
   "          mode (3)\n"                                                \
   "        - lz4.frame.COMPRESSIONLEVEL_MAX: Maximum compression (16)\n\n" \
   "    content_checksum (bool): Specifies whether to enable checksumming\n" \
-  "        of the payload content. If True, a checksum is stored at the\n" \
+  "        of the uncompressed content. If True, a checksum is stored at the\n" \
   "        end of the frame, and checked during decompression. Default is\n" \
-  "        False.\n"                                                    \
+  "        ``False``.\n"                                                    \
   "    block_checksum (bool): Specifies whether to enable checksumming of\n" \
   "        the uncompressed content of each block. If `True` a checksum of\n" \
   "        the uncompressed data in each block in the frame is stored at\n\n" \
   "        the end of each block. If present, these checksums will be used\n\n" \
   "        to validate the data during decompression. The default is\n" \
-  "        `False` meaning block checksums are not calculated and stored.\n" \
+  "        ``False`` meaning block checksums are not calculated and stored.\n" \
   "        This functionality is only supported if the underlying LZ4\n" \
   "        library has version >= 1.8.0. Attempting to set this value\n" \
-  "        to `True` with a version of LZ4 < 1.8.0 will cause a `RuntimeError`\n" \
+  "        to ``True`` with a version of LZ4 < 1.8.0 will cause a ``RuntimeError``\n" \
   "        to be raised.\n"                                             \
-  "    return_bytearray (bool): If True a bytearray object will be returned.\n" \
-  "        If False, a string of bytes is returned. The default is False.\n" \
+  "    return_bytearray (bool): If ``True`` a ``bytearray`` object will be returned.\n" \
+  "        If ``False``, a string of bytes is returned. The default is ``False``.\n" \
 
 PyDoc_STRVAR(
  compress__doc,
@@ -1426,9 +1426,9 @@ PyDoc_STRVAR(
  "    data (str, bytes or buffer-compatible object): data to compress\n\n" \
  "Keyword Args:\n"                                                      \
  COMPRESS_KWARGS_DOCSTRING                                              \
- "    store_size (bool): If True then the frame will include an 8-byte\n" \
+ "    store_size (bool): If ``True`` then the frame will include an 8-byte\n" \
  "        header field that is the uncompressed size of data included\n" \
- "        within the frame. Default is True.\n\n"                       \
+ "        within the frame. Default is ``True``.\n\n"                       \
  "Returns:\n"                                                           \
  "    str or bytearray: Compressed data\n"
  );
@@ -1447,10 +1447,11 @@ PyDoc_STRVAR
  "         disabled, the LZ4 library may buffer data internally until a\n" \
  "         block is full. Default is ``False`` (autoFlush disabled).\n\n" \
  "    source_size (int): This optionally specifies the uncompressed size\n" \
- "        of the source data to be compressed. If specified, the size\n" \
- "        will be stored in the frame header for use during decompression.\n" \
- "    return_bytearray (bool): If True a bytearray object will be returned.\n" \
- "        If False, a string of bytes is returned. The default is False.\n\n" \
+ "        of the data to be compressed. If specified, the size will be\n" \
+ "        stored in the frame header for use during decompression.\n"   \
+ "        Default is ``True``.\n"                                       \
+ "    return_bytearray (bool): If ``True`` a bytearray object will be returned.\n" \
+ "        If ``False``, a string of bytes is returned. Default is ``False``.\n\n" \
  "Returns:\n"                                                           \
  "    str or bytearray: Frame header.\n"
  );
