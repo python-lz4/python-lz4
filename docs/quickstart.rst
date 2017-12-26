@@ -87,7 +87,7 @@ documentation for full details of options.
 :Availability: ``lz4.frame.LZ4FrameCompressor()``,
    ``lz4.frame.compress()``, ``lz4.frame.compress_begin()``
 
-:`block_size: Specifies the maximum blocksize to use for the blocks in a frame.
+:``block_size``: Specifies the maximum blocksize to use for the blocks in a frame.
   Options:
 
   - ``lz4.frame.BLOCKSIZE_DEFAULT`` or 0: the lz4 library default
