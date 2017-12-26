@@ -87,6 +87,7 @@ documentation for full details of options.
 :Availability: ``lz4.frame.LZ4FrameCompressor()``,
    ``lz4.frame.compress()``, ``lz4.frame.compress_begin()``
 
+
 :``block_size``: Specifies the maximum blocksize to use for the blocks in a frame.
   Options:
 
@@ -101,17 +102,20 @@ documentation for full details of options.
 :Availability: ``lz4.frame.LZ4FrameCompressor()``,
    ``lz4.frame.compress()``, ``lz4.frame.compress_begin()``
 
+
 :``block_linked``: Specifies whether to use block-linked compression. If
    ``True``, the compression ratio is improved, particularly for small block
    sizes. Default is ``True``.
 :Availability: ``lz4.frame.LZ4FrameCompressor()``,
    ``lz4.frame.compress()``, ``lz4.frame.compress_begin()``
 
+
 :``content_checksum``: Specifies whether to enable checksumming of the
   uncompressed content. If ``True``, a checksum is stored at the end of the frame,
   and checked during decompression. Default is ``False``.
 :Availability: ``lz4.frame.LZ4FrameCompressor()``,
    ``lz4.frame.compress()``, ``lz4.frame.compress_begin()``
+
 
 :``block_checksum``: Specifies whether to enable checksumming of the
   uncompressed content of each block in the frame. If ``True``, a checksum is
@@ -120,15 +124,18 @@ documentation for full details of options.
 :Availability: ``lz4.frame.LZ4FrameCompressor()``,
    ``lz4.frame.compress()``, ``lz4.frame.compress_begin()``
 
+
 :``auto_flush``: Enable or disable autoFlush. When autoFlush is disabled, the
   LZ4 library may buffer data internally until block is full. Default is
   ``False`` (autoFlush disabled).
 :Availability: ``lz4.frame.LZ4FrameCompressor()``,
    ``lz4.frame.compress_begin()``
 
+
 :``store_size``: If ``True`` the size of the uncompressed data will be stored in
  the frame header for use during decompression. Default is ``True``.
 :Availability: ``lz4.frame.compress()``
+
 
 :``source_size``: This optionally specifies the uncompressed size of the source
  data to be compressed. If specified, the size will be stored in the frame
