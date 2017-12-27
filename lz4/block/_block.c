@@ -214,6 +214,8 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       dest_start = dest;
     }
 
+  dest_start[0] = '\0';
+
   switch (comp)
     {
     case DEFAULT:
@@ -356,6 +358,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
         }
       dest = PyBytes_AS_STRING (py_dest);
     }
+  dest[0] = '\0';
 
   Py_BEGIN_ALLOW_THREADS
 
