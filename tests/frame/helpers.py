@@ -1,6 +1,6 @@
 import lz4.frame as lz4frame
 import math
-
+import pytest
 
 def get_frame_info_check(compressed_data,
                          source_size,
@@ -301,3 +301,37 @@ def roundtrip_LZ4FrameCompressor_LZ4FrameDecompressor(
 
     assert data == decompressed
     assert bytes_read == len(compressed)
+
+
+def decompress_truncated(
+        data,
+        block_size=lz4frame.BLOCKSIZE_DEFAULT,
+        block_linked=True,
+        content_checksum=False,
+        block_checksum=False,
+        compression_level=5,
+        store_size=True):
+
+    compressed = lz4frame.compress(
+        data,
+        block_size=block_size,
+        block_linked=block_linked,
+        content_checksum=content_checksum,
+        block_checksum=block_checksum,
+        compression_level=compression_level,
+        store_size=store_size,
+    )
+
+    message = r'^LZ4F_getFrameInfo failed with code: ERROR_frameHeader_incomplete'
+    with pytest.raises(RuntimeError, message=message):
+        lz4frame.decompress(compressed[:6])
+
+    for i in range(16, len(compressed) - 1, 5): # 15 is the max size of the header
+        message = r'^full_frame=True specified, but data did not contain complete frame. LZ4F_decompress returned: {0}'.format(len(compressed) - i)
+        print(len(compressed), i)
+        try:
+            lz4frame.decompress(compressed[:i])
+        except RuntimeError as r:
+            print(r)
+        with pytest.raises(RuntimeError, message=message):
+            lz4frame.decompress(compressed[:i])
