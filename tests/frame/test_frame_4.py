@@ -1,11 +1,13 @@
 from . helpers import (
     roundtrip_LZ4FrameCompressor,
     roundtrip_LZ4FrameCompressor_LZ4FrameDecompressor,
+    decompress_truncated,
 )
 import os
 import pytest
 
 test_data=[
+    b'',
     (128 * (32 * os.urandom(32))),
     (256 * (32 * os.urandom(32))),
     (512 * (32 * os.urandom(32))),
@@ -61,20 +63,10 @@ def test_roundtrip_LZ4FrameCompressor_LZ4FrameDecompressor(
         content_checksum=content_checksum,
     )
 
-
+def test_decompress_truncated(data):
+    decompress_truncated(data)
 
 # class TestLZ4FrameModern(unittest.TestCase):
-#     def test_decompress_truncated(self):
-#         input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
-#         for chksum in (lz4frame.CONTENTCHECKSUM_DISABLED, lz4frame.CONTENTCHECKSUM_ENABLED):
-#             for conlen in (0, len(input_data)):
-#                 context = lz4frame.create_compression_context()
-#                 compressed = lz4frame.compress_begin(context, content_checksum=chksum, source_size=conlen)
-#                 compressed += lz4frame.compress_update(context, input_data)
-#                 compressed += lz4frame.compress_end(context)
-#                 for i in range(len(compressed)):
-#                     with self.assertRaisesRegexp(RuntimeError, r'^(LZ4F_getFrameInfo failed with code: ERROR_frameHeader_incomplete|LZ4F_freeDecompressionContext reported unclean decompressor state \(truncated frame\?\): \d+)$'):
-#                         lz4frame.decompress(compressed[:i])
 
 #     def test_checksum_failure(self):
 #         input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
