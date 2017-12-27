@@ -1195,7 +1195,7 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
 
   Py_END_ALLOW_THREADS
 
-  if (result != 0 && full_frame)
+  if (result > 0 && full_frame)
     {
       PyErr_Format (PyExc_RuntimeError,
                     "full_frame=True specified, but data did not contain complete frame. LZ4F_decompress returned: %zu", result);
