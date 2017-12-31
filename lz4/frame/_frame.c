@@ -115,64 +115,6 @@ create_compression_context (PyObject * Py_UNUSED (self))
                         destroy_compression_context);
 }
 
-static inline PyObject *
-__buff_alloc (const Py_ssize_t dest_size, const int return_bytearray)
-{
-  PyObject * py_dest;
-
-  if (return_bytearray)
-    {
-      py_dest = PyByteArray_FromStringAndSize (NULL, dest_size);
-    }
-  else
-    {
-      py_dest = PyBytes_FromStringAndSize (NULL, dest_size);
-    }
-
-  if (py_dest == NULL)
-    {
-      return PyErr_NoMemory();
-    }
-  else
-    {
-      return py_dest;
-    }
-}
-
-static inline char *
-__buff_to_string (PyObject const * buff, const int bytearray)
-{
-  if (bytearray)
-    {
-      return PyByteArray_AS_STRING (buff);
-    }
-  else
-    {
-      return PyBytes_AS_STRING (buff);
-    }
-}
-
-static inline void
-__buff_resize (PyObject ** buff, Py_ssize_t size,
-               const int return_bytearray)
-{
-  int ret;
-
-  if (return_bytearray)
-    {
-      ret = PyByteArray_Resize (*buff, size);
-    }
-  else
-    {
-      ret = _PyBytes_Resize (buff, size);
-    }
-  if (ret)
-    {
-      PyErr_SetString (PyExc_RuntimeError,
-                       "Failed to resize buffer size");
-    }
-}
-
 /************
  * compress *
  ************/
@@ -188,9 +130,8 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
   int block_checksum = 0;
   int block_linked = 1;
   LZ4F_preferences_t preferences;
-  size_t compressed_bound;
+  size_t dest_size;
   size_t compressed_size;
-  Py_ssize_t dest_size;
   PyObject *py_dest;
   char *dest;
 
@@ -285,28 +226,24 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
     }
 
   Py_BEGIN_ALLOW_THREADS
-  compressed_bound =
+  dest_size =
     LZ4F_compressFrameBound (source_size, &preferences);
   Py_END_ALLOW_THREADS
 
-  if (compressed_bound > PY_SSIZE_T_MAX)
+  if (dest_size > PY_SSIZE_T_MAX)
     {
       PyErr_Format (PyExc_ValueError,
                     "Input data could require %zu bytes, which is larger than the maximum supported size of %zd bytes",
-                    compressed_bound, PY_SSIZE_T_MAX);
+                    dest_size, PY_SSIZE_T_MAX);
       return NULL;
     }
 
-  dest_size = (Py_ssize_t) compressed_bound;
-
-  py_dest = __buff_alloc(dest_size, return_bytearray);
-  if (py_dest == NULL)
+  dest = PyMem_Malloc (dest_size * sizeof * dest);
+  if (dest == NULL)
     {
       PyBuffer_Release(&source);
       return PyErr_NoMemory();
     }
-  dest = __buff_to_string(py_dest, return_bytearray);
-  dest[0] = '\0';
 
   Py_BEGIN_ALLOW_THREADS
   compressed_size =
@@ -318,24 +255,27 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
 
   if (LZ4F_isError (compressed_size))
     {
-      Py_DECREF (py_dest);
+      PyMem_Free (dest);
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_compressFrame failed with code: %s",
                     LZ4F_getErrorName (compressed_size));
       return NULL;
     }
 
-  /* The actual compressed size might be less than we allocated (we allocated
-     using a worst case guess). If the actual size is less than 75% of what we
-     allocated, then it's worth performing an expensive resize operation to
-     reclaim some space. */
-  if ((Py_ssize_t) compressed_size < (dest_size / 4) * 3)
+  if (return_bytearray)
     {
-      __buff_resize(&py_dest, (Py_ssize_t) compressed_size, return_bytearray);
+      py_dest = PyByteArray_FromStringAndSize (dest, (Py_ssize_t) compressed_size);
     }
   else
     {
-      Py_SIZE (py_dest) = (Py_ssize_t) compressed_size;
+      py_dest = PyBytes_FromStringAndSize (dest, (Py_ssize_t) compressed_size);
+    }
+
+  PyMem_Free (dest);
+
+  if (py_dest == NULL)
+    {
+      return PyErr_NoMemory ();
     }
 
   return py_dest;
@@ -467,13 +407,11 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
 
   context->preferences = preferences;
 
-  py_destination = __buff_alloc(header_size, return_bytearray);
-  if (py_destination == NULL)
+  destination_buffer = PyMem_Malloc (header_size * sizeof * destination_buffer);
+  if (destination_buffer == NULL)
     {
       return PyErr_NoMemory();
     }
-  destination_buffer = __buff_to_string (py_destination, return_bytearray);
-  destination_buffer[0] = '\0';
 
   Py_BEGIN_ALLOW_THREADS
   result = LZ4F_compressBegin (context->context,
@@ -490,7 +428,22 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  Py_SIZE (py_destination) = result;
+  if (return_bytearray)
+    {
+      py_destination = PyByteArray_FromStringAndSize (destination_buffer, (Py_ssize_t) result);
+    }
+  else
+    {
+      py_destination = PyBytes_FromStringAndSize (destination_buffer, (Py_ssize_t) result);
+    }
+
+  PyMem_Free (destination_buffer);
+
+  if (py_destination == NULL)
+    {
+      return PyErr_NoMemory ();
+    }
+
   return py_destination;
 }
 
@@ -574,14 +527,11 @@ compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  py_destination = __buff_alloc((Py_ssize_t) compressed_bound, return_bytearray);
-  if (py_destination == NULL)
+  destination_buffer = PyMem_Malloc (compressed_bound * sizeof * destination_buffer);
+  if (destination_buffer == NULL)
     {
-      PyBuffer_Release(&source);
       return PyErr_NoMemory();
     }
-  destination_buffer = __buff_to_string (py_destination, return_bytearray);
-  destination_buffer[0] = '\0';
 
   compress_options.stableSrc = 0;
 
@@ -603,13 +553,20 @@ compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  if (result < (compressed_bound / 4) * 3)
+  if (return_bytearray)
     {
-      __buff_resize (&py_destination, (Py_ssize_t) result, return_bytearray);
+      py_destination = PyByteArray_FromStringAndSize (destination_buffer, (Py_ssize_t) result);
     }
   else
     {
-      Py_SIZE (py_destination) = (Py_ssize_t) result;
+      py_destination = PyBytes_FromStringAndSize (destination_buffer, (Py_ssize_t) result);
+    }
+
+  PyMem_Free (destination_buffer);
+
+  if (py_destination == NULL)
+    {
+      return PyErr_NoMemory ();
     }
 
   return py_destination;
@@ -680,13 +637,11 @@ compress_flush (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
   destination_size = LZ4F_compressBound (0, &(context->preferences));
   Py_END_ALLOW_THREADS
 
-  py_destination = __buff_alloc((Py_ssize_t) destination_size, return_bytearray);
-  if (py_destination == NULL)
+  destination_buffer = PyMem_Malloc (destination_size * sizeof * destination_buffer);
+  if (destination_buffer == NULL)
     {
       return PyErr_NoMemory();
     }
-  destination_buffer = __buff_to_string (py_destination, return_bytearray);
-  destination_buffer[0] = '\0';
 
   Py_BEGIN_ALLOW_THREADS
   if (end_frame)
@@ -712,13 +667,20 @@ compress_flush (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
       return NULL;
     }
 
-  if (result < (destination_size / 4) * 3)
+  if (return_bytearray)
     {
-      __buff_resize (&py_destination, (Py_ssize_t) result, return_bytearray);
+      py_destination = PyByteArray_FromStringAndSize (destination_buffer, (Py_ssize_t) result);
     }
   else
     {
-      Py_SIZE (py_destination) = (Py_ssize_t) result;
+      py_destination = PyBytes_FromStringAndSize (destination_buffer, (Py_ssize_t) result);
+    }
+
+  PyMem_Free (destination_buffer);
+
+  if (py_destination == NULL)
+    {
+      return PyErr_NoMemory ();
     }
 
   return py_destination;
@@ -1046,7 +1008,7 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
   char * destination_cursor;
   size_t destination_written;
   size_t destination_buffer_size;
-  PyObject *py_destination;
+  PyObject * py_destination;
   size_t result = 0;
   LZ4F_frameInfo_t frame_info;
   LZ4F_decompressOptions_t options;
@@ -1079,6 +1041,10 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
          number of bytes read. Also reduce source_remain accordingly. */
       source_cursor += source_read;
       source_remain -= source_read;
+
+      /* If the uncompressed content size is available, we'll use that to size
+         the destination buffer. Otherwise, guess at twice the remaining source
+         source as a starting point, and adjust if needed. */
       if (frame_info.contentSize > 0)
         {
           destination_buffer_size = frame_info.contentSize;
@@ -1090,20 +1056,18 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
     }
   else
     {
-      /* Choose an initial destination size as either twice the source size, and
-         we'll grow the allocation as needed. */
+      /* Choose an initial destination size as twice the source size, and we'll
+         grow the allocation as needed. */
       destination_buffer_size = 2 * source_remain;
     }
 
   Py_BLOCK_THREADS
 
-  py_destination = __buff_alloc ((Py_ssize_t) destination_buffer_size, return_bytearray);
-  if (py_destination == NULL)
+  destination_buffer = PyMem_Malloc (destination_buffer_size * sizeof * destination_buffer);
+  if (destination_buffer == NULL)
     {
       return PyErr_NoMemory();
     }
-  destination_buffer = __buff_to_string (py_destination, return_bytearray);
-  destination_buffer[0] = '\0';
 
   Py_UNBLOCK_THREADS
 
@@ -1171,17 +1135,21 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
           /* Destination_buffer is full, so need to expand it. result is an
              indication of number of source bytes remaining, so we'll use this
              to estimate the new size of the destination buffer. */
+          char * buff;
           destination_buffer_size += 3 * result;
 
           Py_BLOCK_THREADS
-          __buff_resize (&py_destination, (Py_ssize_t) destination_buffer_size,
-                         return_bytearray);
-          if (py_destination == NULL)
+          buff = PyMem_Realloc (destination_buffer, destination_buffer_size);
+          if (buff == NULL)
             {
-              /* PyErr_SetString already called in __buff_resize */
+              PyErr_SetString (PyExc_RuntimeError,
+                               "Failed to resize buffer");
               return NULL;
             }
-          destination_buffer = __buff_to_string (py_destination, return_bytearray);
+          else
+            {
+              destination_buffer = buff;
+            }
           Py_UNBLOCK_THREADS
         }
       /* Data still remaining to be decompressed, so increment the destination
@@ -1199,7 +1167,7 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
     {
       PyErr_Format (PyExc_RuntimeError,
                     "full_frame=True specified, but data did not contain complete frame. LZ4F_decompress returned: %zu", result);
-      Py_DECREF(py_destination);
+      PyMem_Free (destination_buffer);
       return NULL;
     }
 
@@ -1208,18 +1176,24 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_freeDecompressionContext failed with code: %s",
                     LZ4F_getErrorName (result));
-      Py_DECREF(py_destination);
+      PyMem_Free (destination_buffer);
       return NULL;
     }
 
-  if (destination_written < (destination_buffer_size / 4) * 3)
+  if (return_bytearray)
     {
-      __buff_resize (&py_destination, (Py_ssize_t) destination_written,
-                     return_bytearray);
+      py_destination = PyByteArray_FromStringAndSize (destination_buffer, (Py_ssize_t) destination_written);
     }
   else
     {
-      Py_SIZE (py_destination) = destination_written;
+      py_destination = PyBytes_FromStringAndSize (destination_buffer, (Py_ssize_t) destination_written);
+    }
+
+  PyMem_Free (destination_buffer);
+
+  if (py_destination == NULL)
+    {
+      return PyErr_NoMemory ();
     }
 
   if (return_bytes_read)
