@@ -232,6 +232,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
 
   if (destination_size > PY_SSIZE_T_MAX)
     {
+      PyBuffer_Release(&source);
       PyErr_Format (PyExc_ValueError,
                     "Input data could require %zu bytes, which is larger than the maximum supported size of %zd bytes",
                     destination_size, PY_SSIZE_T_MAX);
@@ -530,6 +531,7 @@ compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
   destination = PyMem_Malloc (compressed_bound * sizeof * destination);
   if (destination == NULL)
     {
+      PyBuffer_Release(&source);
       return PyErr_NoMemory();
     }
 
