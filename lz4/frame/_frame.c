@@ -1007,7 +1007,7 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
   size_t destination_write;
   char * destination_cursor;
   size_t destination_written;
-  size_t destination_buffer_size;
+  size_t destination_size;
   PyObject * py_destination;
   size_t result = 0;
   LZ4F_frameInfo_t frame_info;
@@ -1047,23 +1047,23 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
          source as a starting point, and adjust if needed. */
       if (frame_info.contentSize > 0)
         {
-          destination_buffer_size = frame_info.contentSize;
+          destination_size = frame_info.contentSize;
         }
       else
         {
-          destination_buffer_size = 2 * source_remain;
+          destination_size = 2 * source_remain;
         }
     }
   else
     {
       /* Choose an initial destination size as twice the source size, and we'll
          grow the allocation as needed. */
-      destination_buffer_size = 2 * source_remain;
+      destination_size = 2 * source_remain;
     }
 
   Py_BLOCK_THREADS
 
-  destination_buffer = PyMem_Malloc (destination_buffer_size * sizeof * destination_buffer);
+  destination_buffer = PyMem_Malloc (destination_size * sizeof * destination_buffer);
   if (destination_buffer == NULL)
     {
       return PyErr_NoMemory();
@@ -1082,7 +1082,7 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
 
   source_read = source_remain;
 
-  destination_write = destination_buffer_size;
+  destination_write = destination_size;
   destination_cursor = destination_buffer;
   destination_written = 0;
 
@@ -1130,16 +1130,16 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
           /* We've reached end of input. */
           break;
         }
-      else if (destination_written == destination_buffer_size)
+      else if (destination_written == destination_size)
         {
           /* Destination_buffer is full, so need to expand it. result is an
              indication of number of source bytes remaining, so we'll use this
              to estimate the new size of the destination buffer. */
           char * buff;
-          destination_buffer_size += 3 * result;
+          destination_size += 3 * result;
 
           Py_BLOCK_THREADS
-          buff = PyMem_Realloc (destination_buffer, destination_buffer_size);
+          buff = PyMem_Realloc (destination_buffer, destination_size);
           if (buff == NULL)
             {
               PyErr_SetString (PyExc_RuntimeError,
@@ -1158,7 +1158,7 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
          opposed to simply incrementing it) so we're pointing to the realloc'd
          memory location. */
       destination_cursor = destination_buffer + destination_written;
-      destination_write = destination_buffer_size - destination_written;
+      destination_write = destination_size - destination_written;
     }
 
   Py_END_ALLOW_THREADS
