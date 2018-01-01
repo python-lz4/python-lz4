@@ -181,25 +181,10 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       total_size = dest_size;
     }
 
-  if (return_bytearray)
+  dest = PyMem_Malloc (total_size * sizeof * dest);
+  if (dest == NULL)
     {
-      py_dest = PyByteArray_FromStringAndSize (NULL, total_size);
-      if (py_dest == NULL)
-        {
-          PyBuffer_Release(&source);
-          return PyErr_NoMemory();
-        }
-      dest = PyByteArray_AS_STRING (py_dest);
-    }
-  else
-    {
-      py_dest = PyBytes_FromStringAndSize (NULL, total_size);
-      if (py_dest == NULL)
-        {
-          PyBuffer_Release(&source);
-          return PyErr_NoMemory();
-        }
-      dest = PyBytes_AS_STRING (py_dest);
+      return PyErr_NoMemory();
     }
 
   Py_BEGIN_ALLOW_THREADS
@@ -213,8 +198,6 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     {
       dest_start = dest;
     }
-
-  dest_start[0] = '\0';
 
   switch (comp)
     {
@@ -239,7 +222,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   if (output_size <= 0)
     {
       PyErr_SetString (PyExc_ValueError, "Compression failed");
-      Py_CLEAR (py_dest);
+      PyMem_Free (dest);
       return NULL;
     }
 
@@ -248,29 +231,20 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       output_size += hdr_size;
     }
 
-  /* Resizes are expensive; tolerate some slop to avoid. */
-  if (output_size < (dest_size / 4) * 3)
+  if (return_bytearray)
     {
-      int ret;
-      if (return_bytearray)
-        {
-          ret = PyByteArray_Resize (py_dest, output_size);
-        }
-      else
-        {
-          ret = _PyBytes_Resize (&py_dest, output_size);
-        }
-
-      if (ret)
-        {
-          PyErr_SetString (PyExc_RuntimeError,
-                           "Failed to resize buffer");
-          return NULL;
-        }
+      py_dest = PyByteArray_FromStringAndSize (dest, (Py_ssize_t) output_size);
     }
   else
     {
-      Py_SIZE (py_dest) = output_size;
+      py_dest = PyBytes_FromStringAndSize (dest, (Py_ssize_t) output_size);
+    }
+
+  PyMem_Free (dest);
+
+  if (py_dest == NULL)
+    {
+      return PyErr_NoMemory ();
     }
 
   return py_dest;
@@ -338,27 +312,11 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       return NULL;
     }
 
-  if (return_bytearray)
+  dest = PyMem_Malloc (dest_size * sizeof * dest);
+  if (dest == NULL)
     {
-      py_dest = PyByteArray_FromStringAndSize (NULL, dest_size);
-      if (py_dest == NULL)
-        {
-          PyBuffer_Release(&source);
-          return PyErr_NoMemory();
-        }
-      dest = PyByteArray_AS_STRING (py_dest);
+      return PyErr_NoMemory();
     }
-  else
-    {
-      py_dest = PyBytes_FromStringAndSize (NULL, dest_size);
-      if (py_dest == NULL)
-        {
-          PyBuffer_Release(&source);
-          return PyErr_NoMemory();
-        }
-      dest = PyBytes_AS_STRING (py_dest);
-    }
-  dest[0] = '\0';
 
   Py_BEGIN_ALLOW_THREADS
 
@@ -372,7 +330,8 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   if (output_size < 0)
     {
       PyErr_Format (PyExc_ValueError, "Corrupt input at byte %zu", -output_size);
-      Py_CLEAR (py_dest);
+      PyMem_Free (dest);
+      return NULL;
     }
   else if ((size_t)output_size != dest_size)
     {
@@ -380,7 +339,24 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       PyErr_Format (PyExc_ValueError,
                     "Decompressor wrote %zu bytes, but %zu bytes expected from header",
                     output_size, dest_size);
-      Py_CLEAR (py_dest);
+      PyMem_Free (dest);
+      return NULL;
+    }
+
+  if (return_bytearray)
+    {
+      py_dest = PyByteArray_FromStringAndSize (dest, (Py_ssize_t) output_size);
+    }
+  else
+    {
+      py_dest = PyBytes_FromStringAndSize (dest, (Py_ssize_t) output_size);
+    }
+
+  PyMem_Free (dest);
+
+  if (py_dest == NULL)
+    {
+      return PyErr_NoMemory ();
     }
 
   return py_dest;
