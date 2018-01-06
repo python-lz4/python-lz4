@@ -1,4 +1,8 @@
 import lz4
+import _compression
+import io
+import os
+import builtins
 from ._frame import *
 from ._frame import __doc__ as _doc
 __doc__ = _doc
@@ -182,20 +186,33 @@ class LZ4FrameDecompressor(object):
     """Create a LZ4 frame decompressor object, which can be used to decompress data
     incrementally.
 
+    For a more convenient way of decompressing an entire compressed frame at
+    once, see ``lz4.frame.decompress()``.
+
     Args:
         return_bytearray (bool): When ``False`` a bytes object is returned from the
             calls to methods of this class. When ``True`` a bytearray object will be
             returned. The default is ``False``.
-        return_bytes_read (bool): When ``True``, calls to ``decompress`` will return
-            the number of bytes read from the input data as well as the uncompressed
-            data. The default is ``False``.
+
+
+    Attributes:
+        eof (bool): ``True`` if the end-of-stream marker has been reached. ``False``
+            otherwise.
+        unused_data (bytes): Data found after the end of the compressed stream.
+            Before the end of the frame is reached, this will be ``b''``.
+        needs_input (bool): ``False`` if the ``decompress()`` method can provide more
+            decompressed data before requiring new uncompressed input. ``True``
+            otherwise.
 
     """
 
-    def __init__(self, return_bytearray=False, return_bytes_read=False):
-        self.return_bytearray = return_bytearray
-        self.return_bytes_read = return_bytes_read
+    def __init__(self, return_bytearray=False):
         self._context = create_decompression_context()
+        self.eof = False
+        self.needs_input = True
+        self.unused_data = b''
+        self._unconsumed_data = b''
+        self._return_bytearray = return_bytearray
 
     def __enter__(self):
         # All necessary initialization is done in __init__
@@ -206,38 +223,397 @@ class LZ4FrameDecompressor(object):
         # so no need to del it here
         pass
 
-    def decompress(self, data, full_frame=False):
-        """Decompresses part of an LZ4 frame of compressed data. The returned data
-        should be concatenated with the output of any previous calls to
+    def decompress(self, data, max_length=-1):
+        """Decompresses part or all of an LZ4 frame of compressed data. The returned
+        data should be concatenated with the output of any previous calls to
         ``decompress()``.
 
+        If ``max_length`` is non-negative, returns at most ``max_length`` bytes
+        of decompressed data. If this limit is reached and further output can
+        be produced, the ``needs_input`` attribute will be set to ``False``. In
+        this case, the next call to ``decompress()`` may provide data as
+        ``b''`` to obtain more of the output. In all cases, any unconsumed data
+        from previous calls will be prepended to the input data.
+
+        If all of the input ``data`` was decompressed and returned (either
+        because this was less than ``max_length`` bytes, or because
+        ``max_length`` was negative), the ``needs_input`` attribute will be set
+        to ``True``.
+
         Args:
-            data (str, bytes or buffer-compatible object): data to decompress
-            full_frame (bool): If ``True``, then the ``data`` argument is expected
-                to contain the full LZ4 frame. Default is ``False``.
+            data (str, bytes or buffer-compatible object): compressed data to
+                decompress
+            max_length (int): If this is non-negative, this method returns at
+                most ``max_length`` bytes of decompressed data.
 
         Returns:
-             bytes/bytearray or tuple: Uncompressed data
-
-             If the ``return_bytes_read`` argument is ``True`` this function
-             returns a tuple consisting of:
-
-                 - bytes or bytearray: Uncompressed data
-                 - int: Number of bytes consumed from ``data``
+             bytes: Uncompressed data
 
         """
 
-        if full_frame is True:
-            return decompress(
-                self._context,
-                data,
-                return_bytearray=self.return_bytearray,
-                return_bytes_read=self.return_bytes_read,
+        if self._unconsumed_data:
+            data = self._unconsumed_data + data
+
+        decompressed, bytes_read, eoframe = decompress_chunk(
+            self._context,
+            data,
+            max_destination_size=max_length,
+            return_bytearray=self._return_bytearray,
             )
+
+        if bytes_read < len(data):
+            if eoframe:
+                self.unused_data = data[bytes_read:]
+            else:
+                self._unconsumed_data = data[bytes_read:]
+                self.needs_input = False
+
+        self.eof = eoframe
+
+        return decompressed
+
+
+_MODE_CLOSED   = 0
+_MODE_READ     = 1
+# Value 2 no longer used
+_MODE_WRITE    = 3
+
+
+class LZ4FrameFile(_compression.BaseStream):
+    """A file object providing transparent LZ4F (de)compression.
+
+    An LZ4FFile can act as a wrapper for an existing file object, or refer
+    directly to a named file on disk.
+
+    Note that LZ4FFile provides a *binary* file interface - data read is
+    returned as bytes, and data to be written must be given as bytes.
+
+    When opening a file for writing, the settings used by the compressor can be
+    specified. The underlying compressor object is ``lz4.frame.LZ4FrameCompressor``.
+    See the docstrings for that class for details on compression options.
+
+    Args:
+        filename(str, bytes, PathLike, file object): can be either an actual
+            file name (given as a str, bytes, or
+            PathLike object), in which case the named file is opened, or it
+            can be an existing file object to read from or write to.
+        mode(str): mode can be "r" for reading (default), "w" for (over)writing,
+            "x" for creating exclusively, or "a" for appending. These can
+            equivalently be given as "rb", "wb", "xb" and "ab" respectively.
+        return_bytearray (bool): When ``False`` a bytes object is returned from the
+            calls to methods of this class. When ``True`` a bytearray object will be
+            returned. The default is ``False``.
+        source_size (int): Optionally specify the total size of the uncompressed
+            data. If specified, will be stored in the compressed frame header as
+            an 8-byte field for later use during decompression. Default is 0
+            (no size stored). Only used for writing compressed files.
+        block_size (int): Compressor setting. See ``lz4.frame.LZ4FrameCompressor``.
+        block_linked (bool): Compressor setting. See
+            ``lz4.frame.LZ4FrameCompressor``.
+        compression_level (int): Compressor setting. See
+            ``lz4.frame.LZ4FrameCompressor``.
+        content_checksum (bool): Compressor setting. See
+            ``lz4.frame.LZ4FrameCompressor``.
+        block_checksum (bool): Compressor setting. See
+            ``lz4.frame.LZ4FrameCompressor``.
+        auto_flush (bool): Compressor setting. See
+            ``lz4.frame.LZ4FrameCompressor``.
+
+    """
+
+    def __init__(self, filename=None, mode="r",
+                 block_size=BLOCKSIZE_DEFAULT,
+                 block_linked=True,
+                 compression_level=COMPRESSIONLEVEL_MIN,
+                 content_checksum=False,
+                 block_checksum=False,
+                 auto_flush=False,
+                 return_bytearray=False,
+                 source_size=0):
+
+        self._fp = None
+        self._closefp = False
+        self._mode = _MODE_CLOSED
+
+        if mode in ("r", "rb"):
+            mode_code = _MODE_READ
+        elif mode in ("w", "wb", "a", "ab", "x", "xb"):
+            mode_code = _MODE_WRITE
+            self._compressor = LZ4FrameCompressor(
+                block_size=block_size,
+                block_linked=block_linked,
+                compression_level=compression_level,
+                content_checksum=content_checksum,
+                block_checksum=block_checksum,
+                auto_flush=auto_flush,
+                return_bytearray=return_bytearray,
+            )
+            self._pos = 0
         else:
-            return decompress_chunk(
-                self._context,
-                data,
-                return_bytearray=self.return_bytearray,
-                return_bytes_read=self.return_bytes_read,
+            raise ValueError("Invalid mode: {!r}".format(mode))
+
+        if isinstance(filename, (str, bytes, os.PathLike)):
+            if "b" not in mode:
+                mode += "b"
+            self._fp = builtins.open(filename, mode)
+            self._closefp = True
+            self._mode = mode_code
+        elif hasattr(filename, "read") or hasattr(filename, "write"):
+            self._fp = filename
+            self._mode = mode_code
+        else:
+            raise TypeError("filename must be a str, bytes, file or PathLike object")
+
+        if self._mode == _MODE_READ:
+            raw = _compression.DecompressReader(self._fp, LZ4FrameDecompressor)
+            self._buffer = io.BufferedReader(raw)
+
+        if self._mode == _MODE_WRITE:
+            self._fp.write(
+                self._compressor.begin(source_size=source_size)
             )
+
+    def close(self):
+        """Flush and close the file.
+
+        May be called more than once without error. Once the file is
+        closed, any other operation on it will raise a ValueError.
+        """
+        if self._mode == _MODE_CLOSED:
+            return
+        try:
+            if self._mode == _MODE_READ:
+                self._buffer.close()
+                self._buffer = None
+            elif self._mode == _MODE_WRITE:
+                self._fp.write(self._compressor.finalize())
+                self._compressor = None
+        finally:
+            try:
+                if self._closefp:
+                    self._fp.close()
+            finally:
+                self._fp = None
+                self._closefp = False
+                self._mode = _MODE_CLOSED
+
+    @property
+    def closed(self):
+        """True if this file is closed.
+
+        """
+        return self._mode == _MODE_CLOSED
+
+    def fileno(self):
+        """Return the file descriptor for the underlying file.
+
+        """
+        self._check_not_closed()
+        return self._fp.fileno()
+
+    def seekable(self):
+        """Return whether the file supports seeking.
+
+        """
+        return self.readable() and self._buffer.seekable()
+
+    def readable(self):
+        """Return whether the file was opened for reading.
+
+        """
+        self._check_not_closed()
+        return self._mode == _MODE_READ
+
+    def writable(self):
+        """Return whether the file was opened for writing.
+
+        """
+        self._check_not_closed()
+        return self._mode == _MODE_WRITE
+
+    def peek(self, size=-1):
+        """Return buffered data without advancing the file position.
+
+        Always returns at least one byte of data, unless at EOF. The exact
+        number of bytes returned is unspecified.
+
+        """
+        self._check_can_read()
+        # Relies on the undocumented fact that BufferedReader.peek() always
+        # returns at least one byte (except at EOF)
+        return self._buffer.peek(size)
+
+    def read(self, size=-1):
+        """Read up to ``size`` uncompressed bytes from the file.
+
+        If ``size`` is negative or omitted, read until EOF is reached. Returns
+        ``b''`` if the file is already at EOF.
+
+        Args:
+            size(int): If non-negative, specifies the maximum number of
+                uncompressed bytes to return.
+
+        Returns:
+            bytes: uncompressed data
+
+        """
+        self._check_can_read()
+        return self._buffer.read(size)
+
+    def read1(self, size=-1):
+        """Read up to ``size`` uncompressed bytes, while trying to avoid making multiple
+        reads from the underlying stream. Reads up to a buffer's worth of data
+        if ``size`` is negative.
+
+        Returns ``b''`` if the file is at EOF.
+
+        Args:
+            size(int): If non-negative, specifies the maximum number of
+                uncompressed bytes to return.
+
+        Returns:
+            bytes: uncompressed data
+
+        """
+        self._check_can_read()
+        if size < 0:
+            size = io.DEFAULT_BUFFER_SIZE
+        return self._buffer.read1(size)
+
+    def readline(self, size=-1):
+        """Read a line of uncompressed bytes from the file.
+
+        The terminating newline (if present) is retained. If size is
+        non-negative, no more than size bytes will be read (in which case the
+        line may be incomplete). Returns b'' if already at EOF.
+
+        Args:
+            size(int): If non-negative, specifies the maximum number of
+                uncompressed bytes to return.
+
+        Returns:
+            bytes: uncompressed data
+
+        """
+        self._check_can_read()
+        return self._buffer.readline(size)
+
+    def write(self, data):
+        """Write a bytes object to the file.
+
+        Returns the number of uncompressed bytes written, which is always
+        ``len(data)``. Note that due to buffering, the file on disk may not
+        reflect the data written until close() is called.
+
+        Args:
+            data(bytes): uncompressed data to compress and write to the file
+
+        Returns:
+            int: the number of uncompressed bytes written to the file
+
+        """
+        self._check_can_write()
+        compressed = self._compressor.compress(data)
+        self._fp.write(compressed)
+        self._pos += len(data)
+        return len(data)
+
+    def seek(self, offset, whence=io.SEEK_SET):
+        """Change the file position.
+
+        The new position is specified by ``offset``, relative to the position
+        indicated by ``whence``. Possible values for ``whence`` are:
+
+            io.SEEK_SET or 0: start of stream (default): offset must not be negative
+            io.SEEK_CUR or 1: current stream position
+            io.SEEK_END or 2: end of stream; offset must not be positive
+
+        Returns the new file position.
+
+        Note that seeking is emulated, so depending on the parameters, this
+        operation may be extremely slow.
+
+        Args:
+            offset(int): new position in the file
+            whence(int): position with which ``offset`` is measured. Allowed
+                values are 0, 1, 2. The default is 0 (start of stream).
+
+        Returns:
+            int: new file position
+
+        """
+        self._check_can_seek()
+        return self._buffer.seek(offset, whence)
+
+    def tell(self):
+        """Return the current file position.
+
+        Args:
+            None
+
+        Returns:
+            int: file position
+
+        """
+        self._check_not_closed()
+        if self._mode == _MODE_READ:
+            return self._buffer.tell()
+        return self._pos
+
+
+def open(filename, mode="rb",
+         encoding=None,
+         errors=None,
+         newline=None,
+         block_size=BLOCKSIZE_DEFAULT,
+         block_linked=True,
+         compression_level=COMPRESSIONLEVEL_MIN,
+         content_checksum=False,
+         block_checksum=False,
+         auto_flush=False,
+         return_bytearray=False):
+    """Open an LZ4Frame-compressed file in binary or text mode.
+
+    ``filename`` can be either an actual file name (given as a str, bytes, or
+    PathLike object), in which case the named file is opened, or it can be an
+    existing file object to read from or write to.
+
+    The ``mode`` argument can be ``'r'``, ``'rb'`` (default), ``'w'``, ``'wb'``,
+    ``'x'``, ``'xb'``, ``'a'``, or ``'ab'`` for binary mode, or ``'rt'``,
+    ``'wt'``, ``'xt'``, or ``'at'`` for text mode.
+
+    For binary mode, this function is equivalent to the ``LZ4FrameFile``
+    constructor: ``LZ4FrameFile(filename, mode, ...)``.
+
+    For text mode, an ``LZ4FFile`` object is created, and wrapped in an
+    ``io.TextIOWrapper`` instance with the specified encoding, error handling
+    behavior, and line ending(s).
+
+    """
+    if "t" in mode:
+        if "b" in mode:
+            raise ValueError("Invalid mode: %r" % (mode,))
+    else:
+        if encoding is not None:
+            raise ValueError("Argument 'encoding' not supported in binary mode")
+        if errors is not None:
+            raise ValueError("Argument 'errors' not supported in binary mode")
+        if newline is not None:
+            raise ValueError("Argument 'newline' not supported in binary mode")
+
+    binary_file = LZ4FrameFile(
+        filename,
+        mode=mode,
+        block_size=block_size,
+        block_linked=block_linked,
+        compression_level=compression_level,
+        content_checksum=content_checksum,
+        block_checksum=block_checksum,
+        auto_flush=auto_flush,
+        return_bytearray=return_bytearray,
+    )
+
+    if "t" in mode:
+        return io.TextIOWrapper(binary_file, encoding, errors, newline)
+    else:
+        return binary_file
