@@ -999,7 +999,8 @@ reset_decompression_context (PyObject * Py_UNUSED (self), PyObject * args,
 
 static inline PyObject *
 __decompress(LZ4F_dctx * context, char * source, size_t source_size,
-             int full_frame, int return_bytearray, int return_bytes_read)
+             Py_ssize_t max_destination_size, int full_frame,
+             int return_bytearray, int return_bytes_read)
 {
   size_t source_remain;
   size_t source_read;
@@ -1014,6 +1015,7 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
   size_t result = 0;
   LZ4F_frameInfo_t frame_info;
   LZ4F_decompressOptions_t options;
+  int end_of_frame = 0;
 
   Py_BEGIN_ALLOW_THREADS
 
@@ -1058,9 +1060,16 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
     }
   else
     {
-      /* Choose an initial destination size as twice the source size, and we'll
-         grow the allocation as needed. */
-      destination_size = 2 * source_remain;
+      if (max_destination_size > 0)
+        {
+          destination_size = max_destination_size;
+        }
+      else
+        {
+          /* Choose an initial destination size as twice the source size, and we'll
+             grow the allocation as needed. */
+          destination_size = 2 * source_remain;
+        }
     }
 
   Py_BLOCK_THREADS
@@ -1125,6 +1134,7 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
       if (result == 0)
         {
           /* We've reached the end of the frame. */
+          end_of_frame = 1;
           break;
         }
       else if (source_cursor == source_end)
@@ -1134,25 +1144,35 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
         }
       else if (destination_written == destination_size)
         {
-          /* destination is full, so need to expand it. result is an
-             indication of number of source bytes remaining, so we'll use this
-             to estimate the new size of the destination buffer. */
-          char * buff;
-          destination_size += 3 * result;
-
-          Py_BLOCK_THREADS
-          buff = PyMem_Realloc (destination, destination_size);
-          if (buff == NULL)
+          /* Destination buffer is full. So, stop decompressing if
+             max_destination_size is set. Otherwise expand the destination
+             buffer. */
+          if (max_destination_size > 0)
             {
-              PyErr_SetString (PyExc_RuntimeError,
-                               "Failed to resize buffer");
-              return NULL;
+              break;
             }
           else
             {
-              destination = buff;
+              /* Expand destination buffer. result is an indication of number of
+                 source bytes remaining, so we'll use this to estimate the new
+                 size of the destination buffer. */
+              char * buff;
+              destination_size += 3 * result;
+
+              Py_BLOCK_THREADS
+              buff = PyMem_Realloc (destination, destination_size);
+              if (buff == NULL)
+                {
+                  PyErr_SetString (PyExc_RuntimeError,
+                                   "Failed to resize buffer");
+                  return NULL;
+                }
+              else
+                {
+                  destination = buff;
+                }
+              Py_UNBLOCK_THREADS
             }
-          Py_UNBLOCK_THREADS
         }
       /* Data still remaining to be decompressed, so increment the destination
          cursor location, and reset destination_write ready for the next
@@ -1198,13 +1218,25 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
       return PyErr_NoMemory ();
     }
 
-  if (return_bytes_read)
+  if (full_frame)
     {
-      return Py_BuildValue ("Oi", py_destination, source_cursor - source);
+      if (return_bytes_read)
+        {
+          return Py_BuildValue ("Oi",
+                                py_destination,
+                                source_cursor - source);
+        }
+      else
+        {
+          return py_destination;
+        }
     }
   else
     {
-      return py_destination;
+      return Py_BuildValue ("OiO",
+                            py_destination,
+                            source_cursor - source,
+                            end_of_frame ? Py_True : Py_False);
     }
 }
 
@@ -1220,18 +1252,21 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
   Py_buffer py_source;
   char * source;
   size_t source_size;
-  PyObject * decompressed;
+  Py_ssize_t max_destination_size = 0;
+  PyObject * ret;
   int return_bytearray = 0;
   int return_bytes_read = 0;
   static char *kwlist[] = { "data",
+                            "max_destination_size",
                             "return_bytearray",
                             "return_bytes_read",
                             NULL
                           };
 
 #if IS_PY3
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|pp", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|kpp", kwlist,
                                     &py_source,
+                                    &max_destination_size,
                                     &return_bytearray,
                                     &return_bytes_read
                                     ))
@@ -1239,8 +1274,9 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 #else
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*|ii", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*|kii", kwlist,
                                     &py_source,
+                                    &max_destination_size,
                                     &return_bytearray,
                                     &return_bytes_read
                                     ))
@@ -1267,8 +1303,13 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
   source = (char *) py_source.buf;
   source_size = py_source.len;
 
-  decompressed = __decompress (context, source, source_size, 1, return_bytearray,
-                               return_bytes_read);
+  ret = __decompress (context,
+                      source,
+                      source_size,
+                      max_destination_size,
+                      1,
+                      return_bytearray,
+                      return_bytes_read);
 
   PyBuffer_Release(&py_source);
 
@@ -1276,7 +1317,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
   LZ4F_freeDecompressionContext (context);
   Py_END_ALLOW_THREADS
 
-  return decompressed;
+  return ret;
 }
 
 /********************
@@ -1287,36 +1328,36 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
                   PyObject * keywds)
 {
   PyObject * py_context = NULL;
-  PyObject * decompressed;
+  PyObject * ret;
   LZ4F_dctx * context;
   Py_buffer py_source;
   char * source;
   size_t source_size;
+  Py_ssize_t max_destination_size = 0;
   int return_bytearray = 0;
-  int return_bytes_read = 0;
   static char *kwlist[] = { "context",
                             "data",
+                            "max_destination_size",
                             "return_bytearray",
-                            "return_bytes_read",
                             NULL
                           };
 
 #if IS_PY3
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Oy*|pp", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Oy*|kp", kwlist,
                                     &py_context,
                                     &py_source,
-                                    &return_bytearray,
-                                    &return_bytes_read
+                                    &max_destination_size,
+                                    &return_bytearray
                                     ))
     {
       return NULL;
     }
 #else
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os*|ii", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os*|ki", kwlist,
                                     &py_context,
                                     &py_source,
-                                    &return_bytearray,
-                                    &return_bytes_read
+                                    &max_destination_size,
+                                    &return_bytearray
                                     ))
     {
       return NULL;
@@ -1338,12 +1379,17 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
   source = (char *) py_source.buf;
   source_size = py_source.len;
 
-  decompressed = __decompress (context, source, source_size, 0, return_bytearray,
-                               return_bytes_read);
+  ret = __decompress (context,
+                      source,
+                      source_size,
+                      max_destination_size,
+                      0,
+                      return_bytearray,
+                      0);
 
   PyBuffer_Release(&py_source);
 
-  return decompressed;
+  return ret;
 }
 
 PyDoc_STRVAR(
