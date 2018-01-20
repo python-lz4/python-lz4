@@ -66,40 +66,28 @@ def test_roundtrip_LZ4FrameCompressor_LZ4FrameDecompressor(
 def test_decompress_truncated(data):
     decompress_truncated(data)
 
-# class TestLZ4FrameModern(unittest.TestCase):
 
-#     def test_checksum_failure(self):
-#         input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
-#         compressed = lz4frame.compress(input_data, content_checksum=lz4frame.CONTENTCHECKSUM_ENABLED)
-#         with self.assertRaisesRegexp(RuntimeError, r'^LZ4F_decompress failed with code: ERROR_contentChecksum_invalid'):
-#             last = struct.unpack('B', compressed[-1:])[0]
-#             lz4frame.decompress(compressed[:-1] + struct.pack('B', last ^ 0x42))
-#         # NB: blockChecksumFlag is not supported by lz4 at the moment, so some
-#         # random 1-bit modifications of input may actually trigger valid output
-#         # without errors. And content checksum remains the same!
-
-#     def test_decompress_trailer(self):
-#         input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
-#         compressed = lz4frame.compress(input_data)
-#         with self.assertRaisesRegexp(ValueError, r'^Extra data: 64 trailing bytes'):
-#             lz4frame.decompress(compressed + b'A'*64)
-#         # This API does not support frame concatenation!
-#         with self.assertRaisesRegexp(ValueError, r'^Extra data: \d+ trailing bytes'):
-#             lz4frame.decompress(compressed + compressed)
-
-#     def test_LZ4FrameCompressor_fails(self):
-#         input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123"
-#         with self.assertRaisesRegexp(RuntimeError, r'compress called after flush'):
-#             with lz4frame.LZ4FrameCompressor() as compressor:
-#                 compressed = compressor.compress_begin()
-#                 compressed += compressor.compress(input_data)
-#                 compressed += compressor.flush()
-#                 compressed = compressor.compress(input_data)
+import struct
+import lz4.frame as lz4frame
 
 
-# if sys.version_info < (2, 7):
-#     # Poor-man unittest.TestCase.skip for Python 2.6
-#     del TestLZ4FrameModern
+def test_content_checksum_failure(data):
+    compressed = lz4frame.compress(data, content_checksum=True)
+    message = r'^LZ4F_decompress failed with code: ERROR_contentChecksum_invalid$'
+    with pytest.raises(RuntimeError, message=message):
+        last = struct.unpack('B', compressed[-1:])[0]
+        lz4frame.decompress(compressed[:-1] + struct.pack('B', last ^ 0x42))
 
-# if __name__ == '__main__':
-#     unittest.main()
+def test_block_checksum_failure(data):
+    compressed = lz4frame.compress(
+        data,
+        content_checksum=True,
+        block_checksum=True,
+        return_bytearray=True,
+    )
+    message = r'^LZ4F_decompress failed with code: ERROR_blockChecksum_invalid$'
+    if len(compressed) > 32:
+        with pytest.raises(RuntimeError, message=message):
+            compressed[18] = compressed[18] ^ 0x42
+            lz4frame.decompress(compressed)
+

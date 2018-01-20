@@ -1204,7 +1204,7 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
     }
   else
     {
-      return Py_BuildValue ("O", py_destination);
+      return py_destination;
     }
 }
 
