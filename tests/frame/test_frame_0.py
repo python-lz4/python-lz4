@@ -42,8 +42,10 @@ def test_reset_decompression_context_2():
         r = lz4frame.reset_decompression_context(context)
         assert r is None
         # And confirm we can use the context after reset
-        d = lz4frame.decompress_chunk(context, c)
+        d, bytes_read, eof = lz4frame.decompress_chunk(context, c)
         assert d == b'1234'
+        assert bytes_read == len(c)
+        assert eof == True
     else:
         pass
 
@@ -98,24 +100,26 @@ def test_decompress_return_type_4():
 def test_decompress_chunk_return_type_1():
     c = lz4frame.compress(b'', return_bytearray=False)
     d = lz4frame.create_decompression_context()
-    r = lz4frame.decompress_chunk(
+    r, b, e = lz4frame.decompress_chunk(
         d,
         c,
         return_bytearray=False,
-        return_bytes_read=False
     )
     assert isinstance(r, bytes)
+    assert isinstance(b, int)
+    assert isinstance(e, bool)
 
 def test_decompress_chunk_return_type_2():
     c = lz4frame.compress(b'', return_bytearray=False)
     d = lz4frame.create_decompression_context()
-    r = lz4frame.decompress_chunk(
+    r, b, e = lz4frame.decompress_chunk(
         d,
         c,
         return_bytearray=True,
-        return_bytes_read=False
     )
     assert isinstance(r, bytearray)
+    assert isinstance(b, int)
+    assert isinstance(e, bool)
 
 def test_decompress_chunk_return_type_3():
     c = lz4frame.compress(b'', return_bytearray=False)
@@ -124,11 +128,11 @@ def test_decompress_chunk_return_type_3():
         d,
         c,
         return_bytearray=False,
-        return_bytes_read=True
     )
     assert isinstance(r, tuple)
     assert isinstance(r[0], bytes)
     assert isinstance(r[1], int)
+    assert isinstance(r[2], bool)
 
 def test_decompress_chunk_return_type_4():
     c = lz4frame.compress(b'', return_bytearray=False)
@@ -137,9 +141,9 @@ def test_decompress_chunk_return_type_4():
         d,
         c,
         return_bytearray=True,
-        return_bytes_read=True
     )
     assert isinstance(r, tuple)
     assert isinstance(r[0], bytearray)
     assert isinstance(r[1], int)
+    assert isinstance(r[2], bool)
 

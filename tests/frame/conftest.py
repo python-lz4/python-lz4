@@ -1,5 +1,4 @@
 import pytest
-# import random
 import lz4.frame as lz4frame
 import lz4
 
@@ -44,8 +43,6 @@ else:
 )
 def block_checksum(request):
     return request.param
-
-
 
 compression_levels = [
         (lz4frame.COMPRESSIONLEVEL_MIN),
