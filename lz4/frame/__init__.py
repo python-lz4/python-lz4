@@ -1,5 +1,4 @@
 import lz4
-import _compression
 import io
 import os
 import builtins
@@ -7,6 +6,11 @@ import sys
 from ._frame import *
 from ._frame import __doc__ as _doc
 __doc__ = _doc
+
+try:
+    import _compression # Python 3.6 and later
+except:
+    from . import _compression
 
 
 class LZ4FrameCompressor(object):
