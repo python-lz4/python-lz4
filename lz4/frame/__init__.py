@@ -3,6 +3,7 @@ import _compression
 import io
 import os
 import builtins
+import sys
 from ._frame import *
 from ._frame import __doc__ as _doc
 __doc__ = _doc
@@ -352,7 +353,12 @@ class LZ4FrameFile(_compression.BaseStream):
         else:
             raise ValueError("Invalid mode: {!r}".format(mode))
 
-        if isinstance(filename, (str, bytes, os.PathLike)):
+        if sys.version_info > (3, 6):
+            path_test = isinstance(filename, (str, bytes, os.PathLike))
+        else:
+            path_test = isinstance(filename, (str, bytes))
+
+        if path_test is True:
             if "b" not in mode:
                 mode += "b"
             self._fp = builtins.open(filename, mode)
