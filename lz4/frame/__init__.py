@@ -581,7 +581,8 @@ def open(filename, mode="rb",
          content_checksum=False,
          block_checksum=False,
          auto_flush=False,
-         return_bytearray=False):
+         return_bytearray=False,
+         source_size=0):
     """Open an LZ4Frame-compressed file in binary or text mode.
 
     ``filename`` can be either an actual file name (given as a str, bytes, or
