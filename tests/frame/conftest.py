@@ -1,11 +1,10 @@
 import pytest
-# import random
 import lz4.frame as lz4frame
 import lz4
 
 @pytest.fixture(
     params=[
-        (lz4frame.BLOCKSIZE_DEFAULT),
+#        (lz4frame.BLOCKSIZE_DEFAULT),
         (lz4frame.BLOCKSIZE_MAX64KB),
         (lz4frame.BLOCKSIZE_MAX256KB),
         (lz4frame.BLOCKSIZE_MAX1MB),
@@ -45,8 +44,6 @@ else:
 def block_checksum(request):
     return request.param
 
-
-
 compression_levels = [
         (lz4frame.COMPRESSIONLEVEL_MIN),
         (lz4frame.COMPRESSIONLEVEL_MINHC),
@@ -74,4 +71,13 @@ def auto_flush(request):
     ]
 )
 def store_size(request):
+    return request.param
+
+@pytest.fixture(
+    params=[
+        (True),
+        (False),
+    ]
+)
+def return_bytearray(request):
     return request.param

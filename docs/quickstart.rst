@@ -45,12 +45,13 @@ disabled by specifying ``auto_flush=True`` when calling ``compress_begin``.
 Alternatively, the LZ4 buffers can be flushed at any time without ending the
 frame by calling ``compress_flush`` with ``end_frame=False``.
 
-Decompressing data can also be done in a chunked fashion::
+Decompressing data can also be done in a chunked fashion. Note that ``decompress_chunk``
+returns a tuple ``(decompressed_data, bytes_read, end_of_frame_indicator)``::
 
   >>> d_context = lz4.frame.create_decompression_context()
-  >>> decompressed = lz4.frame.decompress_chunk(d_context, compressed[:len(compressed)//2])
-  >>> decompressed += lz4.frame.decompress_chunk(d_context, compressed[len(compressed)//2:])
-  >>> decompressed == input_data
+  >>> d1, b, e = lz4.frame.decompress_chunk(d_context, compressed[:len(compressed)//2])
+  >>> d2, b, e = lz4.frame.decompress_chunk(d_context, compressed[len(compressed)//2:])
+  >>> d1 + d2 == input_data
   Out[12]: True
 
 Rather than managing compression and decompression context objects manually, it
@@ -70,6 +71,29 @@ is more convenient to use the ``LZ4FrameCompressor`` and
   ...     decompressed += decompressor.decompress(compressed[len(compressed)//2:])
   >>> decompressed == input_data
   Out[13]: True
+
+Working with compressed files
+-----------------------------
+
+The frame bindings provide capability for working with files containing LZ4
+frame compressed data. This functionality is intended to be a drop in
+replacement for that offered in the Python standard library for bz2, gzip and
+LZMA compressed files. The ``lz4.frame.open()`` function is the most convenient
+way to work with compressed data files::
+
+  >>> import lz4.frame
+  >>> import os
+  >>> input_data = 20 * os.urandom(1024)
+  >>> with lz4.frame.open('testfile', mode='wb') as fp:
+  ...     fp.write(input_data)
+  >>> with lz4.frame.open('testfile', mode='r') as fp:
+  ...     output_data = fp.read()
+  >>> output_data == input_data
+  True
+
+The library also provides the class ``lz4.frame.LZ4FrameFile`` for working with
+compressed files.
+
 
 Controlling the compression
 ---------------------------
