@@ -3,11 +3,9 @@ import pytest
 import lz4.frame as lz4frame
 
 test_data=[
-    #b'',
+    b'',
     (128 * (32 * os.urandom(32))),
-    # (256 * (32 * os.urandom(32))),
-    # (512 * (32 * os.urandom(32))),
-    # (1024 * (32 * os.urandom(32))),
+    (5 * 128 * os.urandom(1024)),
 ]
 
 @pytest.fixture(
@@ -17,6 +15,17 @@ test_data=[
     ]
 )
 def data(request):
+    return request.param
+
+compression_levels = [
+        (lz4frame.COMPRESSIONLEVEL_MIN),
+        # (lz4frame.COMPRESSIONLEVEL_MINHC),
+        # (lz4frame.COMPRESSIONLEVEL_MAX),
+    ]
+@pytest.fixture(
+    params=compression_levels
+)
+def compression_level(request):
     return request.param
 
 
