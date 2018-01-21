@@ -248,11 +248,13 @@ class LZ4FrameDecompressor(object):
         Args:
             data (str, bytes or buffer-compatible object): compressed data to
                 decompress
+
+        Keyword Args:
             max_length (int): If this is non-negative, this method returns at
                 most ``max_length`` bytes of decompressed data.
 
         Returns:
-             bytes: Uncompressed data
+            bytes: Uncompressed data
 
         """
 
