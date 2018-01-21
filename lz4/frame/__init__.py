@@ -617,9 +617,8 @@ def open(filename, mode="rb",
             See ``io.TextIOWrapper`` for further details.
         errors (str): specifies how encoding and decoding errors are to be
             handled. See ``io.TextIOWrapper`` for further details.
-        newline (str): controls how line endings are handled. It can be ``None``,
-            ``''``, ``'\n'``, ``'\r'``, and ``'\r\n'``. See ``io.TextIOWrapper``
-            for further details.
+        newline (str): controls how line endings are handled. See
+            ``io.TextIOWrapper`` for further details.
         return_bytearray (bool): When ``False`` a bytes object is returned from the
             calls to methods of this class. When ``True`` a bytearray object will be
             returned. The default is ``False``.

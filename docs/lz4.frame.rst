@@ -68,3 +68,13 @@ to manually create and manage compression and decompression contexts.
 .. autoclass:: lz4.frame.LZ4FrameCompressor
 .. autoclass:: lz4.frame.LZ4FrameDecompressor
 
+
+Reading and writing compressed files
+------------------------------------
+
+These provide capability for reading and writing of files using LZ4 compressed
+frames. These are designed to be drop in replacements for the LZMA, BZ2 and Gzip
+equivalent functionalities in the Python standard library.
+
+.. autofunction:: lz4.frame.open
+.. autoclass:: lz4.frame.LZ4FrameFile
