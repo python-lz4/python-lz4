@@ -1623,19 +1623,20 @@ PyDoc_STRVAR
  "    data (str, bytes or buffer-compatible object): part of a LZ4\n"   \
  "        frame of compressed data\n\n"                                 \
  "Keyword Args:\n"                                                      \
+ "    max_length (int): if non-negative this specifies the maximum number" \
+ "         of bytes of uncompressed data to return. Default is -1.\n"   \
  "    return_bytearray (bool): If True a bytearray object will be returned.\n" \
  "        If False, a string of bytes is returned. The default is False.\n\n" \
- "    return_bytes_read (bool): If ``True`` then the number of bytes read\n" \
- "        from ``data`` will also be returned.\n"                        \
  "\n"                                                                   \
  "Returns:\n"                                                           \
- "    bytes/bytearray or tuple: Uncompressed data\n"                    \
+ "    tuple: (uncompressed data, bytes read, end of frame indicator)\n" \
  "\n"                                                                   \
- "    If the ``return_bytes_read`` argument is ``True`` this function\n" \
- "    returns a tuple consisting of:\n"                                 \
+ "    This function returns a tuple consisting of:\n"                   \
  "\n"                                                                   \
  "        - bytes or bytearray: Uncompressed data\n"                    \
- "        - int: Number of bytes consumed from ``data``\n"
+ "        - int: Number of bytes consumed from input ``data``\n"        \
+ "        - bool: ``True`` if the end of the compressed frame has been\n" \
+ "              reached. ``False`` otherwise.\n"
  );
 
 static PyMethodDef module_methods[] =
