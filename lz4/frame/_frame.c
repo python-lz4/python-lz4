@@ -1252,21 +1252,18 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
   Py_buffer py_source;
   char * source;
   size_t source_size;
-  Py_ssize_t max_length = -1;
   PyObject * ret;
   int return_bytearray = 0;
   int return_bytes_read = 0;
   static char *kwlist[] = { "data",
-                            "max_length",
                             "return_bytearray",
                             "return_bytes_read",
                             NULL
                           };
 
 #if IS_PY3
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|kpp", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|pp", kwlist,
                                     &py_source,
-                                    &max_length,
                                     &return_bytearray,
                                     &return_bytes_read
                                     ))
@@ -1274,9 +1271,8 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 #else
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*|kii", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*|ii", kwlist,
                                     &py_source,
-                                    &max_length,
                                     &return_bytearray,
                                     &return_bytes_read
                                     ))
@@ -1306,7 +1302,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
   ret = __decompress (context,
                       source,
                       source_size,
-                      max_length,
+                      -1,
                       1,
                       return_bytearray,
                       return_bytes_read);
