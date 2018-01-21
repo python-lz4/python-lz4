@@ -1,9 +1,11 @@
 # Local python-lz4 copy of this file taken from the CPython standard library
-# for earlier Python versions that don't ship with this file.
+# for earlier Python versions that don't ship with this file. This file has
+# been modified to work on Python < 3.0.
 
 """Internal classes used by the gzip, lzma and bz2 modules"""
 
 import io
+import sys
 
 
 BUFFER_SIZE = io.DEFAULT_BUFFER_SIZE  # Compressed data read chunk size
@@ -61,7 +63,10 @@ class DecompressReader(io.RawIOBase):
 
     def close(self):
         self._decompressor = None
-        return super().close()
+        if sys.version_info > (3, 0):
+            return super().close()
+        else:
+            return super(DecompressReader, self).close()
 
     def seekable(self):
         return self._fp.seekable()
