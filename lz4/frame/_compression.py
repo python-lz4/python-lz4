@@ -5,7 +5,8 @@
 """Internal classes used by the gzip, lzma and bz2 modules"""
 
 import io
-import sys
+# Ensure super has Python 3 semantics even on Python 2
+from builtins import super
 
 
 BUFFER_SIZE = io.DEFAULT_BUFFER_SIZE  # Compressed data read chunk size
@@ -63,10 +64,7 @@ class DecompressReader(io.RawIOBase):
 
     def close(self):
         self._decompressor = None
-        if sys.version_info > (3, 0):
-            return super().close()
-        else:
-            return super(DecompressReader, self).close()
+        return super().close()
 
     def seekable(self):
         return self._fp.seekable()
