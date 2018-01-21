@@ -1252,7 +1252,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
   Py_buffer py_source;
   char * source;
   size_t source_size;
-  Py_ssize_t max_length = 0;
+  Py_ssize_t max_length = -1;
   PyObject * ret;
   int return_bytearray = 0;
   int return_bytes_read = 0;
@@ -1333,7 +1333,7 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
   Py_buffer py_source;
   char * source;
   size_t source_size;
-  Py_ssize_t max_length = 0;
+  Py_ssize_t max_length = -1;
   int return_bytearray = 0;
   static char *kwlist[] = { "context",
                             "data",
