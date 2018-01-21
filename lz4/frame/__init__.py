@@ -274,6 +274,9 @@ class LZ4FrameDecompressor(object):
             else:
                 self._unconsumed_data = data[bytes_read:]
                 self.needs_input = False
+        else:
+            self._unconsumed_data = b''
+            self.needs_input = True
 
         self.eof = eoframe
 
