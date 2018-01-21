@@ -1060,7 +1060,7 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
     }
   else
     {
-      if (max_length > 0)
+      if (max_length >= 0)
         {
           destination_size = max_length;
         }
@@ -1147,7 +1147,7 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
           /* Destination buffer is full. So, stop decompressing if
              max_length is set. Otherwise expand the destination
              buffer. */
-          if (max_length > 0)
+          if (max_length >= 0)
             {
               break;
             }
