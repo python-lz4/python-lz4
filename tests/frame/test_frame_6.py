@@ -54,12 +54,9 @@ def test_lz4frame_open_write_read(
     kwargs['block_checksum'] = block_checksum
     kwargs['auto_flush'] = auto_flush
     kwargs['return_bytearray'] = return_bytearray
+    kwargs['mode'] = 'wb'
 
-    with lz4frame.open(
-            'testfile',
-            mode='wb',
-            **kwargs,
-    ) as fp:
+    with lz4frame.open('testfile', **kwargs) as fp:
         fp.write(data)
 
     with lz4frame.open('testfile', mode='r') as fp:
