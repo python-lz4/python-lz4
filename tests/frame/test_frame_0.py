@@ -147,3 +147,9 @@ def test_decompress_chunk_return_type_4():
     assert isinstance(r[1], int)
     assert isinstance(r[2], bool)
 
+def test_block_size_constants():
+    assert lz4frame.BLOCKSIZE_DEFAULT == 0
+    assert lz4frame.BLOCKSIZE_MAX64KB == 4
+    assert lz4frame.BLOCKSIZE_MAX256KB == 5
+    assert lz4frame.BLOCKSIZE_MAX1MB == 6
+    assert lz4frame.BLOCKSIZE_MAX4MB == 7
