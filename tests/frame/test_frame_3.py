@@ -1,13 +1,10 @@
 import lz4.frame as lz4frame
 import pytest
 import os
-from . helpers import roundtrip_1, roundtrip_2
+import struct
 
 test_data=[
-    (os.urandom(128 * 1024)),
     (os.urandom(256 * 1024)),
-    (os.urandom(512 * 1024)),
-    (os.urandom(1024 * 1024)),
 ]
 
 @pytest.fixture(
@@ -20,11 +17,40 @@ def data(request):
     return request.param
 
 
-def test_roundtrip_1(data, block_size):
-    roundtrip_1(data, block_size)
+def test_decompress_truncated(data):
+    compressed = lz4frame.compress(data)
+
+    message = r'^LZ4F_getFrameInfo failed with code: ERROR_frameHeader_incomplete'
+    with pytest.raises(RuntimeError, message=message):
+        lz4frame.decompress(compressed[:6])
+
+    for i in range(16, len(compressed) - 1, 5): # 15 is the max size of the header
+        message = r'^Frame incomplete. LZ4F_decompress returned: {0}'.format(len(compressed) - i)
+        try:
+            lz4frame.decompress(compressed[:i])
+        except RuntimeError as r:
+            print(r)
+        with pytest.raises(RuntimeError, message=message):
+            lz4frame.decompress(compressed[:i])
 
 
-def test_roundtrip_2(data, block_size):
-    roundtrip_2(data, block_size)
+def test_content_checksum_failure(data):
+    compressed = lz4frame.compress(data, content_checksum=True)
+    message = r'^LZ4F_decompress failed with code: ERROR_contentChecksum_invalid$'
+    with pytest.raises(RuntimeError, message=message):
+        last = struct.unpack('B', compressed[-1:])[0]
+        lz4frame.decompress(compressed[:-1] + struct.pack('B', last ^ 0x42))
 
 
+def test_block_checksum_failure(data):
+    compressed = lz4frame.compress(
+        data,
+        content_checksum=True,
+        block_checksum=True,
+        return_bytearray=True,
+    )
+    message = r'^LZ4F_decompress failed with code: ERROR_blockChecksum_invalid$'
+    if len(compressed) > 32:
+        with pytest.raises(RuntimeError, message=message):
+            compressed[18] = compressed[18] ^ 0x42
+            lz4frame.decompress(compressed)

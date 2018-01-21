@@ -123,6 +123,14 @@ lz4frame = Extension('lz4.frame._frame',
                      include_dirs=include_dirs,
 )
 
+install_requires=[
+    'deprecation',
+]
+# On Python earlier than 3.0 the builtins package isn't included, but it is
+# provided by the future package
+if sys.version_info < (3, 0):
+    install_requires.append('future')
+
 # Finally call setup with the extension modules as defined above.
 setup(
     name='lz4',
@@ -135,9 +143,7 @@ setup(
         'pkgconfig',
         'pytest-runner',
     ],
-    install_requires=[
-        'deprecation',
-    ],
+    install_requires=install_requires,
     description="LZ4 Bindings for Python",
     long_description=open('README.rst', 'r').read(),
     author='Jonathan Underwood',

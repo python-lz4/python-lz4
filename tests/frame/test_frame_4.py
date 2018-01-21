@@ -1,10 +1,10 @@
-from . helpers import (
-    roundtrip_LZ4FrameCompressor,
-    roundtrip_LZ4FrameCompressor_LZ4FrameDecompressor,
-    decompress_truncated,
-)
+import lz4.frame as lz4frame
 import os
 import pytest
+from . helpers import (
+    get_frame_info_check,
+    get_chunked,
+)
 
 test_data=[
     b'',
@@ -42,52 +42,103 @@ def chunks(request):
     return request.param
 
 
-def test_roundtrip_LZ4FrameCompressor(data, chunks, block_size, reset, block_checksum, content_checksum):
-    roundtrip_LZ4FrameCompressor(
+def test_roundtrip_LZ4FrameCompressor(
         data,
-        chunks=chunks,
-        block_size=block_size,
-        reset=reset,
-        block_checksum=block_checksum,
-        content_checksum=content_checksum,
+        chunks,
+        block_size,
+        block_linked,
+        reset,
+        store_size,
+        block_checksum,
+        content_checksum):
+
+    with lz4frame.LZ4FrameCompressor(
+            block_size=block_size,
+            block_linked=block_linked,
+            content_checksum=content_checksum,
+            block_checksum=block_checksum,
+    ) as compressor:
+        def do_compress():
+            if store_size is True:
+                compressed = compressor.begin(source_size=len(data))
+            else:
+                compressed = compressor.begin()
+
+            for chunk in get_chunked(data, chunks):
+                compressed += compressor.compress(chunk)
+
+            compressed += compressor.finalize()
+            return compressed
+
+        compressed = do_compress()
+
+        if reset is True:
+            compressor.reset()
+            compressed = do_compress()
+
+    get_frame_info_check(
+        compressed,
+        len(data),
+        store_size,
+        block_size,
+        block_linked,
+        content_checksum,
+        block_checksum,
     )
+
+    decompressed, bytes_read = lz4frame.decompress(compressed, return_bytes_read=True)
+    assert data == decompressed
+    assert bytes_read == len(compressed)
+
 
 def test_roundtrip_LZ4FrameCompressor_LZ4FrameDecompressor(
-        data, chunks, block_size, reset, block_checksum, content_checksum):
-    roundtrip_LZ4FrameCompressor_LZ4FrameDecompressor(
         data,
-        chunks=chunks,
-        block_size=block_size,
-        reset=reset,
-        block_checksum=block_checksum,
-        content_checksum=content_checksum,
+        chunks,
+        block_size,
+        block_linked,
+        reset,
+        store_size,
+        block_checksum,
+        content_checksum):
+
+    with lz4frame.LZ4FrameCompressor(
+            block_size=block_size,
+            block_linked=block_linked,
+            content_checksum=content_checksum,
+            block_checksum=block_checksum,
+    ) as compressor:
+        def do_compress():
+            if store_size is True:
+                compressed = compressor.begin(source_size=len(data))
+            else:
+                compressed = compressor.begin()
+
+            for chunk in get_chunked(data, chunks):
+                compressed += compressor.compress(chunk)
+
+            compressed += compressor.finalize()
+            return compressed
+
+        compressed = do_compress()
+
+        if reset is True:
+            compressor.reset()
+            compressed = do_compress()
+
+    get_frame_info_check(
+        compressed,
+        len(data),
+        store_size,
+        block_size,
+        block_linked,
+        content_checksum,
+        block_checksum,
     )
 
-def test_decompress_truncated(data):
-    decompress_truncated(data)
+    with lz4frame.LZ4FrameDecompressor() as decompressor:
+        decompressed = b''
+        for chunk in get_chunked(compressed, chunks):
+            b = decompressor.decompress(chunk)
+            decompressed += b
 
-
-import struct
-import lz4.frame as lz4frame
-
-
-def test_content_checksum_failure(data):
-    compressed = lz4frame.compress(data, content_checksum=True)
-    message = r'^LZ4F_decompress failed with code: ERROR_contentChecksum_invalid$'
-    with pytest.raises(RuntimeError, message=message):
-        last = struct.unpack('B', compressed[-1:])[0]
-        lz4frame.decompress(compressed[:-1] + struct.pack('B', last ^ 0x42))
-
-def test_block_checksum_failure(data):
-    compressed = lz4frame.compress(
-        data,
-        content_checksum=True,
-        block_checksum=True,
-        return_bytearray=True,
-    )
-    message = r'^LZ4F_decompress failed with code: ERROR_blockChecksum_invalid$'
-    if len(compressed) > 32:
-        with pytest.raises(RuntimeError, message=message):
-            compressed[18] = compressed[18] ^ 0x42
-            lz4frame.decompress(compressed)
-
+    assert data == decompressed
