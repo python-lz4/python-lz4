@@ -302,6 +302,8 @@ class LZ4FrameFile(_compression.BaseStream):
             file name (given as a str, bytes, or
             PathLike object), in which case the named file is opened, or it
             can be an existing file object to read from or write to.
+
+    Keyword Args:
         mode(str): mode can be "r" for reading (default), "w" for (over)writing,
             "x" for creating exclusively, or "a" for appending. These can
             equivalently be given as "rb", "wb", "xb" and "ab" respectively.
@@ -600,6 +602,37 @@ def open(filename, mode="rb",
     ``io.TextIOWrapper`` instance with the specified encoding, error handling
     behavior, and line ending(s).
 
+    Args:
+        filename (str, bytes, os.PathLike): file name or file object to open
+
+    Keyword Args:
+        mode (str): mode for opening the file
+        encoding (str): the name of the encoding that the stream will be decoded
+            or encoded with. It defaults to ``locale.getpreferredencoding(False)``.
+            See ``io.TextIOWrapper`` for further details.
+        errors (str): specifies how encoding and decoding errors are to be
+            handled. See ``io.TextIOWrapper`` for further details.
+        newline (str): controls how line endings are handled. It can be ``None``,
+            ``''``, ``'\n'``, ``'\r'``, and ``'\r\n'``. See ``io.TextIOWrapper``
+            for further details.
+        return_bytearray (bool): When ``False`` a bytes object is returned from the
+            calls to methods of this class. When ``True`` a bytearray object will be
+            returned. The default is ``False``.
+        source_size (int): Optionally specify the total size of the uncompressed
+            data. If specified, will be stored in the compressed frame header as
+            an 8-byte field for later use during decompression. Default is 0
+            (no size stored). Only used for writing compressed files.
+        block_size (int): Compressor setting. See ``lz4.frame.LZ4FrameCompressor``.
+        block_linked (bool): Compressor setting. See
+            ``lz4.frame.LZ4FrameCompressor``.
+        compression_level (int): Compressor setting. See
+            ``lz4.frame.LZ4FrameCompressor``.
+        content_checksum (bool): Compressor setting. See
+            ``lz4.frame.LZ4FrameCompressor``.
+        block_checksum (bool): Compressor setting. See
+            ``lz4.frame.LZ4FrameCompressor``.
+        auto_flush (bool): Compressor setting. See
+            ``lz4.frame.LZ4FrameCompressor``.
     """
     if "t" in mode:
         if "b" in mode:
