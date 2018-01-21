@@ -999,7 +999,7 @@ reset_decompression_context (PyObject * Py_UNUSED (self), PyObject * args,
 
 static inline PyObject *
 __decompress(LZ4F_dctx * context, char * source, size_t source_size,
-             Py_ssize_t max_destination_size, int full_frame,
+             Py_ssize_t max_length, int full_frame,
              int return_bytearray, int return_bytes_read)
 {
   size_t source_remain;
@@ -1060,9 +1060,9 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
     }
   else
     {
-      if (max_destination_size > 0)
+      if (max_length > 0)
         {
-          destination_size = max_destination_size;
+          destination_size = max_length;
         }
       else
         {
@@ -1145,9 +1145,9 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
       else if (destination_written == destination_size)
         {
           /* Destination buffer is full. So, stop decompressing if
-             max_destination_size is set. Otherwise expand the destination
+             max_length is set. Otherwise expand the destination
              buffer. */
-          if (max_destination_size > 0)
+          if (max_length > 0)
             {
               break;
             }
@@ -1252,12 +1252,12 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
   Py_buffer py_source;
   char * source;
   size_t source_size;
-  Py_ssize_t max_destination_size = 0;
+  Py_ssize_t max_length = 0;
   PyObject * ret;
   int return_bytearray = 0;
   int return_bytes_read = 0;
   static char *kwlist[] = { "data",
-                            "max_destination_size",
+                            "max_length",
                             "return_bytearray",
                             "return_bytes_read",
                             NULL
@@ -1266,7 +1266,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
 #if IS_PY3
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|kpp", kwlist,
                                     &py_source,
-                                    &max_destination_size,
+                                    &max_length,
                                     &return_bytearray,
                                     &return_bytes_read
                                     ))
@@ -1276,7 +1276,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
 #else
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "s*|kii", kwlist,
                                     &py_source,
-                                    &max_destination_size,
+                                    &max_length,
                                     &return_bytearray,
                                     &return_bytes_read
                                     ))
@@ -1306,7 +1306,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args,
   ret = __decompress (context,
                       source,
                       source_size,
-                      max_destination_size,
+                      max_length,
                       1,
                       return_bytearray,
                       return_bytes_read);
@@ -1333,11 +1333,11 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
   Py_buffer py_source;
   char * source;
   size_t source_size;
-  Py_ssize_t max_destination_size = 0;
+  Py_ssize_t max_length = 0;
   int return_bytearray = 0;
   static char *kwlist[] = { "context",
                             "data",
-                            "max_destination_size",
+                            "max_length",
                             "return_bytearray",
                             NULL
                           };
@@ -1346,7 +1346,7 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "Oy*|kp", kwlist,
                                     &py_context,
                                     &py_source,
-                                    &max_destination_size,
+                                    &max_length,
                                     &return_bytearray
                                     ))
     {
@@ -1356,7 +1356,7 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os*|ki", kwlist,
                                     &py_context,
                                     &py_source,
-                                    &max_destination_size,
+                                    &max_length,
                                     &return_bytearray
                                     ))
     {
@@ -1382,7 +1382,7 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
   ret = __decompress (context,
                       source,
                       source_size,
-                      max_destination_size,
+                      max_length,
                       0,
                       return_bytearray,
                       0);

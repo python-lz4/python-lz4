@@ -262,7 +262,7 @@ class LZ4FrameDecompressor(object):
         decompressed, bytes_read, eoframe = decompress_chunk(
             self._context,
             data,
-            max_destination_size=max_length,
+            max_length=max_length,
             return_bytearray=self._return_bytearray,
             )
 
