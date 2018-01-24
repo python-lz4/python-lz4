@@ -20,7 +20,7 @@ Status
 Introduction
 ============
 This package provides python bindings for the `LZ4 compression library
-<https://cyan4973.github.io/lz4//>`_.
+<https://lz4.github.io/lz4/>`_.
 
 The bindings provided in this package cover the `frame format
 <http://lz4.github.io/lz4/lz4_Frame_format.html>`_ and the `block format
