@@ -1222,7 +1222,7 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
     {
       if (return_bytes_read)
         {
-          return Py_BuildValue ("Oi",
+          return Py_BuildValue ("Ni",
                                 py_destination,
                                 source_cursor - source);
         }
@@ -1233,7 +1233,7 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
     }
   else
     {
-      return Py_BuildValue ("OiO",
+      return Py_BuildValue ("NiO",
                             py_destination,
                             source_cursor - source,
                             end_of_frame ? Py_True : Py_False);
