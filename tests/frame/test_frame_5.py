@@ -1,8 +1,6 @@
 import lz4.frame
 import time
 import pytest
-tracemalloc = pytest.importorskip('tracemalloc')
-
 
 test_data=[
     (b'a' * 1024 * 1024),
@@ -19,6 +17,8 @@ def data(request):
 
 
 def test_frame_decompress_mem_usage(data):
+    tracemalloc = pytest.importorskip('tracemalloc')
+
     tracemalloc.start()
 
     compressed = lz4.frame.compress(data)
@@ -38,6 +38,7 @@ def test_frame_decompress_mem_usage(data):
 
 
 def test_frame_decompress_chunk_mem_usage(data):
+    tracemalloc = pytest.importorskip('tracemalloc')
     tracemalloc.start()
 
     compressed = lz4.frame.compress(data)
@@ -59,6 +60,7 @@ def test_frame_decompress_chunk_mem_usage(data):
 
 
 def test_frame_open_decompress_mem_usage(data):
+    tracemalloc = pytest.importorskip('tracemalloc')
     tracemalloc.start()
 
     with lz4.frame.open('test.lz4', 'w') as f:
@@ -79,4 +81,12 @@ def test_frame_open_decompress_mem_usage(data):
 
             prev_snapshot = snapshot
 
+
 # TODO: add many more memory usage tests along the lines of this one for other funcs
+
+def test_dummy_always_pass():
+    # If pytest finds all tests are skipped, then it exits with code 5 rather
+    # than 0, which tox sees as an error. Here we add a dummy test that always passes.
+    assert True
+
+
