@@ -21,18 +21,18 @@ class LZ4FrameCompressor(object):
         block_size (int): Sepcifies the maximum blocksize to use.
             Options:
 
-                - lz4.frame.BLOCKSIZE_DEFAULT or 0: the lz4 library default
-                - lz4.frame.BLOCKSIZE_MAX64KB or 4: 64 kB
-                - lz4.frame.BLOCKSIZE_MAX256KB or 5: 256 kB
-                - lz4.frame.BLOCKSIZE_MAX1MB or 6: 1 MB
-                - lz4.frame.BLOCKSIZE_MAX4MB or 7: 4 MB
+                - `lz4.frame.BLOCKSIZE_DEFAULT` or 0: the lz4 library default
+                - `lz4.frame.BLOCKSIZE_MAX64KB` or 4: 64 kB
+                - `lz4.frame.BLOCKSIZE_MAX256KB` or 5: 256 kB
+                - `lz4.frame.BLOCKSIZE_MAX1MB` or 6: 1 MB
+                - `lz4.frame.BLOCKSIZE_MAX4MB` or 7: 4 MB
 
-            If unspecified, will default to lz4.frame.BLOCKSIZE_DEFAULT which
-            is equal to lz4.frame.BLOCKSIZE_MAX64KB.
+            If unspecified, will default to `lz4.frame.BLOCKSIZE_DEFAULT` which
+            is equal to `lz4.frame.BLOCKSIZE_MAX64KB`.
         block_linked (bool): Specifies whether to use block-linked
-            compression. If `True`, the compression ratio is improved, especially
-            for small block sizes. If `False` the blocks are compressed independently.
-            The default is `True`.
+            compression. If ``True``, the compression ratio is improved, especially
+            for small block sizes. If ``False`` the blocks are compressed independently.
+            The default is ``True``.
         compression_level (int): Specifies the level of compression used.
             Values between 0-16 are valid, with 0 (default) being the
             lowest compression (0-2 are the same value), and 16 the highest.
@@ -40,29 +40,29 @@ class LZ4FrameCompressor(object):
             Values between 4-9 are recommended. 0 is the default.
             The following module constants are provided as a convenience:
 
-                - lz4.frame.COMPRESSIONLEVEL_MIN: Minimum compression (0)
-                - lz4.frame.COMPRESSIONLEVEL_MINHC: Minimum high-compression (3)
-                - lz4.frame.COMPRESSIONLEVEL_MAX: Maximum compression (16)
+                - `lz4.frame.COMPRESSIONLEVEL_MIN`: Minimum compression (0)
+                - `lz4.frame.COMPRESSIONLEVEL_MINHC`: Minimum high-compression (3)
+                - `lz4.frame.COMPRESSIONLEVEL_MAX`: Maximum compression (16)
 
         content_checksum (bool): Specifies whether to enable checksumming of
-            the payload content. If `True` a checksum of the uncompressed data
+            the payload content. If ``True`` a checksum of the uncompressed data
             is stored at the end of the compressed frame which is checked during
-            decompression. The default is `False`.
+            decompression. The default is ``False``.
         block_checksum (bool): Specifies whether to enable checksumming of
-            the content of each block. If `True` a checksum of the uncompressed
+            the content of each block. If ``True`` a checksum of the uncompressed
             data in each block in the frame is stored at the end of each block.
             If present, these checksums will be used to validate the data during
-            decompression. The default is `False`, meaning block checksums are not
+            decompression. The default is ``False``, meaning block checksums are not
             calculated and stored. This functionality is only supported if the
             underlying LZ4 library has version >= 1.8.0. Attempting to set this
-            value to `True` with a version of LZ4 < 1.8.0 will cause a RuntimeError
+            value to `True` with a version of LZ4 < 1.8.0 will cause a ``RuntimeError``
             to be raised.
-        auto_flush (bool): When `False`, the LZ4 library may buffer data until a
-            block is full. When `True` no buffering occurs, and partially full
-            blocks may be returned. The default is `False`.
-        return_bytearray (bool): When `False` a bytes object is returned from the
-            calls to methods of this class. When `True` a bytearray object will be
-            returned. The default is `False`.
+        auto_flush (bool): When ``False``, the LZ4 library may buffer data until a
+            block is full. When ``True`` no buffering occurs, and partially full
+            blocks may be returned. The default is ``False``.
+        return_bytearray (bool): When ``False`` a ``bytes`` object is returned from the
+            calls to methods of this class. When ``True`` a ``bytearray`` object will be
+            returned. The default is ``False``.
     """
 
     def __init__(self,
@@ -339,15 +339,16 @@ class LZ4FrameFile(_compression.BaseStream):
             can be an existing file object to read from or write to.
 
     Keyword Args:
-        mode(str): mode can be "r" for reading (default), "w" for (over)writing,
-            "x" for creating exclusively, or "a" for appending. These can
-            equivalently be given as "rb", "wb", "xb" and "ab" respectively.
-        return_bytearray (bool): When ``False`` a bytes object is returned from the
-            calls to methods of this class. When ``True`` a bytearray object will be
-            returned. The default is ``False``.
+        mode(str): mode can be ``'r'`` for reading (default), ``'w'`` for
+            (over)writing, ``'x'`` for creating exclusively, or ``'a'``
+            for appending. These can equivalently be given as ``'rb'``, ``'wb'``,
+            ``'xb'`` and ``'ab'`` respectively.
+        return_bytearray (bool): When ``False`` a bytes object is returned from
+            the calls to methods of this class. When ``True`` a ``bytearray``
+            object will be returned. The default is ``False``.
         source_size (int): Optionally specify the total size of the uncompressed
             data. If specified, will be stored in the compressed frame header as
-            an 8-byte field for later use during decompression. Default is 0
+            an 8-byte field for later use during decompression. Default is ``0``
             (no size stored). Only used for writing compressed files.
         block_size (int): Compressor setting. See `lz4.frame.LZ4FrameCompressor`.
         block_linked (bool): Compressor setting. See
@@ -363,7 +364,7 @@ class LZ4FrameFile(_compression.BaseStream):
 
     """
 
-    def __init__(self, filename=None, mode="r",
+    def __init__(self, filename=None, mode='r',
                  block_size=BLOCKSIZE_DEFAULT,
                  block_linked=True,
                  compression_level=COMPRESSIONLEVEL_MIN,
@@ -377,9 +378,9 @@ class LZ4FrameFile(_compression.BaseStream):
         self._closefp = False
         self._mode = _MODE_CLOSED
 
-        if mode in ("r", "rb"):
+        if mode in ('r', 'rb'):
             mode_code = _MODE_READ
-        elif mode in ("w", "wb", "a", "ab", "x", "xb"):
+        elif mode in ('w', 'wb', 'a', 'ab', 'x', 'xb'):
             mode_code = _MODE_WRITE
             self._compressor = LZ4FrameCompressor(
                 block_size=block_size,
@@ -392,7 +393,7 @@ class LZ4FrameFile(_compression.BaseStream):
             )
             self._pos = 0
         else:
-            raise ValueError("Invalid mode: {!r}".format(mode))
+            raise ValueError('Invalid mode: {!r}'.format(mode))
 
         if sys.version_info > (3, 6):
             path_test = isinstance(filename, (str, bytes, os.PathLike))
@@ -400,16 +401,16 @@ class LZ4FrameFile(_compression.BaseStream):
             path_test = isinstance(filename, (str, bytes))
 
         if path_test is True:
-            if "b" not in mode:
-                mode += "b"
+            if 'b' not in mode:
+                mode += 'b'
             self._fp = builtins.open(filename, mode)
             self._closefp = True
             self._mode = mode_code
-        elif hasattr(filename, "read") or hasattr(filename, "write"):
+        elif hasattr(filename, 'read') or hasattr(filename, 'write'):
             self._fp = filename
             self._mode = mode_code
         else:
-            raise TypeError("filename must be a str, bytes, file or PathLike object")
+            raise TypeError('filename must be a str, bytes, file or PathLike object')
 
         if self._mode == _MODE_READ:
             raw = _compression.DecompressReader(self._fp, LZ4FrameDecompressor)
@@ -493,8 +494,8 @@ class LZ4FrameFile(_compression.BaseStream):
     def read(self, size=-1):
         """Read up to ``size`` uncompressed bytes from the file.
 
-        If ``size`` is negative or omitted, read until EOF is reached. Returns
-        ``b''`` if the file is already at EOF.
+        If ``size`` is negative or omitted, read until ``EOF`` is reached.
+        Returns ``b''`` if the file is already at ``EOF``.
 
         Args:
             size(int): If non-negative, specifies the maximum number of
@@ -691,7 +692,7 @@ def open(filename, mode="rb",
         return_bytearray=return_bytearray,
     )
 
-    if "t" in mode:
+    if 't' in mode:
         return io.TextIOWrapper(binary_file, encoding, errors, newline)
     else:
         return binary_file
