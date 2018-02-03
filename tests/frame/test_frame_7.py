@@ -66,3 +66,31 @@ def test_roundtrip_multiframe_3(data):
 
     assert len(decompressed) == nframes * len(data)
     assert data * nframes == decompressed
+
+def test_roundtrip_multiframe_4(data):
+    nframes = 4
+
+    compressed = b''
+    with lz4frame.LZ4FrameCompressor() as compressor:
+        for _ in range(nframes):
+            compressed += compressor.begin()
+            compressed += compressor.compress(data)
+            compressed += compressor.finalize()
+
+    decompressed = b''
+    with lz4frame.LZ4FrameDecompressor() as decompressor:
+        for i in range(nframes):
+            if i == 0:
+                d = compressed
+            else:
+                d = decompressor.unused_data
+            decompressed += decompressor.decompress(d)
+            assert decompressor.eof == True
+            assert decompressor.needs_input == True
+            if i == nframes - 1:
+                assert decompressor.unused_data == None
+            else:
+                assert len(decompressor.unused_data) == len(compressed) * (nframes - i - 1) / nframes
+
+    assert len(decompressed) == nframes * len(data)
+    assert data * nframes == decompressed
