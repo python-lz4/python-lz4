@@ -226,7 +226,7 @@ class LZ4FrameDecompressor(object):
         self._context = create_decompression_context()
         self.eof = False
         self.needs_input = True
-        self.unused_data = b''
+        self.unused_data = None
         self._unconsumed_data = b''
         self._return_bytearray = return_bytearray
 
@@ -293,6 +293,7 @@ class LZ4FrameDecompressor(object):
         else:
             self._unconsumed_data = b''
             self.needs_input = True
+            self.unused_data = None
 
         self.eof = eoframe
 
@@ -315,7 +316,7 @@ class LZ4FrameFile(_compression.BaseStream):
     returned as bytes, and data to be written must be given as bytes.
 
     When opening a file for writing, the settings used by the compressor can be
-    specified. The underlying compressor object is ``lz4.frame.LZ4FrameCompressor``.
+    specified. The underlying compressor object is `lz4.frame.LZ4FrameCompressor`.
     See the docstrings for that class for details on compression options.
 
     Args:
