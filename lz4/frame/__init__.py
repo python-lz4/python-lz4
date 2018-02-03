@@ -239,6 +239,18 @@ class LZ4FrameDecompressor(object):
         # so no need to del it here
         pass
 
+    def reset(self):
+        """Reset the decompressor state. This is useful after an error occurs, allowing
+        re-use of the instance.
+
+        """
+        reset_decompression_context(self._context)
+        self.eof = False
+        self.needs_input = True
+        self.unused_data = None
+        self._unconsumed_data = b''
+
+
     def decompress(self, data, max_length=-1):
         """Decompresses part or all of an LZ4 frame of compressed data. The returned
         data should be concatenated with the output of any previous calls to
@@ -259,7 +271,8 @@ class LZ4FrameDecompressor(object):
         If an end of frame marker is encountered in the data during
         decompression, decompression will stop at the end of the frame, and any
         data after the end of frame is available from the `unused_data`
-        attribute.
+        attribute. In this case, the `LZ4FrameDecompressor` instance is reset
+        and can be used for further decompression.
 
         Args:
             data (str, bytes or buffer-compatible object): compressed data to
