@@ -199,7 +199,6 @@ class LZ4FrameDecompressor(object):
             calls to methods of this class. When ``True`` a bytearray object will be
             returned. The default is ``False``.
 
-
     Attributes:
         eof (bool): ``True`` if the end-of-stream marker has been reached. ``False``
             otherwise.

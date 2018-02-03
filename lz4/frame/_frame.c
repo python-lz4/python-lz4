@@ -1453,7 +1453,7 @@ PyDoc_STRVAR(
  "        header field that is the uncompressed size of data included\n" \
  "        within the frame. Default is ``True``.\n\n"                       \
  "Returns:\n"                                                           \
- "    str or bytearray: Compressed data\n"
+ "    bytes or bytearray: Compressed data\n"
  );
 PyDoc_STRVAR
 (
@@ -1476,7 +1476,7 @@ PyDoc_STRVAR
  "    return_bytearray (bool): If ``True`` a bytearray object will be returned.\n" \
  "        If ``False``, a string of bytes is returned. Default is ``False``.\n\n" \
  "Returns:\n"                                                           \
- "    str or bytearray: Frame header.\n"
+ "    bytes or bytearray: Frame header.\n"
  );
 
 #undef COMPRESS_KWARGS_DOCSTRING
@@ -1494,13 +1494,13 @@ PyDoc_STRVAR
  "    context (cCtx): compression context\n"                            \
  "    data (str, bytes or buffer-compatible object): data to compress\n\n" \
  "Keyword Args:\n"                                                      \
- "    return_bytearray (bool): If True a bytearray object will be returned.\n" \
- "        If False, a string of bytes is returned. The default is False.\n\n" \
+ "    return_bytearray (bool): If ``True`` a bytearray object will be returned.\n" \
+ "        If ``False``, a string of bytes is returned. The default is False.\n\n" \
  "Returns:\n"                                                           \
- "    str or bytearray: Compressed data as a string\n\n"                \
+ "    bytes or bytearray: Compressed data\n\n"                          \
  "Notes:\n"                                                             \
- "    If auto flush is disabled (`auto_flush`=False when calling\n"     \
- "    compress_begin) this function may buffer and retain some or all of\n" \
+ "    If auto flush is disabled (``auto_flush``=``False`` when calling\n" \
+ "    `compress_begin`) this function may buffer and retain some or all of\n" \
  "    the compressed data for future calls to `compress`.\n"
  );
 
@@ -1528,7 +1528,7 @@ PyDoc_STRVAR
  "        If False, a string of bytes is returned. The default is False.\n" \
  "\n"                                                                   \
  "Returns:\n"                                                           \
- "    str or bytearray: Remaining (buffered) compressed data, and\n"    \
+ "    bytes or bytearray: Remaining (buffered) compressed data, and\n"    \
  "        optionally an end frame marker and frame content checksum.\n"
  );
 
@@ -1544,18 +1544,18 @@ PyDoc_STRVAR
  "Returns:\n"                                                           \
  "    dict: Dictionary with keys:\n"                                    \
  "\n"                                                                   \
- "        - block_size (int): the maximum size (in bytes) of each block\n" \
- "        - block_size_id (int): identifier for maximum block size\n"   \
- "        - content_checksum (bool): specifies whether the frame\n"     \
+ "        - ``block_size`` (int): the maximum size (in bytes) of each block\n" \
+ "        - ``block_size_id`` (int): identifier for maximum block size\n"   \
+ "        - ``content_checksum`` (bool): specifies whether the frame\n" \
  "          contains a checksum of the uncompressed content\n"          \
- "        - content_size (int): uncompressed size in bytes of\n"        \
+ "        - ``content_size`` (int): uncompressed size in bytes of\n"    \
  "          frame content\n"                                            \
- "        - block_linked (bool): specifies whether the frame contains\n" \
+ "        - ``block_linked`` (bool): specifies whether the frame contains\n" \
  "          blocks which are independently compressed (``False``) or\n" \
- "          linked (``True``)\n"                                                   \
- "        - block_checksum (bool): specifies whether each block\n"      \
+ "          linked (``True``)\n"                                        \
+ "        - ``block_checksum`` (bool): specifies whether each block\n"  \
  "          contains a checksum of its contents\n"                      \
- "        - skippable (bool): whether the block is skippable (``True``)\n" \
+ "        - ``skippable`` (bool): whether the block is skippable (``True``)\n" \
  "          or not (``False``)\n"
  );
 
@@ -1598,7 +1598,8 @@ PyDoc_STRVAR
  "        from ``data`` will also be returned.\n"                       \
  "\n"                                                                   \
  "Returns:\n"                                                           \
- "    bytes/bytearray or tuple: Uncompressed data\n"                    \
+ "    bytes/bytearray or tuple: Uncompressed data and optionally the number" \
+ "        of bytes read\n"                                              \
  "\n"                                                                   \
  "    If the ``return_bytes_read`` argument is ``True`` this function\n" \
  "    returns a tuple consisting of:\n"                                 \
