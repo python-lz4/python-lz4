@@ -84,7 +84,7 @@ class LZ4FrameCompressor(object):
         self.block_checksum = block_checksum
         self.auto_flush = auto_flush
         self.return_bytearray = return_bytearray
-        self._context = create_compression_context()
+        self._context = None
         self._started = False
 
     def __enter__(self):
@@ -101,7 +101,7 @@ class LZ4FrameCompressor(object):
         information. The data returned from subsequent calls to ``compress()``
         should be concatenated with this header.
 
-        Args:
+        Keyword Args:
             source_size (int): Optionally specify the total size of the
                 uncompressed data. If specified, will be stored in the
                 compressed frame header as an 8-byte field for later use
@@ -112,6 +112,7 @@ class LZ4FrameCompressor(object):
         """
 
         if self._started is False:
+            self._context = create_compression_context()
             result = compress_begin(
                 self._context,
                 block_size=self.block_size,
@@ -126,7 +127,9 @@ class LZ4FrameCompressor(object):
             self._started = True
             return result
         else:
-            raise RuntimeError('compress_begin called when not already initialized')
+            raise RuntimeError(
+                'LZ4FrameCompressor.begin() called after already initialized'
+            )
 
     def compress(self, data):
         """Compress ``data`` (a ``bytes`` object), returning a bytes object
@@ -179,11 +182,20 @@ class LZ4FrameCompressor(object):
         self._started = False
         return result
 
+    def flush(self):
+        """This function is identical to `LZ4Compressor.finalize()` and is provided for
+        API compatibility with the compressors included in the Python standard
+        library.
+
+        """
+        result = finalize()
+        return result
+
     def reset(self):
         """Reset the LZ4FrameCompressor instance allowing it to be re-used
 
         """
-        self._context = create_compression_context()
+        self._context = None
         self._started = False
 
 
