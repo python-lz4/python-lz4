@@ -363,44 +363,50 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 }
 
 PyDoc_STRVAR(compress__doc,
-             "compress(source, mode='default', acceleration=1, compression=0)\n\n" \
+             "compress(source, mode='default', acceleration=1, compression=0, return_bytearray=False)\n\n" \
              "Compress source, returning the compressed data as a string.\n" \
-             "Raises an exception if any error occurs.\n\n"             \
+             "Raises an exception if any error occurs.\n"               \
+             "\n"                                                       \
              "Args:\n"                                                  \
              "    source (str, bytes or buffer-compatible object): Data to compress\n" \
-             "    mode (str): If 'default' or unspecified use the default LZ4\n" \
-             "        compression mode. Set to 'fast' to use the fast compression\n" \
+             "\n"                                                       \
+             "Keyword Args:\n"                                          \
+             "    mode (str): If ``'default'`` or unspecified use the default LZ4\n" \
+             "        compression mode. Set to ``'fast'`` to use the fast compression\n" \
              "        LZ4 mode at the expense of compression. Set to\n" \
-             "        'high_compression' to use the LZ4 high-compression mode at\n" \
-             "        the exepense of speed\n"                          \
-             "    acceleration (int): When mode is set to 'fast' this argument\n" \
+             "        ``'high_compression'`` to use the LZ4 high-compression mode at\n" \
+             "        the exepense of speed.\n"                         \
+             "    acceleration (int): When mode is set to ``'fast'`` this argument\n" \
              "        specifies the acceleration. The larger the acceleration, the\n" \
              "        faster the but the lower the compression. The default\n" \
-             "        compression corresponds to a value of 1.\n"       \
-             "    compression (int): When mode is set to `high_compression` this\n" \
+             "        compression corresponds to a value of ``1``.\n"       \
+             "    compression (int): When mode is set to ``high_compression`` this\n" \
              "        argument specifies the compression. Valid values are between\n" \
-             "        1 and 12. Values between 4-9 are recommended, and 9 is the\n" \
-             "        default.\n"
-             "    store_size (bool): If True (the default) then the size of the\n" \
+             "        ``1`` and ``12``. Values between ``4-9`` are recommended, and\n" \
+             "        ``9`` is the default.\n"
+             "    store_size (bool): If ``True`` (the default) then the size of the\n" \
              "        uncompressed data is stored at the start of the compressed\n" \
              "        block.\n"                                         \
-             "    return_bytearray (bool): If False (the default) then the function\n" \
-             "        will return a bytes object. If True, then the function will\n" \
+             "    return_bytearray (bool): If ``False`` (the default) then the function\n" \
+             "        will return a bytes object. If ``True``, then the function will\n" \
              "        return a bytearray object.\n\n" \
              "Returns:\n"                                               \
              "    bytes or bytearray: Compressed data.\n");
 
 PyDoc_STRVAR(decompress__doc,
-             "decompress(source, uncompressed_size=-1)\n\n"                                 \
+             "decompress(source, uncompressed_size=-1, return_bytearray=False)\n\n"                                 \
              "Decompress source, returning the uncompressed data as a string.\n" \
-             "Raises an exception if any error occurs.\n\n"             \
+             "Raises an exception if any error occurs.\n"             \
+             "\n"                                                       \
              "Args:\n"                                                  \
-             "    source (str, bytes or buffer-compatible object): Data to decompress\n\n" \
-             "    uncompressed_size (int): If not specified or < 0, the uncompressed data\n" \
-             "        size is read from the start of the source block. If specified,\n" \
+             "    source (str, bytes or buffer-compatible object): Data to decompress.\n" \
+             "\n"                                                       \
+             "Keyword Args:\n"                                          \
+             "    uncompressed_size (int): If not specified or negative, the uncompressed\n" \
+             "        data size is read from the start of the source block. If specified,\n" \
              "        it is assumed that the full source data is compressed data.\n" \
-             "    return_bytearray (bool): If False (the default) then the function\n" \
-             "        will return a bytes object. If True, then the function will\n" \
+             "    return_bytearray (bool): If ``False`` (the default) then the function\n" \
+             "        will return a bytes object. If ``True``, then the function will\n" \
              "        return a bytearray object.\n\n" \
              "Returns:\n"                                               \
              "    bytes or bytearray: Decompressed data.\n");
