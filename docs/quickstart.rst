@@ -1,14 +1,17 @@
+.. default-domain:: lz4.frame
+.. py:currentmodule:: lz4.frame
+
 Quickstart
 ==========
 
 Simple usage
 ------------
 
-The recommended binding to use is the LZ4 frame format binding, since this provides
-interoperability with other implementations and language bindings.
+The recommended binding to use is the LZ4 frame format binding, since this
+provides interoperability with other implementations and language bindings.
 
-The simplest way to use the frame bindings is via the `compress` and
-`decompress` functions::
+The simplest way to use the frame bindings is via the :py:func:`compress` and
+:py:func:`decompress` functions::
 
   >>> import os
   >>> import lz4.frame
@@ -18,12 +21,12 @@ The simplest way to use the frame bindings is via the `compress` and
   >>> decompressed == input_data
   Out[6]: True
 
-The `compress` function reads the input data and compresses it and returns a LZ4
-frame. A frame consists of a header, and a sequence of blocks of compressed
-data, and a frame end marker (and optionally a checksum of the uncompressed
-data). The `decompress` function takes a full LZ4 frame, decompresses it (and
-optionally verifies the uncompressed data against the stored checksum), and
-returns the uncompressed data.
+The :py:func:`compress` function reads the input data and compresses it and
+returns a LZ4 frame. A frame consists of a header, and a sequence of blocks of
+compressed data, and a frame end marker (and optionally a checksum of the
+uncompressed data). The :py:func:`decompress` function takes a full LZ4 frame,
+decompresses it (and optionally verifies the uncompressed data against the
+stored checksum), and returns the uncompressed data.
 
 Working with data in chunks
 ---------------------------
@@ -42,16 +45,17 @@ also provided to compress and decompress data in chunks::
 
 Here a compression context is first created which is used to maintain state
 across calls to the LZ4 library. This is an opaque PyCapsule object.
-`compress_begin` starts a new frame and returns the frame header.
-`compress_chunk` compresses input data and returns the compressed data.
-`compress_flush` ends the frame and returns the frame end marker. The data
-returned from these functions is catenated to form the compressed frame.
+:py:func:`compress_begin` starts a new frame and returns the frame header.
+:py:func:`compress_chunk` compresses input data and returns the compressed data.
+:py:func:`compress_flush` ends the frame and returns the frame end marker. The
+data returned from these functions is catenated to form the compressed frame.
 
-`compress_flush` also flushes any buffered data; by default, `compress_chunk`
-may buffer data until a block is full. This buffering can be disabled by
-specifying ``auto_flush=True`` when calling `compress_begin`. Alternatively, the
-LZ4 buffers can be flushed at any time without ending the frame by calling
-`compress_flush` with ``end_frame=False``.
+:py:func:`compress_flush` also flushes any buffered data; by default,
+:py:func:`compress_chunk` may buffer data until a block is full. This buffering
+can be disabled by specifying ``auto_flush=True`` when calling
+:py:func:`compress_begin`. Alternatively, the LZ4 buffers can be flushed at any
+time without ending the frame by calling :py:func:`compress_flush` with
+``end_frame=False``.
 
 Decompressing data can also be done in a chunked fashion::
 
@@ -61,17 +65,18 @@ Decompressing data can also be done in a chunked fashion::
   >>> d1 + d2 == input_data
   Out[12]: True
 
-Note that `decompress_chunk` returns a tuple ``(decompressed_data, bytes_read,
-end_of_frame_indicator)``. ``decompressed_data`` is the decompressed data,
-``bytes_read`` reports the number of bytes read from the compressed input.
+Note that :py:func:`decompress_chunk` returns a tuple ``(decompressed_data,
+bytes_read, end_of_frame_indicator)``. ``decompressed_data`` is the decompressed
+data, ``bytes_read`` reports the number of bytes read from the compressed input.
 ``end_of_frame_indicator`` is ``True`` if the end-of-frame marker is encountered
 during the decompression, and ``False`` otherwise. If the end-of-frame marker is
 encountered in the input, no attempt is made to decompress the data after the
 marker.
 
 Rather than managing compression and decompression context objects manually, it
-is more convenient to use the `LZ4FrameCompressor` and
-`LZ4FrameDecompressor` classes which provide context manager functionality::
+is more convenient to use the :py:class:`LZ4FrameCompressor` and
+:py:class:`LZ4FrameDecompressor` classes which provide context manager
+functionality::
 
   >>> import lz4.frame
   >>> import os
@@ -94,8 +99,8 @@ Working with compressed files
 The frame bindings provide capability for working with files containing LZ4
 frame compressed data. This functionality is intended to be a drop in
 replacement for that offered in the Python standard library for bz2, gzip and
-LZMA compressed files. The `lz4.frame.open()` function is the most convenient
-way to work with compressed data files::
+LZMA compressed files. The :py:func:`lz4.frame.open()` function is the most
+convenient way to work with compressed data files::
 
   >>> import lz4.frame
   >>> import os
@@ -107,8 +112,8 @@ way to work with compressed data files::
   >>> output_data == input_data
   True
 
-The library also provides the class `lz4.frame.LZ4FrameFile` for working with
-compressed files.
+The library also provides the class :py:class:`lz4.frame.LZ4FrameFile` for
+working with compressed files.
 
 
 Controlling the compression
@@ -132,8 +137,9 @@ module constants are provided as a convenience:
 - `lz4.frame.COMPRESSIONLEVEL_MINHC`: Minimum high-compression mode (3)
 - `lz4.frame.COMPRESSIONLEVEL_MAX`: Maximum compression (16)
 
-Availability: `lz4.frame.compress()`, `lz4.frame.compress_begin()`,
-`lz4.frame.open()`, `lz4.frame.LZ4FrameCompressor`, `lz4.frame.LZ4FrameFile`.
+Availability: :py:func:`lz4.frame.compress()`,
+:py:func:`lz4.frame.compress_begin()`, :py:func:`lz4.frame.open()`,
+:py:class:`lz4.frame.LZ4FrameCompressor`, :py:class:`lz4.frame.LZ4FrameFile`.
 
 
 Controlling the block size
@@ -151,8 +157,9 @@ blocks in a frame. Options:
 If unspecified, will default to `lz4.frame.BLOCKSIZE_DEFAULT` which is
 currently equal to `lz4.frame.BLOCKSIZE_MAX64KB`
 
-Availability: `lz4.frame.compress()`, `lz4.frame.compress_begin()`,
-`lz4.frame.open()`, `lz4.frame.LZ4FrameCompressor`, `lz4.frame.LZ4FrameFile`.
+Availability: :py:func:`lz4.frame.compress()`,
+:py:func:`lz4.frame.compress_begin()`, :py:func:`lz4.frame.open()`,
+:py:class:`lz4.frame.LZ4FrameCompressor`, :py:class:`lz4.frame.LZ4FrameFile`.
 
 
 Controlling block linking
@@ -163,8 +170,9 @@ If ``True``, the compression process will use data between sequential blocks to
 improve the compression ratio, particularly for small blocks. The default is
 ``True``.
 
-Availability: `lz4.frame.compress()`, `lz4.frame.compress_begin()`,
-`lz4.frame.open()`, `lz4.frame.LZ4FrameCompressor`, `lz4.frame.LZ4FrameFile`.
+Availability: :py:func:`lz4.frame.compress()`,
+:py:func:`lz4.frame.compress_begin()`, :py:func:`lz4.frame.open()`,
+:py:class:`lz4.frame.LZ4FrameCompressor`, :py:class:`lz4.frame.LZ4FrameFile`.
 
 
 Data checksum validation
@@ -180,8 +188,9 @@ uncompressed content of each individual block in the frame. If ``True``, a
 checksum is stored at the end of each block in the frame, and checked during
 decompression. Default is ``False``.
 
-Availability: `lz4.frame.compress()`, `lz4.frame.compress_begin()`,
-`lz4.frame.open()`, `lz4.frame.LZ4FrameCompressor`, `lz4.frame.LZ4FrameFile`.
+Availability: :py:func:`lz4.frame.compress()`,
+:py:func:`lz4.frame.compress_begin()`, :py:func:`lz4.frame.open()`,
+:py:class:`lz4.frame.LZ4FrameCompressor`, :py:class:`lz4.frame.LZ4FrameFile`.
 
 
 Data buffering
@@ -198,8 +207,9 @@ This is the default.
 When ``auto_flush`` is ``True``, the compression functions will return
 compressed data immediately.
  
-Availability: `lz4.frame.compress()`, `lz4.frame.compress_begin()`,
-`lz4.frame.open()`, `lz4.frame.LZ4FrameCompressor`, `lz4.frame.LZ4FrameFile`.
+Availability: :py:func:`lz4.frame.compress()`,
+:py:func:`lz4.frame.compress_begin()`, :py:func:`lz4.frame.open()`,
+:py:class:`lz4.frame.LZ4FrameCompressor`, :py:class:`lz4.frame.LZ4FrameFile`.
 
 
 Storing the uncompressed source data size in the frame
@@ -213,11 +223,12 @@ decompression functions to better size memory buffers during decompression.
 If ``store_size`` is ``True`` the size of the uncompressed data will be stored in
 the frame header for use during decompression. Default is ``True``.
 
-Availability of ``store_size``: `lz4.frame.compress()`
+Availability of ``store_size``: :py:func:`lz4.frame.compress()`
 
 The ``source_size`` argument optionally specifies the uncompressed size of the
 source data to be compressed. If specified, the size will be stored in the frame
 header for use during decompression.
 
-Availability of ``source_size``: `lz4.frame.LZ4FrameCompressor.begin()`,
-   `lz4.frame.compress_begin()`, `lz4.frame.open()`, `lz4.frame.LZ4FrameFile`.
+Availability of ``source_size``: :py:meth:`lz4.frame.LZ4FrameCompressor.begin()`,
+:py:func:`lz4.frame.compress_begin()`, :py:func:`lz4.frame.open()`,
+:py:class:`lz4.frame.LZ4FrameFile`.
