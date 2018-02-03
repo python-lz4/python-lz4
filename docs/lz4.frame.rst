@@ -1,5 +1,4 @@
 .. default-role:: obj
-.. default-domain:: lz4.frame
 .. py:module:: lz4.frame
 
 lz4.frame sub-package

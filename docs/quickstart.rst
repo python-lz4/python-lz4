@@ -1,4 +1,3 @@
-.. default-domain:: lz4.frame
 .. py:currentmodule:: lz4.frame
 
 Quickstart
