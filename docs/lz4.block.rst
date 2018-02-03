@@ -1,3 +1,5 @@
+.. default-role:: obj
+
 
 lz4.block sub-package
 =====================
