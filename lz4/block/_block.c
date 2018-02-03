@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013, Steeve Morin, 2016 Jonathan Underwood
+ * Copyright (c) 2012-2018, Steeve Morin, Jonathan Underwood
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
