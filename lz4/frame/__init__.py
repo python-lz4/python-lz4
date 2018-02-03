@@ -242,19 +242,24 @@ class LZ4FrameDecompressor(object):
     def decompress(self, data, max_length=-1):
         """Decompresses part or all of an LZ4 frame of compressed data. The returned
         data should be concatenated with the output of any previous calls to
-        ``decompress()``.
+        `decompress()`.
 
         If ``max_length`` is non-negative, returns at most ``max_length`` bytes
         of decompressed data. If this limit is reached and further output can
-        be produced, the ``needs_input`` attribute will be set to ``False``. In
-        this case, the next call to ``decompress()`` may provide data as
+        be produced, the `needs_input` attribute will be set to ``False``. In
+        this case, the next call to `decompress()` may provide data as
         ``b''`` to obtain more of the output. In all cases, any unconsumed data
         from previous calls will be prepended to the input data.
 
         If all of the input ``data`` was decompressed and returned (either
         because this was less than ``max_length`` bytes, or because
-        ``max_length`` was negative), the ``needs_input`` attribute will be set
+        ``max_length`` was negative), the `needs_input` attribute will be set
         to ``True``.
+
+        If an end of frame marker is encountered in the data during
+        decompression, decompression will stop at the end of the frame, and any
+        data after the end of frame is available from the `unused_data`
+        attribute.
 
         Args:
             data (str, bytes or buffer-compatible object): compressed data to
