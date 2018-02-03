@@ -318,17 +318,17 @@ class LZ4FrameFile(_compression.BaseStream):
             data. If specified, will be stored in the compressed frame header as
             an 8-byte field for later use during decompression. Default is 0
             (no size stored). Only used for writing compressed files.
-        block_size (int): Compressor setting. See ``lz4.frame.LZ4FrameCompressor``.
+        block_size (int): Compressor setting. See `lz4.frame.LZ4FrameCompressor`.
         block_linked (bool): Compressor setting. See
-            ``lz4.frame.LZ4FrameCompressor``.
+            `lz4.frame.LZ4FrameCompressor`.
         compression_level (int): Compressor setting. See
-            ``lz4.frame.LZ4FrameCompressor``.
+            `lz4.frame.LZ4FrameCompressor`.
         content_checksum (bool): Compressor setting. See
-            ``lz4.frame.LZ4FrameCompressor``.
+            `lz4.frame.LZ4FrameCompressor`.
         block_checksum (bool): Compressor setting. See
-            ``lz4.frame.LZ4FrameCompressor``.
+            `lz4.frame.LZ4FrameCompressor`.
         auto_flush (bool): Compressor setting. See
-            ``lz4.frame.LZ4FrameCompressor``.
+            `lz4.frame.LZ4FrameCompressor`.
 
     """
 
@@ -627,15 +627,15 @@ def open(filename, mode="rb",
             (no size stored). Only used for writing compressed files.
         block_size (int): Compressor setting. See ``lz4.frame.LZ4FrameCompressor``.
         block_linked (bool): Compressor setting. See
-            ``lz4.frame.LZ4FrameCompressor``.
+            `lz4.frame.LZ4FrameCompressor`.
         compression_level (int): Compressor setting. See
-            ``lz4.frame.LZ4FrameCompressor``.
+            `lz4.frame.LZ4FrameCompressor`.
         content_checksum (bool): Compressor setting. See
-            ``lz4.frame.LZ4FrameCompressor``.
+            `lz4.frame.LZ4FrameCompressor`.
         block_checksum (bool): Compressor setting. See
-            ``lz4.frame.LZ4FrameCompressor``.
+            `lz4.frame.LZ4FrameCompressor`.
         auto_flush (bool): Compressor setting. See
-            ``lz4.frame.LZ4FrameCompressor``.
+            `lz4.frame.LZ4FrameCompressor`.
     """
     if "t" in mode:
         if "b" in mode:
