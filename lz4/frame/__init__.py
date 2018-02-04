@@ -21,11 +21,11 @@ class LZ4FrameCompressor(object):
         block_size (int): Sepcifies the maximum blocksize to use.
             Options:
 
-                - `lz4.frame.BLOCKSIZE_DEFAULT` or 0: the lz4 library default
-                - `lz4.frame.BLOCKSIZE_MAX64KB` or 4: 64 kB
-                - `lz4.frame.BLOCKSIZE_MAX256KB` or 5: 256 kB
-                - `lz4.frame.BLOCKSIZE_MAX1MB` or 6: 1 MB
-                - `lz4.frame.BLOCKSIZE_MAX4MB` or 7: 4 MB
+            - `lz4.frame.BLOCKSIZE_DEFAULT` or 0: the lz4 library default
+            - `lz4.frame.BLOCKSIZE_MAX64KB` or 4: 64 kB
+            - `lz4.frame.BLOCKSIZE_MAX256KB` or 5: 256 kB
+            - `lz4.frame.BLOCKSIZE_MAX1MB` or 6: 1 MB
+            - `lz4.frame.BLOCKSIZE_MAX4MB` or 7: 4 MB
 
             If unspecified, will default to `lz4.frame.BLOCKSIZE_DEFAULT` which
             is equal to `lz4.frame.BLOCKSIZE_MAX64KB`.
@@ -40,9 +40,9 @@ class LZ4FrameCompressor(object):
             Values between 4-9 are recommended. 0 is the default.
             The following module constants are provided as a convenience:
 
-                - `lz4.frame.COMPRESSIONLEVEL_MIN`: Minimum compression (0)
-                - `lz4.frame.COMPRESSIONLEVEL_MINHC`: Minimum high-compression (3)
-                - `lz4.frame.COMPRESSIONLEVEL_MAX`: Maximum compression (16)
+            - `lz4.frame.COMPRESSIONLEVEL_MIN`: Minimum compression (0)
+            - `lz4.frame.COMPRESSIONLEVEL_MINHC`: Minimum high-compression (3)
+            - `lz4.frame.COMPRESSIONLEVEL_MAX`: Maximum compression (16)
 
         content_checksum (bool): Specifies whether to enable checksumming of
             the payload content. If ``True`` a checksum of the uncompressed data
@@ -572,9 +572,9 @@ class LZ4FrameFile(_compression.BaseStream):
         The new position is specified by ``offset``, relative to the position
         indicated by ``whence``. Possible values for ``whence`` are:
 
-            io.SEEK_SET or 0: start of stream (default): offset must not be negative
-            io.SEEK_CUR or 1: current stream position
-            io.SEEK_END or 2: end of stream; offset must not be positive
+        - io.SEEK_SET or 0: start of stream (default): offset must not be negative
+        - io.SEEK_CUR or 1: current stream position
+        - io.SEEK_END or 2: end of stream; offset must not be positive
 
         Returns the new file position.
 
@@ -631,10 +631,10 @@ def open(filename, mode="rb",
     ``'x'``, ``'xb'``, ``'a'``, or ``'ab'`` for binary mode, or ``'rt'``,
     ``'wt'``, ``'xt'``, or ``'at'`` for text mode.
 
-    For binary mode, this function is equivalent to the ``LZ4FrameFile``
-    constructor: ``LZ4FrameFile(filename, mode, ...)``.
+    For binary mode, this function is equivalent to the `LZ4FrameFile`
+    constructor: `LZ4FrameFile(filename, mode, ...)`.
 
-    For text mode, an ``LZ4FFile`` object is created, and wrapped in an
+    For text mode, an `LZ4FrameFile` object is created, and wrapped in an
     ``io.TextIOWrapper`` instance with the specified encoding, error handling
     behavior, and line ending(s).
 
@@ -668,6 +668,7 @@ def open(filename, mode="rb",
             `lz4.frame.LZ4FrameCompressor`.
         auto_flush (bool): Compressor setting. See
             `lz4.frame.LZ4FrameCompressor`.
+
     """
     if "t" in mode:
         if "b" in mode:

@@ -220,13 +220,13 @@ header adds an extra 8 bytes to the size of the compressed frame, but allows the
 decompression functions to better size memory buffers during decompression.
 
 If ``store_size`` is ``True`` the size of the uncompressed data will be stored in
-the frame header for use during decompression. Default is ``True``.
+the frame header. Default is ``True``.
 
 Availability of ``store_size``: :py:func:`lz4.frame.compress()`
 
 The ``source_size`` argument optionally specifies the uncompressed size of the
 source data to be compressed. If specified, the size will be stored in the frame
-header for use during decompression.
+header.
 
 Availability of ``source_size``: :py:meth:`lz4.frame.LZ4FrameCompressor.begin()`,
 :py:func:`lz4.frame.compress_begin()`, :py:func:`lz4.frame.open()`,
