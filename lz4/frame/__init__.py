@@ -572,9 +572,9 @@ class LZ4FrameFile(_compression.BaseStream):
         The new position is specified by ``offset``, relative to the position
         indicated by ``whence``. Possible values for ``whence`` are:
 
-            io.SEEK_SET or 0: start of stream (default): offset must not be negative
-            io.SEEK_CUR or 1: current stream position
-            io.SEEK_END or 2: end of stream; offset must not be positive
+            - io.SEEK_SET or 0: start of stream (default): offset must not be negative
+            - io.SEEK_CUR or 1: current stream position
+            - io.SEEK_END or 2: end of stream; offset must not be positive
 
         Returns the new file position.
 
