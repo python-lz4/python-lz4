@@ -67,8 +67,9 @@ convenient to use. They provide context management, and so it is not necessary
 to manually create and manage compression and decompression contexts.
 
 .. autoclass:: lz4.frame.LZ4FrameCompressor
+   :members:
 .. autoclass:: lz4.frame.LZ4FrameDecompressor
-
+   :members:
 
 Reading and writing compressed files
 ------------------------------------
@@ -79,3 +80,4 @@ equivalent functionalities in the Python standard library.
 
 .. autofunction:: lz4.frame.open
 .. autoclass:: lz4.frame.LZ4FrameFile
+   :members:
