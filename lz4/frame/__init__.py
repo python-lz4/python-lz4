@@ -631,10 +631,10 @@ def open(filename, mode="rb",
     ``'x'``, ``'xb'``, ``'a'``, or ``'ab'`` for binary mode, or ``'rt'``,
     ``'wt'``, ``'xt'``, or ``'at'`` for text mode.
 
-    For binary mode, this function is equivalent to the ``LZ4FrameFile``
-    constructor: ``LZ4FrameFile(filename, mode, ...)``.
+    For binary mode, this function is equivalent to the `LZ4FrameFile`
+    constructor: `LZ4FrameFile(filename, mode, ...)`.
 
-    For text mode, an ``LZ4FFile`` object is created, and wrapped in an
+    For text mode, an `LZ4FrameFile` object is created, and wrapped in an
     ``io.TextIOWrapper`` instance with the specified encoding, error handling
     behavior, and line ending(s).
 
@@ -668,6 +668,7 @@ def open(filename, mode="rb",
             `lz4.frame.LZ4FrameCompressor`.
         auto_flush (bool): Compressor setting. See
             `lz4.frame.LZ4FrameCompressor`.
+
     """
     if "t" in mode:
         if "b" in mode:
