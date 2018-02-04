@@ -21,11 +21,11 @@ class LZ4FrameCompressor(object):
         block_size (int): Sepcifies the maximum blocksize to use.
             Options:
 
-                - `lz4.frame.BLOCKSIZE_DEFAULT` or 0: the lz4 library default
-                - `lz4.frame.BLOCKSIZE_MAX64KB` or 4: 64 kB
-                - `lz4.frame.BLOCKSIZE_MAX256KB` or 5: 256 kB
-                - `lz4.frame.BLOCKSIZE_MAX1MB` or 6: 1 MB
-                - `lz4.frame.BLOCKSIZE_MAX4MB` or 7: 4 MB
+            - `lz4.frame.BLOCKSIZE_DEFAULT` or 0: the lz4 library default
+            - `lz4.frame.BLOCKSIZE_MAX64KB` or 4: 64 kB
+            - `lz4.frame.BLOCKSIZE_MAX256KB` or 5: 256 kB
+            - `lz4.frame.BLOCKSIZE_MAX1MB` or 6: 1 MB
+            - `lz4.frame.BLOCKSIZE_MAX4MB` or 7: 4 MB
 
             If unspecified, will default to `lz4.frame.BLOCKSIZE_DEFAULT` which
             is equal to `lz4.frame.BLOCKSIZE_MAX64KB`.
@@ -40,9 +40,9 @@ class LZ4FrameCompressor(object):
             Values between 4-9 are recommended. 0 is the default.
             The following module constants are provided as a convenience:
 
-                - `lz4.frame.COMPRESSIONLEVEL_MIN`: Minimum compression (0)
-                - `lz4.frame.COMPRESSIONLEVEL_MINHC`: Minimum high-compression (3)
-                - `lz4.frame.COMPRESSIONLEVEL_MAX`: Maximum compression (16)
+            - `lz4.frame.COMPRESSIONLEVEL_MIN`: Minimum compression (0)
+            - `lz4.frame.COMPRESSIONLEVEL_MINHC`: Minimum high-compression (3)
+            - `lz4.frame.COMPRESSIONLEVEL_MAX`: Maximum compression (16)
 
         content_checksum (bool): Specifies whether to enable checksumming of
             the payload content. If ``True`` a checksum of the uncompressed data
@@ -572,9 +572,9 @@ class LZ4FrameFile(_compression.BaseStream):
         The new position is specified by ``offset``, relative to the position
         indicated by ``whence``. Possible values for ``whence`` are:
 
-            - io.SEEK_SET or 0: start of stream (default): offset must not be negative
-            - io.SEEK_CUR or 1: current stream position
-            - io.SEEK_END or 2: end of stream; offset must not be positive
+        - io.SEEK_SET or 0: start of stream (default): offset must not be negative
+        - io.SEEK_CUR or 1: current stream position
+        - io.SEEK_END or 2: end of stream; offset must not be positive
 
         Returns the new file position.
 
