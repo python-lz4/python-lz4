@@ -447,13 +447,19 @@ class LZ4FrameFile(_compression.BaseStream):
 
     @property
     def closed(self):
-        """True if this file is closed.
+        """Returns ``True`` if this file is closed.
+
+        Returns:
+            bool: ``True`` if the file is closed, ``False`` otherwise.
 
         """
         return self._mode == _MODE_CLOSED
 
     def fileno(self):
         """Return the file descriptor for the underlying file.
+
+        Returns:
+            file object: file descriptor for file.
 
         """
         self._check_not_closed()
@@ -462,11 +468,18 @@ class LZ4FrameFile(_compression.BaseStream):
     def seekable(self):
         """Return whether the file supports seeking.
 
+        Returns:
+            bool: ``True`` if the file supports seeking, ``False`` otherwise.
+
         """
         return self.readable() and self._buffer.seekable()
 
     def readable(self):
         """Return whether the file was opened for reading.
+
+        Returns:
+            bool: ``True`` if the file was opened for reading, ``False``
+                otherwise.
 
         """
         self._check_not_closed()
@@ -474,6 +487,10 @@ class LZ4FrameFile(_compression.BaseStream):
 
     def writable(self):
         """Return whether the file was opened for writing.
+
+        Returns:
+            bool: ``True`` if the file was opened for writing, ``False``
+                otherwise.
 
         """
         self._check_not_closed()
@@ -484,6 +501,9 @@ class LZ4FrameFile(_compression.BaseStream):
 
         Always returns at least one byte of data, unless at EOF. The exact
         number of bytes returned is unspecified.
+
+        Returns:
+            bytes: uncompressed data
 
         """
         self._check_can_read()
@@ -572,9 +592,9 @@ class LZ4FrameFile(_compression.BaseStream):
         The new position is specified by ``offset``, relative to the position
         indicated by ``whence``. Possible values for ``whence`` are:
 
-        - io.SEEK_SET or 0: start of stream (default): offset must not be negative
-        - io.SEEK_CUR or 1: current stream position
-        - io.SEEK_END or 2: end of stream; offset must not be positive
+        - ``io.SEEK_SET`` or 0: start of stream (default): offset must not be negative
+        - ``io.SEEK_CUR`` or 1: current stream position
+        - ``io.SEEK_END`` or 2: end of stream; offset must not be positive
 
         Returns the new file position.
 
