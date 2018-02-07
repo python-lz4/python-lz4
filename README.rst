@@ -28,8 +28,11 @@ The bindings provided in this package cover the `frame format
 format bindings are the recommended ones to use, as this guarantees
 interoperability with other implementations and language bindings.
 
-A future release may implement support for the LZ4 stream format. Patches and
-help are welcome.
+The API provided by the frame format bindings follows that of the LZMA, zlib,
+gzip and bzip2 compression libraries which are provided with the Python standard
+library. As such, these LZ4 bindings should provide a drop-in alternative to the
+compression libraries shipped with Python. The package provides context managers
+and file handlers support.
 
 Documenation
 ============
