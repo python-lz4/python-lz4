@@ -43,7 +43,14 @@ generated using Sphinx. Documentation is also hosted on readthedocs.
 
 :master: http://python-lz4.readthedocs.io/en/stable/
 :development: http://python-lz4.readthedocs.io/en/latest/
-   
+
+Homepage
+========
+
+The `project homepage <https://www.github.com/python-lz4/python-lz4>`_ is hosted
+on Github. Please report any issues you find using the `issue tracker
+<https://github.com/python-lz4/python-lz4/issues>`_.
+
 Licensing
 =========
 Code specific to this project is covered by the `BSD 3-Clause License
