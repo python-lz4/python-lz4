@@ -1400,11 +1400,11 @@ PyDoc_STRVAR(
 #define COMPRESS_KWARGS_DOCSTRING                                     \
   "    block_size (int): Sepcifies the maximum blocksize to use.\n"     \
   "        Options:\n\n"                                                \
-  "        - ``lz4.frame.BLOCKSIZE_DEFAULT`` or 0: the lz4 library default\n" \
-  "        - ``lz4.frame.BLOCKSIZE_MAX64KB`` or 4: 64 kB\n"             \
-  "        - ``lz4.frame.BLOCKSIZE_MAX256KB`` or 5: 256 kB\n"           \
-  "        - ``lz4.frame.BLOCKSIZE_MAX1MB`` or 6: 1 MB\n"               \
-  "        - ``lz4.frame.BLOCKSIZE_MAX4MB`` or 7: 4 MB\n\n"             \
+  "        - `lz4.frame.BLOCKSIZE_DEFAULT` or 0: the lz4 library default\n" \
+  "        - `lz4.frame.BLOCKSIZE_MAX64KB` or 4: 64 kB\n"             \
+  "        - `lz4.frame.BLOCKSIZE_MAX256KB` or 5: 256 kB\n"           \
+  "        - `lz4.frame.BLOCKSIZE_MAX1MB` or 6: 1 MB\n"               \
+  "        - `lz4.frame.BLOCKSIZE_MAX4MB` or 7: 4 MB\n\n"             \
   "        If unspecified, will default to ``lz4.frame.BLOCKSIZE_DEFAULT``\n" \
   "        which is currently equal to ``lz4.frame.BLOCKSIZE_MAX64KB``.\n" \
   "    block_linked (bool): Specifies whether to use block-linked\n"    \
@@ -1416,11 +1416,11 @@ PyDoc_STRVAR(
   "        Values below 0 will enable \"fast acceleration\", proportional\n" \
   "        to the value. Values above 16 will be treated as 16.\n"      \
   "        The following module constants are provided as a convenience:\n\n" \
-  "        - lz4.frame.COMPRESSIONLEVEL_MIN: Minimum compression (0, the\n" \
+  "        - `lz4.frame.COMPRESSIONLEVEL_MIN`: Minimum compression (0, the\n" \
   "          default)\n"                                                \
-  "        - lz4.frame.COMPRESSIONLEVEL_MINHC: Minimum high-compression\n" \
+  "        - `lz4.frame.COMPRESSIONLEVEL_MINHC`: Minimum high-compression\n" \
   "          mode (3)\n"                                                \
-  "        - lz4.frame.COMPRESSIONLEVEL_MAX: Maximum compression (16)\n\n" \
+  "        - `lz4.frame.COMPRESSIONLEVEL_MAX`: Maximum compression (16)\n\n" \
   "    content_checksum (bool): Specifies whether to enable checksumming\n" \
   "        of the uncompressed content. If True, a checksum is stored at the\n" \
   "        end of the frame, and checked during decompression. Default is\n" \
