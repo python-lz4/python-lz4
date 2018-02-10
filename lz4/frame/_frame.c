@@ -1507,29 +1507,33 @@ PyDoc_STRVAR
 PyDoc_STRVAR
 (
  compress_flush__doc,
- "compress_flush(context, return_bytearray=False)\n\n"                    \
- "Flushes a compression context returning any data buffed in the context as\n" \
- "compressed data. If ``end_frame`` is ``True`` an endmark and optional\n" \
- "checksum are appended, and the compression context is reset for re-use\n" \
- "for creating a new frame. The returned data should be appended to the\n" \
- "output of previous calls to ``compress``.\n"                           \
+ "compress_flush(context, end_frame=True, return_bytearray=False)\n\n"  \
+ "Flushes a compression context returning any data buffed in the context\n" \
+ "as compressed data. The returned data should be appended to the\n" \
+ "output of previous calls to ``compress``. The ``end_frame`` argument\n" \
+ "specifies whether or not the frame should be ended.\n"                \
  "\n"                                                                   \
  "Args:\n"                                                              \
  "    context (cCtx): Compression context\n"                            \
  "    end_frame (bool): If ``True``, in addition to flushing any buffered\n" \
  "        data, an end frame marker (and possibly a checksum) will be\n" \
- "        appended to the data, and the compression context reset. If\n" \
- "        ``end_frame`` is ``False`` but the underlying LZ4 library doesn't" \
- "        support flushing without ending the frame, a ``RuntimeError``\n" \
- "        will be raised. Default is ``True``.\n"                                           \
+ "        appended to the data returned. In this case the compression\n" \
+ "        context will be reset and can be used for creating a new frame.\n" \
+ "        Default is ``True``.\n"                                       \
  "\n"                                                                   \
  "Keyword Args:\n"                                                      \
- "    return_bytearray (bool): If True a bytearray object will be returned.\n" \
- "        If False, a string of bytes is returned. The default is False.\n" \
+ "    return_bytearray (bool): If ``True`` a ``bytearray`` object will\n" \
+ "        be returned. If ``False``, a string of bytes is returned. The.\n" \
+ "        default is ``False``.\n"                                      \
  "\n"                                                                   \
  "Returns:\n"                                                           \
- "    bytes or bytearray: Remaining (buffered) compressed data, and\n"    \
- "        optionally an end frame marker and frame content checksum.\n"
+ "    bytes or bytearray: Remaining (buffered) compressed data, and\n"  \
+ "        optionally an end frame marker and frame content checksum.\n" \
+ "\n"                                                                   \
+ "Notes:\n"                                                             \
+ "    If ``end_frame`` is ``False`` but the underlying LZ4 library doesn't" \
+ "    support flushing without ending the frame, a ``RuntimeError``\n" \
+ "    will be raised.\n"
  );
 
 PyDoc_STRVAR
