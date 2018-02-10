@@ -1,3 +1,4 @@
+import deprecation
 import lz4
 import io
 import os
@@ -243,7 +244,7 @@ class LZ4FrameCompressor(object):
 
         return result
 
-    def finalize(self):
+    def flush(self):
         """Finish the compression process, returning a bytes object containing any data
         stored in the compressor's internal buffers and a frame footer.
 
@@ -263,13 +264,16 @@ class LZ4FrameCompressor(object):
         self._started = False
         return result
 
-    def flush(self):
-        """This function is identical to `LZ4Compressor.finalize()` and is provided for
-        API compatibility with the compressors included in the Python standard
-        library.
+    @deprecation.deprecated(deprecated_in="0.23.1", removed_in="1.0",
+                            current_version=lz4.__version__,
+                            details="Use the LZ4FrameCompressor.flush() method instead")
+    def finalize(self):
+        """This function is identical to `LZ4FrameCompressor.flush()` and is provided
+        for backwards compatibility only. You should migrate your code to use
+        `LZ4FrameCompressor.flush()`.
 
         """
-        result = finalize()
+        result = flush()
         return result
 
     def reset(self):
@@ -518,7 +522,7 @@ class LZ4FrameFile(_compression.BaseStream):
                 self._buffer.close()
                 self._buffer = None
             elif self._mode == _MODE_WRITE:
-                self._fp.write(self._compressor.finalize())
+                self._fp.write(self._compressor.flush())
                 self._compressor = None
         finally:
             try:

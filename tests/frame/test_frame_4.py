@@ -67,7 +67,7 @@ def test_roundtrip_LZ4FrameCompressor(
             for chunk in get_chunked(data, chunks):
                 compressed += compressor.compress(chunk)
 
-            compressed += compressor.finalize()
+            compressed += compressor.flush()
             return compressed
 
         compressed = do_compress()
@@ -116,7 +116,7 @@ def test_roundtrip_LZ4FrameCompressor_LZ4FrameDecompressor(
             for chunk in get_chunked(data, chunks):
                 compressed += compressor.compress(chunk)
 
-            compressed += compressor.finalize()
+            compressed += compressor.flush()
             return compressed
 
         compressed = do_compress()

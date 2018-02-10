@@ -75,7 +75,7 @@ def test_roundtrip_multiframe_4(data):
         for _ in range(nframes):
             compressed += compressor.begin()
             compressed += compressor.compress(data)
-            compressed += compressor.finalize()
+            compressed += compressor.flush()
 
     decompressed = b''
     with lz4frame.LZ4FrameDecompressor() as decompressor:
