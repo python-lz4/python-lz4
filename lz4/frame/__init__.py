@@ -128,7 +128,7 @@ class LZ4FrameCompressor(object):
             decompression. The default is ``False``, meaning block checksums are not
             calculated and stored. This functionality is only supported if the
             underlying LZ4 library has version >= 1.8.0. Attempting to set this
-            value to `True` with a version of LZ4 < 1.8.0 will cause a ``RuntimeError``
+            value to ``True`` with a version of LZ4 < 1.8.0 will cause a ``RuntimeError``
             to be raised.
         auto_flush (bool): When ``False``, the LZ4 library may buffer data until a
             block is full. When ``True`` no buffering occurs, and partially full
