@@ -216,11 +216,12 @@ class LZ4FrameCompressor(object):
         containing compressed data the input.
 
         If ``auto_flush`` has been set to ``False``, some of ``data`` may be
-        buffered internally, for use in later calls to compress() and flush().
+        buffered internally, for use in later calls to
+        `LZ4FrameCompressor.compress()` and `LZ4FrameCompressor.flush()`.
 
         The returned data should be concatenated with the output of any
-        previous calls to ``compress()`` and a single call to
-        ``compress_begin()``.
+        previous calls to `compress()` and a single call to
+        `compress_begin()`.
 
         Args:
             data (str, bytes or buffer-compatible object): data to compress
