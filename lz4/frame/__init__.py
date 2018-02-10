@@ -92,9 +92,16 @@ class LZ4FrameCompressor(object):
         return self
 
     def __exit__(self, exception_type, exception, traceback):
-        # The compression context is created with an appropriate destructor, so
-        # no del it here and let GC collect it
-        del self._context
+        self.block_size = None
+        self.block_linked = None
+        self.compression_level = None
+        self.content_checksum = None
+        self.block_checksum = None
+        self.auto_flush = None
+        self.return_bytearray = None
+        self._context = None
+        self._started = False
+
 
     def begin(self, source_size=0):
         """Begin a compression frame. The returned data contains frame header
@@ -235,9 +242,12 @@ class LZ4FrameDecompressor(object):
         return self
 
     def __exit__(self, exception_type, exception, traceback):
-        # The decompression context is created with an appropriate destructor,
-        # so del it here and let GC collect it
-        del self._context
+        self._context = None
+        self.eof = None
+        self.needs_input = None
+        self.unused_data = None
+        self._unconsumed_data = None
+        self._return_bytearray = None
 
     def reset(self):
         """Reset the decompressor state. This is useful after an error occurs, allowing
