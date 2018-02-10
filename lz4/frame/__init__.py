@@ -3,14 +3,86 @@ import io
 import os
 import builtins
 import sys
-from ._frame import *
-from ._frame import __doc__ as _doc
+from ._frame import (
+    compress,
+    decompress,
+    create_compression_context,
+    compress_begin,
+    compress_chunk,
+    compress_flush,
+    create_decompression_context,
+    reset_decompression_context,
+    decompress_chunk,
+    get_frame_info,
+    BLOCKSIZE_DEFAULT as _BLOCKSIZE_DEFAULT,
+    BLOCKSIZE_MAX64KB as _BLOCKSIZE_MAX64KB,
+    BLOCKSIZE_MAX256KB as _BLOCKSIZE_MAX256KB,
+    BLOCKSIZE_MAX1MB as _BLOCKSIZE_MAX1MB,
+    BLOCKSIZE_MAX4MB as _BLOCKSIZE_MAX4MB,
+    __doc__ as _doc
+)
+
 __doc__ = _doc
 
 try:
     import _compression # Python 3.6 and later
 except:
     from . import _compression
+
+
+BLOCKSIZE_DEFAULT = _BLOCKSIZE_DEFAULT
+"""Specifying ``block_size=lz4.frame.BLOCKSIZE_DEFAULT`` will instruct the LZ4
+library to use the default maximum blocksize.
+
+"""
+
+BLOCKSIZE_MAX64KB = _BLOCKSIZE_MAX64KB
+"""Specifying ``block_size=lz4.frame.BLOCKSIZE_MAX64KB`` will instruct the LZ4
+library to create blocks containing a maximum of 64 kB of uncompressed data.
+
+"""
+
+BLOCKSIZE_MAX256KB = _BLOCKSIZE_MAX256KB
+"""Specifying ``block_size=lz4.frame.BLOCKSIZE_MAX256KB`` will instruct the LZ4
+library to create blocks containing a maximum of 256 kB of uncompressed data.
+
+"""
+"""Specifying ``block_size=lz4.frame.BLOCKSIZE_DEFAULT`` will instruct the LZ4
+library to use the default maximum blocksize.
+
+"""
+
+BLOCKSIZE_MAX1MB = _BLOCKSIZE_MAX1MB
+"""Specifying ``block_size=lz4.frame.BLOCKSIZE_MAX1MB`` will instruct the LZ4
+library to create blocks containing a maximum of 1 MB of uncompressed data.
+
+"""
+
+BLOCKSIZE_MAX4MB = _BLOCKSIZE_MAX4MB
+"""Specifying ``block_size=lz4.frame.BLOCKSIZE_MAX4MB`` will instruct the LZ4
+library to create blocks containing a maximum of 4 MB of uncompressed data.
+
+"""
+
+COMPRESSIONLEVEL_MIN = 0
+"""Specifying ``compression_level=lz4.frame.COMPRESSIONLEVEL_MIN`` will instruct
+the LZ4 library to use a compression level of 0
+
+"""
+
+COMPRESSIONLEVEL_MINHC = 3
+"""Specifying ``compression_level=lz4.frame.COMPRESSIONLEVEL_MINHC`` will
+instruct the LZ4 library to use a compression level of 3, the minimum for the
+high compression mode.
+
+"""
+
+COMPRESSIONLEVEL_MAX = 16
+"""Specifying ``compression_level=lz4.frame.COMPRESSIONLEVEL_MAX`` will instruct
+the LZ4 library to use a compression level of 16, the highest compression level
+available.
+
+"""
 
 
 class LZ4FrameCompressor(object):

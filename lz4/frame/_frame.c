@@ -1706,9 +1706,6 @@ MODULE_INIT_FUNC (_frame)
   PyModule_AddIntConstant (module, "BLOCKSIZE_MAX256KB", LZ4F_max256KB);
   PyModule_AddIntConstant (module, "BLOCKSIZE_MAX1MB", LZ4F_max1MB);
   PyModule_AddIntConstant (module, "BLOCKSIZE_MAX4MB", LZ4F_max4MB);
-  PyModule_AddIntConstant (module, "COMPRESSIONLEVEL_MIN", 0);
-  PyModule_AddIntConstant (module, "COMPRESSIONLEVEL_MINHC", 3);
-  PyModule_AddIntConstant (module, "COMPRESSIONLEVEL_MAX", 16);
 
   return module;
 }
