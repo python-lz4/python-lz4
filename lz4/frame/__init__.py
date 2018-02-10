@@ -32,7 +32,8 @@ except:
 
 BLOCKSIZE_DEFAULT = _BLOCKSIZE_DEFAULT
 """Specifying ``block_size=lz4.frame.BLOCKSIZE_DEFAULT`` will instruct the LZ4
-library to use the default maximum blocksize.
+library to use the default maximum blocksize. This is currently equivalent to
+`lz4.frame.BLOCKSIZE_MAX64KB`
 
 """
 
@@ -93,11 +94,11 @@ class LZ4FrameCompressor(object):
         block_size (int): Sepcifies the maximum blocksize to use.
             Options:
 
-            - `lz4.frame.BLOCKSIZE_DEFAULT` or 0: the lz4 library default
-            - `lz4.frame.BLOCKSIZE_MAX64KB` or 4: 64 kB
-            - `lz4.frame.BLOCKSIZE_MAX256KB` or 5: 256 kB
-            - `lz4.frame.BLOCKSIZE_MAX1MB` or 6: 1 MB
-            - `lz4.frame.BLOCKSIZE_MAX4MB` or 7: 4 MB
+            - `lz4.frame.BLOCKSIZE_DEFAULT`: the lz4 library default
+            - `lz4.frame.BLOCKSIZE_MAX64KB`: 64 kB
+            - `lz4.frame.BLOCKSIZE_MAX256KB`: 256 kB
+            - `lz4.frame.BLOCKSIZE_MAX1MB`: 1 MB
+            - `lz4.frame.BLOCKSIZE_MAX4MB`: 4 MB
 
             If unspecified, will default to `lz4.frame.BLOCKSIZE_DEFAULT` which
             is equal to `lz4.frame.BLOCKSIZE_MAX64KB`.
@@ -759,7 +760,7 @@ def open(filename, mode="rb",
             data. If specified, will be stored in the compressed frame header as
             an 8-byte field for later use during decompression. Default is 0
             (no size stored). Only used for writing compressed files.
-        block_size (int): Compressor setting. See ``lz4.frame.LZ4FrameCompressor``.
+        block_size (int): Compressor setting. See `lz4.frame.LZ4FrameCompressor`.
         block_linked (bool): Compressor setting. See
             `lz4.frame.LZ4FrameCompressor`.
         compression_level (int): Compressor setting. See
