@@ -1400,13 +1400,13 @@ PyDoc_STRVAR(
 #define COMPRESS_KWARGS_DOCSTRING                                     \
   "    block_size (int): Sepcifies the maximum blocksize to use.\n"     \
   "        Options:\n\n"                                                \
-  "        - `lz4.frame.BLOCKSIZE_DEFAULT` or 0: the lz4 library default\n" \
-  "        - `lz4.frame.BLOCKSIZE_MAX64KB` or 4: 64 kB\n"             \
-  "        - `lz4.frame.BLOCKSIZE_MAX256KB` or 5: 256 kB\n"           \
-  "        - `lz4.frame.BLOCKSIZE_MAX1MB` or 6: 1 MB\n"               \
-  "        - `lz4.frame.BLOCKSIZE_MAX4MB` or 7: 4 MB\n\n"             \
-  "        If unspecified, will default to ``lz4.frame.BLOCKSIZE_DEFAULT``\n" \
-  "        which is currently equal to ``lz4.frame.BLOCKSIZE_MAX64KB``.\n" \
+  "        - `lz4.frame.BLOCKSIZE_DEFAULT`: the lz4 library default\n" \
+  "        - `lz4.frame.BLOCKSIZE_MAX64KB`: 64 kB\n"             \
+  "        - `lz4.frame.BLOCKSIZE_MAX256KB`: 256 kB\n"           \
+  "        - `lz4.frame.BLOCKSIZE_MAX1MB`: 1 MB\n"               \
+  "        - `lz4.frame.BLOCKSIZE_MAX4MB`: 4 MB\n\n"             \
+  "        If unspecified, will default to `lz4.frame.BLOCKSIZE_DEFAULT`\n" \
+  "        which is currently equal to `lz4.frame.BLOCKSIZE_MAX64KB`.\n" \
   "    block_linked (bool): Specifies whether to use block-linked\n"    \
   "        compression. If ``True``, the compression ratio is improved,\n" \
   "        particularly for small block sizes. Default is ``True``.\n"  \

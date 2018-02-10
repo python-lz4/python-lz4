@@ -1,3 +1,4 @@
+import deprecation
 import lz4
 import io
 import os
@@ -32,7 +33,8 @@ except:
 
 BLOCKSIZE_DEFAULT = _BLOCKSIZE_DEFAULT
 """Specifying ``block_size=lz4.frame.BLOCKSIZE_DEFAULT`` will instruct the LZ4
-library to use the default maximum blocksize.
+library to use the default maximum blocksize. This is currently equivalent to
+`lz4.frame.BLOCKSIZE_MAX64KB`
 
 """
 
@@ -90,14 +92,14 @@ class LZ4FrameCompressor(object):
     incrementally.
 
     Args:
-        block_size (int): Sepcifies the maximum blocksize to use.
+        block_size (int): Specifies the maximum blocksize to use.
             Options:
 
-            - `lz4.frame.BLOCKSIZE_DEFAULT` or 0: the lz4 library default
-            - `lz4.frame.BLOCKSIZE_MAX64KB` or 4: 64 kB
-            - `lz4.frame.BLOCKSIZE_MAX256KB` or 5: 256 kB
-            - `lz4.frame.BLOCKSIZE_MAX1MB` or 6: 1 MB
-            - `lz4.frame.BLOCKSIZE_MAX4MB` or 7: 4 MB
+            - `lz4.frame.BLOCKSIZE_DEFAULT`: the lz4 library default
+            - `lz4.frame.BLOCKSIZE_MAX64KB`: 64 kB
+            - `lz4.frame.BLOCKSIZE_MAX256KB`: 256 kB
+            - `lz4.frame.BLOCKSIZE_MAX1MB`: 1 MB
+            - `lz4.frame.BLOCKSIZE_MAX4MB`: 4 MB
 
             If unspecified, will default to `lz4.frame.BLOCKSIZE_DEFAULT` which
             is equal to `lz4.frame.BLOCKSIZE_MAX64KB`.
@@ -127,7 +129,7 @@ class LZ4FrameCompressor(object):
             decompression. The default is ``False``, meaning block checksums are not
             calculated and stored. This functionality is only supported if the
             underlying LZ4 library has version >= 1.8.0. Attempting to set this
-            value to `True` with a version of LZ4 < 1.8.0 will cause a ``RuntimeError``
+            value to ``True`` with a version of LZ4 < 1.8.0 will cause a ``RuntimeError``
             to be raised.
         auto_flush (bool): When ``False``, the LZ4 library may buffer data until a
             block is full. When ``True`` no buffering occurs, and partially full
@@ -215,11 +217,12 @@ class LZ4FrameCompressor(object):
         containing compressed data the input.
 
         If ``auto_flush`` has been set to ``False``, some of ``data`` may be
-        buffered internally, for use in later calls to compress() and flush().
+        buffered internally, for use in later calls to
+        `LZ4FrameCompressor.compress()` and `LZ4FrameCompressor.flush()`.
 
         The returned data should be concatenated with the output of any
-        previous calls to ``compress()`` and a single call to
-        ``compress_begin()``.
+        previous calls to `compress()` and a single call to
+        `compress_begin()`.
 
         Args:
             data (str, bytes or buffer-compatible object): data to compress
@@ -241,12 +244,12 @@ class LZ4FrameCompressor(object):
 
         return result
 
-    def finalize(self):
+    def flush(self):
         """Finish the compression process, returning a bytes object containing any data
         stored in the compressor's internal buffers and a frame footer.
 
-        To use the LZ4FrameCompressor instance after this has been called, it
-        is necessary to first call the ``reset()`` method.
+        The LZ4FrameCompressor instance may be re-used after this method has
+        been called to create a new frame of compressed data.
 
         Returns:
             bytes or bytearray: any remaining buffered compressed data and frame footer.
@@ -261,17 +264,20 @@ class LZ4FrameCompressor(object):
         self._started = False
         return result
 
-    def flush(self):
-        """This function is identical to `LZ4Compressor.finalize()` and is provided for
-        API compatibility with the compressors included in the Python standard
-        library.
+    @deprecation.deprecated(deprecated_in="0.23.1", removed_in="1.0",
+                            current_version=lz4.__version__,
+                            details="Use the LZ4FrameCompressor.flush() method instead")
+    def finalize(self):
+        """This function is identical to `LZ4FrameCompressor.flush()` and is provided
+        for backwards compatibility only. You should migrate your code to use
+        `LZ4FrameCompressor.flush()`.
 
         """
-        result = finalize()
+        result = flush()
         return result
 
     def reset(self):
-        """Reset the LZ4FrameCompressor instance allowing it to be re-used
+        """Reset the LZ4FrameCompressor instance allowing it to be re-used after an error.
 
         """
         self._context = None
@@ -283,7 +289,7 @@ class LZ4FrameDecompressor(object):
     incrementally.
 
     For a more convenient way of decompressing an entire compressed frame at
-    once, see ``lz4.frame.decompress()``.
+    once, see `lz4.frame.decompress()`.
 
     Args:
         return_bytearray (bool): When ``False`` a bytes object is returned from the
@@ -516,7 +522,7 @@ class LZ4FrameFile(_compression.BaseStream):
                 self._buffer.close()
                 self._buffer = None
             elif self._mode == _MODE_WRITE:
-                self._fp.write(self._compressor.finalize())
+                self._fp.write(self._compressor.flush())
                 self._compressor = None
         finally:
             try:
@@ -759,7 +765,7 @@ def open(filename, mode="rb",
             data. If specified, will be stored in the compressed frame header as
             an 8-byte field for later use during decompression. Default is 0
             (no size stored). Only used for writing compressed files.
-        block_size (int): Compressor setting. See ``lz4.frame.LZ4FrameCompressor``.
+        block_size (int): Compressor setting. See `lz4.frame.LZ4FrameCompressor`.
         block_linked (bool): Compressor setting. See
             `lz4.frame.LZ4FrameCompressor`.
         compression_level (int): Compressor setting. See
