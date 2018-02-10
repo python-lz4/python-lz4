@@ -91,7 +91,7 @@ class LZ4FrameCompressor(object):
     incrementally.
 
     Args:
-        block_size (int): Sepcifies the maximum blocksize to use.
+        block_size (int): Specifies the maximum blocksize to use.
             Options:
 
             - `lz4.frame.BLOCKSIZE_DEFAULT`: the lz4 library default
