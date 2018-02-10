@@ -1,4 +1,5 @@
 .. py:currentmodule:: lz4.frame
+.. default-role:: obj
 
 Quickstart
 ==========

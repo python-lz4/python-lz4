@@ -81,3 +81,43 @@ equivalent functionalities in the Python standard library.
 .. autofunction:: lz4.frame.open
 .. autoclass:: lz4.frame.LZ4FrameFile
    :members:
+
+Module attributes
+-----------------
+
+A number of module attributes are defined for convenience. These are detailed below.
+
+Compression level
+~~~~~~~~~~~~~~~~~
+
+The following module attributes can be used when setting the
+``compression_level`` argument.
+
+.. autodata:: lz4.frame.COMPRESSIONLEVEL_MIN
+   :annotation:
+
+.. autodata:: lz4.frame.COMPRESSIONLEVEL_MINHC
+   :annotation:
+
+.. autodata:: lz4.frame.COMPRESSIONLEVEL_MAX
+   :annotation:
+
+Block size
+~~~~~~~~~~
+
+The following attributes can be used when setting the ``block_size`` argument.
+
+.. autodata:: lz4.frame.BLOCKSIZE_DEFAULT
+   :annotation:
+
+.. autodata:: lz4.frame.BLOCKSIZE_MAX64KB
+   :annotation:
+
+.. autodata:: lz4.frame.BLOCKSIZE_MAX256KB
+   :annotation:
+
+.. autodata:: lz4.frame.BLOCKSIZE_MAX1MB
+   :annotation:
+
+.. autodata:: lz4.frame.BLOCKSIZE_MAX4MB
+   :annotation:

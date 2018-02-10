@@ -28,8 +28,11 @@ The bindings provided in this package cover the `frame format
 format bindings are the recommended ones to use, as this guarantees
 interoperability with other implementations and language bindings.
 
-A future release may implement support for the LZ4 stream format. Patches and
-help are welcome.
+The API provided by the frame format bindings follows that of the LZMA, zlib,
+gzip and bzip2 compression libraries which are provided with the Python standard
+library. As such, these LZ4 bindings should provide a drop-in alternative to the
+compression libraries shipped with Python. The package provides context managers
+and file handlers support.
 
 Documenation
 ============
@@ -43,7 +46,14 @@ generated using Sphinx. Documentation is also hosted on readthedocs.
 
 :master: http://python-lz4.readthedocs.io/en/stable/
 :development: http://python-lz4.readthedocs.io/en/latest/
-   
+
+Homepage
+========
+
+The `project homepage <https://www.github.com/python-lz4/python-lz4>`_ is hosted
+on Github. Please report any issues you find using the `issue tracker
+<https://github.com/python-lz4/python-lz4/issues>`_.
+
 Licensing
 =========
 Code specific to this project is covered by the `BSD 3-Clause License

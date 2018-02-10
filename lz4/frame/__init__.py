@@ -3,14 +3,86 @@ import io
 import os
 import builtins
 import sys
-from ._frame import *
-from ._frame import __doc__ as _doc
+from ._frame import (
+    compress,
+    decompress,
+    create_compression_context,
+    compress_begin,
+    compress_chunk,
+    compress_flush,
+    create_decompression_context,
+    reset_decompression_context,
+    decompress_chunk,
+    get_frame_info,
+    BLOCKSIZE_DEFAULT as _BLOCKSIZE_DEFAULT,
+    BLOCKSIZE_MAX64KB as _BLOCKSIZE_MAX64KB,
+    BLOCKSIZE_MAX256KB as _BLOCKSIZE_MAX256KB,
+    BLOCKSIZE_MAX1MB as _BLOCKSIZE_MAX1MB,
+    BLOCKSIZE_MAX4MB as _BLOCKSIZE_MAX4MB,
+    __doc__ as _doc
+)
+
 __doc__ = _doc
 
 try:
     import _compression # Python 3.6 and later
 except:
     from . import _compression
+
+
+BLOCKSIZE_DEFAULT = _BLOCKSIZE_DEFAULT
+"""Specifying ``block_size=lz4.frame.BLOCKSIZE_DEFAULT`` will instruct the LZ4
+library to use the default maximum blocksize.
+
+"""
+
+BLOCKSIZE_MAX64KB = _BLOCKSIZE_MAX64KB
+"""Specifying ``block_size=lz4.frame.BLOCKSIZE_MAX64KB`` will instruct the LZ4
+library to create blocks containing a maximum of 64 kB of uncompressed data.
+
+"""
+
+BLOCKSIZE_MAX256KB = _BLOCKSIZE_MAX256KB
+"""Specifying ``block_size=lz4.frame.BLOCKSIZE_MAX256KB`` will instruct the LZ4
+library to create blocks containing a maximum of 256 kB of uncompressed data.
+
+"""
+"""Specifying ``block_size=lz4.frame.BLOCKSIZE_DEFAULT`` will instruct the LZ4
+library to use the default maximum blocksize.
+
+"""
+
+BLOCKSIZE_MAX1MB = _BLOCKSIZE_MAX1MB
+"""Specifying ``block_size=lz4.frame.BLOCKSIZE_MAX1MB`` will instruct the LZ4
+library to create blocks containing a maximum of 1 MB of uncompressed data.
+
+"""
+
+BLOCKSIZE_MAX4MB = _BLOCKSIZE_MAX4MB
+"""Specifying ``block_size=lz4.frame.BLOCKSIZE_MAX4MB`` will instruct the LZ4
+library to create blocks containing a maximum of 4 MB of uncompressed data.
+
+"""
+
+COMPRESSIONLEVEL_MIN = 0
+"""Specifying ``compression_level=lz4.frame.COMPRESSIONLEVEL_MIN`` will instruct
+the LZ4 library to use a compression level of 0
+
+"""
+
+COMPRESSIONLEVEL_MINHC = 3
+"""Specifying ``compression_level=lz4.frame.COMPRESSIONLEVEL_MINHC`` will
+instruct the LZ4 library to use a compression level of 3, the minimum for the
+high compression mode.
+
+"""
+
+COMPRESSIONLEVEL_MAX = 16
+"""Specifying ``compression_level=lz4.frame.COMPRESSIONLEVEL_MAX`` will instruct
+the LZ4 library to use a compression level of 16, the highest compression level
+available.
+
+"""
 
 
 class LZ4FrameCompressor(object):
@@ -92,9 +164,16 @@ class LZ4FrameCompressor(object):
         return self
 
     def __exit__(self, exception_type, exception, traceback):
-        # The compression context is created with an appropriate destructor, so
-        # no need to del it here
-        pass
+        self.block_size = None
+        self.block_linked = None
+        self.compression_level = None
+        self.content_checksum = None
+        self.block_checksum = None
+        self.auto_flush = None
+        self.return_bytearray = None
+        self._context = None
+        self._started = False
+
 
     def begin(self, source_size=0):
         """Begin a compression frame. The returned data contains frame header
@@ -235,9 +314,12 @@ class LZ4FrameDecompressor(object):
         return self
 
     def __exit__(self, exception_type, exception, traceback):
-        # The decompression context is created with an appropriate destructor,
-        # so no need to del it here
-        pass
+        self._context = None
+        self.eof = None
+        self.needs_input = None
+        self.unused_data = None
+        self._unconsumed_data = None
+        self._return_bytearray = None
 
     def reset(self):
         """Reset the decompressor state. This is useful after an error occurs, allowing
@@ -447,13 +529,19 @@ class LZ4FrameFile(_compression.BaseStream):
 
     @property
     def closed(self):
-        """True if this file is closed.
+        """Returns ``True`` if this file is closed.
+
+        Returns:
+            bool: ``True`` if the file is closed, ``False`` otherwise.
 
         """
         return self._mode == _MODE_CLOSED
 
     def fileno(self):
         """Return the file descriptor for the underlying file.
+
+        Returns:
+            file object: file descriptor for file.
 
         """
         self._check_not_closed()
@@ -462,11 +550,18 @@ class LZ4FrameFile(_compression.BaseStream):
     def seekable(self):
         """Return whether the file supports seeking.
 
+        Returns:
+            bool: ``True`` if the file supports seeking, ``False`` otherwise.
+
         """
         return self.readable() and self._buffer.seekable()
 
     def readable(self):
         """Return whether the file was opened for reading.
+
+        Returns:
+            bool: ``True`` if the file was opened for reading, ``False``
+                otherwise.
 
         """
         self._check_not_closed()
@@ -474,6 +569,10 @@ class LZ4FrameFile(_compression.BaseStream):
 
     def writable(self):
         """Return whether the file was opened for writing.
+
+        Returns:
+            bool: ``True`` if the file was opened for writing, ``False``
+                otherwise.
 
         """
         self._check_not_closed()
@@ -484,6 +583,9 @@ class LZ4FrameFile(_compression.BaseStream):
 
         Always returns at least one byte of data, unless at EOF. The exact
         number of bytes returned is unspecified.
+
+        Returns:
+            bytes: uncompressed data
 
         """
         self._check_can_read()
@@ -572,9 +674,9 @@ class LZ4FrameFile(_compression.BaseStream):
         The new position is specified by ``offset``, relative to the position
         indicated by ``whence``. Possible values for ``whence`` are:
 
-        - io.SEEK_SET or 0: start of stream (default): offset must not be negative
-        - io.SEEK_CUR or 1: current stream position
-        - io.SEEK_END or 2: end of stream; offset must not be positive
+        - ``io.SEEK_SET`` or 0: start of stream (default): offset must not be negative
+        - ``io.SEEK_CUR`` or 1: current stream position
+        - ``io.SEEK_END`` or 2: end of stream; offset must not be positive
 
         Returns the new file position.
 

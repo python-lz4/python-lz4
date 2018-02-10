@@ -28,7 +28,7 @@
 #define PyStr_InternFromString PyUnicode_InternFromString
 #define PyStr_Decode PyUnicode_Decode
 
-#define PyStr_AsUTF8String PyUnicode_AsUTF8String // returns PyBytes
+#define PyStr_AsUTF8String PyUnicode_AsUTF8String /* returns PyBytes */
 #define PyStr_AsUTF8 PyUnicode_AsUTF8
 #define PyStr_AsUTF8AndSize PyUnicode_AsUTF8AndSize
 
@@ -74,11 +74,11 @@
 #define PyStr_Decode PyString_Decode
 
 #ifdef __GNUC__
-static PyObject * PyStr_Concat(PyObject *left, PyObject *right) __attribute__ ((unused));
+static PyObject *PyStr_Concat(PyObject *left, PyObject *right) __attribute__ ((unused));
 #endif
 static PyObject *PyStr_Concat(PyObject *left, PyObject *right) {
     PyObject *str = left;
-    Py_INCREF(left);  // reference to old left will be stolen
+    Py_INCREF(left);  /* reference to old left will be stolen */
     PyString_Concat(&str, right);
     if (str) {
         return str;
