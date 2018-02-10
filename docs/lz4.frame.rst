@@ -93,20 +93,31 @@ Compression level
 The following module attributes can be used when setting the
 ``compression_level`` argument.
 
-.. autoattribute:: lz4.frame.COMPRESSIONLEVEL_MIN
+.. autodata:: lz4.frame.COMPRESSIONLEVEL_MIN
+   :annotation:
 
-.. autoattribute:: lz4.frame.COMPRESSIONLEVEL_MINHC
+.. autodata:: lz4.frame.COMPRESSIONLEVEL_MINHC
+   :annotation:
 
-.. autoattribute:: lz4.frame.COMPRESSIONLEVEL_MAX
-
+.. autodata:: lz4.frame.COMPRESSIONLEVEL_MAX
+   :annotation:
 
 Block size
 ~~~~~~~~~~
 
 The following attributes can be used when setting the ``block_size`` argument.
 
-.. autoattribute:: lz4.frame.BLOCKSIZE_DEFAULT
-.. autoattribute:: lz4.frame.BLOCKSIZE_MAX64KB
-.. autoattribute:: lz4.frame.BLOCKSIZE_MAX256KB
-.. autoattribute:: lz4.frame.BLOCKSIZE_MAX1MB
-.. autoattribute:: lz4.frame.BLOCKSIZE_MAX4MB
+.. autodata:: lz4.frame.BLOCKSIZE_DEFAULT
+   :annotation:
+
+.. autodata:: lz4.frame.BLOCKSIZE_MAX64KB
+   :annotation:
+
+.. autodata:: lz4.frame.BLOCKSIZE_MAX256KB
+   :annotation:
+
+.. autodata:: lz4.frame.BLOCKSIZE_MAX1MB
+   :annotation:
+
+.. autodata:: lz4.frame.BLOCKSIZE_MAX4MB
+   :annotation:
