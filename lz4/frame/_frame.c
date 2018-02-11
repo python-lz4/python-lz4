@@ -1390,9 +1390,11 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
 
 PyDoc_STRVAR(
  create_compression_context__doc,
- "create_compression_context()\n\n"                                     \
+ "create_compression_context()\n"                                       \
+ "\n"                                                                   \
  "Creates a Compression Context object, which will be used in all\n"    \
- "compression operations.\n\n"                                          \
+ "compression operations.\n"                                            \
+ "\n"                                                                   \
  "Returns:\n"                                                           \
  "    cCtx: A compression context\n"
  );
@@ -1441,7 +1443,8 @@ PyDoc_STRVAR(
 PyDoc_STRVAR(
  compress__doc,
  "compress(data, compression_level=0, block_size=0, content_checksum=0,\n" \
- "    block_linked=True, store_size=True, return_bytearray=False)\n\n"      \
+ "block_linked=True, store_size=True, return_bytearray=False)\n"        \
+ "\n"                                                                   \
  "Compresses ``data`` returning the compressed data as a complete frame.\n\n" \
  "The returned data includes a header and endmark and so is suitable\n" \
  "for writing to a file.\n\n"                                           \
@@ -1459,8 +1462,9 @@ PyDoc_STRVAR
 (
  compress_begin__doc,
  "compress_begin(context, source_size=0, compression_level=0, block_size=0,\n" \
- "    content_checksum=0, content_size=1, block_mode=0, frame_type=0,\n" \
- "    auto_flush=1)\n\n"                                                \
+ "content_checksum=0, content_size=1, block_mode=0, frame_type=0,\n"    \
+ "auto_flush=1)\n"                                                      \
+ "\n"                                                                   \
  "Creates a frame header from a compression context.\n\n"               \
  "Args:\n"                                                              \
  "    context (cCtx): A compression context.\n\n"                       \
@@ -1484,30 +1488,36 @@ PyDoc_STRVAR
 PyDoc_STRVAR
 (
  compress_chunk__doc,
- "compress_chunk(context, data)\n\n"                                    \
+ "compress_chunk(context, data)\n"                                      \
+ "\n"                                                                   \
  "Compresses blocks of data and returns the compressed data.\n"         \
  "\n"                                                                   \
  "The returned data should be concatenated with the data returned from\n" \
- "`compress_begin` and any previous calls to `compress`.\n"             \
+ "`lz4.frame.compress_begin` and any previous calls to `lz4.frame.compress`.\n"   \
  "\n"                                                                   \
  "Args:\n"                                                              \
  "    context (cCtx): compression context\n"                            \
- "    data (str, bytes or buffer-compatible object): data to compress\n\n" \
+ "    data (str, bytes or buffer-compatible object): data to compress\n" \
+ "\n"                                                                   \
  "Keyword Args:\n"                                                      \
- "    return_bytearray (bool): If ``True`` a bytearray object will be returned.\n" \
- "        If ``False``, a string of bytes is returned. The default is False.\n\n" \
+ "    return_bytearray (bool): If ``True`` a bytearray object will be\n" \
+ "        returned. If ``False``, a string of bytes is returned. The\n" \
+ "        default is False.\n"                                          \
+ "\n"                                                                   \
  "Returns:\n"                                                           \
  "    bytes or bytearray: Compressed data\n\n"                          \
  "Notes:\n"                                                             \
- "    If auto flush is disabled (``auto_flush``=``False`` when calling\n" \
- "    `compress_begin`) this function may buffer and retain some or all of\n" \
- "    the compressed data for future calls to `compress`.\n"
+ "    If auto flush is disabled (``auto_flush=False`` when calling\n" \
+ "    `lz4.frame.compress_begin`) this function may buffer and retain\n" \
+ "    some or all  of the compressed data for future calls to\n"        \
+ "    `lz4.frame.compress`.\n"
  );
 
 PyDoc_STRVAR
 (
  compress_flush__doc,
- "compress_flush(context, end_frame=True, return_bytearray=False)\n\n"  \
+ "compress_flush(context, end_frame=True, return_bytearray=False)\n"    \
+ "\n"                                                                   \
  "Flushes a compression context returning any data buffed in the context\n" \
  "as compressed data. The returned data should be appended to the\n" \
  "output of previous calls to ``compress``. The ``end_frame`` argument\n" \
@@ -1566,20 +1576,23 @@ PyDoc_STRVAR
 PyDoc_STRVAR
 (
  create_decompression_context__doc,
- "create_decompression_context()\n\n"                                 \
- "Creates a decompression context object, which will be used for\n"   \
- "decompression operations.\n\n"                                      \
- "Returns:\n"                                                         \
+ "create_decompression_context()\n"                                     \
+ "\n"                                                                   \
+ "Creates a decompression context object, which will be used for\n"     \
+ "decompression operations.\n"                                          \
+ "\n"                                                                   \
+ "Returns:\n"                                                           \
  "    dCtx: A decompression context\n"
  );
 
 PyDoc_STRVAR
 (
  reset_decompression_context__doc,
- "reset_decompression_context(context)\n\n"                             \
+ "reset_decompression_context(context)\n"                               \
+ "\n"                                                                   \
  "Resets a decompression context object. This is useful for recovering\n" \
  "from an error or for stopping an unfinished decompression and starting\n" \
- "a new one with the same context\n"                                      \
+ "a new one with the same context\n"                                    \
  "\n"                                        \
  "Args:\n"                                                           \
  "    context (dCtx): A decompression context\n"
@@ -1588,7 +1601,8 @@ PyDoc_STRVAR
 PyDoc_STRVAR
 (
  decompress__doc,
- "decompress(data)\n\n"                                                 \
+ "decompress(data, return_bytearray=False, return_bytes_read=False)\n"  \
+ "\n"                                                                   \
  "Decompresses a frame of data and returns it as a string of bytes.\n"  \
  "\n"                                                                   \
  "Args:\n"                                                              \
@@ -1596,10 +1610,11 @@ PyDoc_STRVAR
  "       This should contain a complete LZ4 frame of compressed data.\n" \
  "\n"                                                                   \
  "Keyword Args:\n"                                                      \
- "    return_bytearray (bool): If True a bytearray object will be returned.\n" \
- "        If False, a string of bytes is returned. The default is False.\n" \
+ "    return_bytearray (bool): If ``True`` a bytearray object will be\n" \
+ "        returned. If ``False``, a string of bytes is returned. The\n" \
+ "        default is ``False``.\n"                                      \
  "    return_bytes_read (bool): If ``True`` then the number of bytes read\n" \
- "        from ``data`` will also be returned.\n"                       \
+ "        from ``data`` will also be returned. Default is ``False``\n"  \
  "\n"                                                                   \
  "Returns:\n"                                                           \
  "    bytes/bytearray or tuple: Uncompressed data and optionally the number" \
@@ -1615,7 +1630,8 @@ PyDoc_STRVAR
 PyDoc_STRVAR
 (
  decompress_chunk__doc,
- "decompress(context, data)\n\n"                                        \
+ "decompress(context, data)\n"                                          \
+ "\n"                                                                   \
  "Decompresses part of a frame of data. The returned uncompressed data\n" \
  "should be catenated with the data returned from previous calls to\n"  \
  "`decompress_chunk`\n\n"                                               \
@@ -1625,13 +1641,13 @@ PyDoc_STRVAR
  "        frame of compressed data\n\n"                                 \
  "Keyword Args:\n"                                                      \
  "    max_length (int): if non-negative this specifies the maximum number" \
- "         of bytes of uncompressed data to return. Default is -1.\n"   \
- "    return_bytearray (bool): If True a bytearray object will be returned.\n" \
- "        If False, a string of bytes is returned. The default is False.\n\n" \
+ "         of bytes of uncompressed data to return. Default is ``-1``.\n" \
+ "    return_bytearray (bool): If ``True`` a bytearray object will be\n" \
+ "        returned.If ``False``, a string of bytes is returned. The\n"  \
+ "        default is ``False``.\n"                                      \
  "\n"                                                                   \
  "Returns:\n"                                                           \
  "    tuple: (uncompressed data, bytes read, end of frame indicator)\n" \
- "\n"                                                                   \
  "    This function returns a tuple consisting of:\n"                   \
  "\n"                                                                   \
  "    - bytes or bytearray: Uncompressed data\n"                        \
