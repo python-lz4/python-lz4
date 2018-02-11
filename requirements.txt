@@ -4,3 +4,5 @@ pytest-runner
 setuptools_scm
 deprecation
 pkgconfig
+future
+
