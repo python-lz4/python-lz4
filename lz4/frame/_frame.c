@@ -1493,7 +1493,8 @@ PyDoc_STRVAR
  "Compresses blocks of data and returns the compressed data.\n"         \
  "\n"                                                                   \
  "The returned data should be concatenated with the data returned from\n" \
- "`lz4.frame.compress_begin` and any previous calls to `lz4.frame.compress`.\n"   \
+ "`lz4.frame.compress_begin` and any subsequent calls to\n"   \
+ "`lz4.frame.compress_chunk`.\n"                                        \
  "\n"                                                                   \
  "Args:\n"                                                              \
  "    context (cCtx): compression context\n"                            \
@@ -1520,8 +1521,9 @@ PyDoc_STRVAR
  "\n"                                                                   \
  "Flushes a compression context returning any data buffed in the context\n" \
  "as compressed data. The returned data should be appended to the\n" \
- "output of previous calls to ``compress``. The ``end_frame`` argument\n" \
- "specifies whether or not the frame should be ended.\n"                \
+ "output of previous calls to ``lz4.frame.compress_chunk``. The\n" \
+ "``end_frame`` argument specifies whether or not the frame should be\n" \
+ "ended.\n"                                                             \
  "\n"                                                                   \
  "Args:\n"                                                              \
  "    context (cCtx): Compression context\n"                            \
@@ -1533,8 +1535,8 @@ PyDoc_STRVAR
  "\n"                                                                   \
  "Keyword Args:\n"                                                      \
  "    return_bytearray (bool): If ``True`` a ``bytearray`` object will\n" \
- "        be returned. If ``False``, a string of bytes is returned. The.\n" \
- "        default is ``False``.\n"                                      \
+ "        be returned. If ``False``, a ``bytes`` object is returned.\n" \
+ "        The default is ``False``.\n"                                  \
  "\n"                                                                   \
  "Returns:\n"                                                           \
  "    bytes or bytearray: Remaining (buffered) compressed data, and\n"  \
