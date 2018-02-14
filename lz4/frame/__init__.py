@@ -273,7 +273,7 @@ class LZ4FrameCompressor(object):
         `LZ4FrameCompressor.flush()`.
 
         """
-        result = flush()
+        result = self.flush()
         return result
 
     def reset(self):
