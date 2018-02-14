@@ -4,10 +4,12 @@ python:
   - 3.4
   - 3.5
   - 3.6
-install: pip install tox
+install:
+  - pip install tox
+  - pip install -r docs/requirements.txt
 script:
   - tox
-
+  - make -C docs doctest html
 deploy:
   - provider: pypi
     # server: https://test.pypi.org/legacy/
