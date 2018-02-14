@@ -13,13 +13,15 @@ provides interoperability with other implementations and language bindings.
 The simplest way to use the frame bindings is via the :py:func:`compress` and
 :py:func:`decompress` functions::
 
+.. doctest::
+
   >>> import os
   >>> import lz4.frame
   >>> input_data = 20 * 128 * os.urandom(1024)  # Read 20 * 128kb
   >>> compressed = lz4.frame.compress(input_data)
   >>> decompressed = lz4.frame.decompress(compressed)
   >>> decompressed == input_data
-  Out[6]: True
+  True
 
 The :py:func:`compress` function reads the input data and compresses it and
 returns a LZ4 frame. A frame consists of a header, and a sequence of blocks of
@@ -34,6 +36,8 @@ Working with data in chunks
 It's often inconvenient to hold the full data in memory, and so functions are
 also provided to compress and decompress data in chunks::
 
+.. doctest::
+
   >>> import lz4.frame
   >>> import os
   >>> input_data = 20 * 128 * os.urandom(1024)
@@ -41,7 +45,7 @@ also provided to compress and decompress data in chunks::
   >>> compressed = lz4.frame.compress_begin(c_context)
   >>> compressed += lz4.frame.compress_chunk(c_context, input_data[:10 * 128 * 1024])
   >>> compressed += lz4.frame.compress_chunk(c_context, input_data[10 * 128 * 1024:])
-  >>> compressed += compress_flush(c_context)
+  >>> compressed += lz4.frame.compress_flush(c_context)
 
 Here a compression context is first created which is used to maintain state
 across calls to the LZ4 library. This is an opaque PyCapsule object.
@@ -59,11 +63,13 @@ time without ending the frame by calling :py:func:`compress_flush` with
 
 Decompressing data can also be done in a chunked fashion::
 
+.. doctest::
+
   >>> d_context = lz4.frame.create_decompression_context()
   >>> d1, b, e = lz4.frame.decompress_chunk(d_context, compressed[:len(compressed)//2])
   >>> d2, b, e = lz4.frame.decompress_chunk(d_context, compressed[len(compressed)//2:])
   >>> d1 + d2 == input_data
-  Out[12]: True
+  True
 
 Note that :py:func:`decompress_chunk` returns a tuple ``(decompressed_data,
 bytes_read, end_of_frame_indicator)``. ``decompressed_data`` is the decompressed
@@ -78,6 +84,8 @@ is more convenient to use the :py:class:`LZ4FrameCompressor` and
 :py:class:`LZ4FrameDecompressor` classes which provide context manager
 functionality::
 
+.. doctest::
+
   >>> import lz4.frame
   >>> import os
   >>> input_data = 20 * 128 * os.urandom(1024)
@@ -85,12 +93,12 @@ functionality::
   ...     compressed = compressor.begin()
   ...     compressed += compressor.compress(input_data[:10 * 128 * 1024])
   ...     compressed += compressor.compress(input_data[10 * 128 * 1024:])
-  ...     compressed += compressor.finalize()
+  ...     compressed += compressor.flush()
   >>> with lz4.frame.LZ4FrameDecompressor() as decompressor:
   ...     decompressed = decompressor.decompress(compressed[:len(compressed)//2])
   ...     decompressed += decompressor.decompress(compressed[len(compressed)//2:])
   >>> decompressed == input_data
-  Out[13]: True
+  True
 
 
 Working with compressed files
@@ -102,11 +110,15 @@ replacement for that offered in the Python standard library for bz2, gzip and
 LZMA compressed files. The :py:func:`lz4.frame.open()` function is the most
 convenient way to work with compressed data files::
 
+.. doctest::
+
   >>> import lz4.frame
   >>> import os
   >>> input_data = 20 * os.urandom(1024)
   >>> with lz4.frame.open('testfile', mode='wb') as fp:
-  ...     fp.write(input_data)
+  ...     bytes_written = fp.write(input_data)
+  ...     bytes_written == len(input_data)
+  True
   >>> with lz4.frame.open('testfile', mode='r') as fp:
   ...     output_data = fp.read()
   >>> output_data == input_data
