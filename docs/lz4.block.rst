@@ -18,11 +18,16 @@ Example usage
 -------------
 To use the lz4 block format bindings is straightforward::
 
+.. doctest::
+
     >>> import lz4.block
-    >>> compressed_data = lz4.block.compress(data)
-    >>> data == lz4.block.decompress(compressed_data)
+    >>> import os
+    >>> input_data = 20 * 128 * os.urandom(1024)  # Read 20 * 128kb
+    >>> compressed_data = lz4.block.compress(input_data)
+    >>> output_data = lz4.block.decompress(compressed_data)
+    >>> input_data == output_data
     True
-    >>>
+
 
 Contents
 ----------------
