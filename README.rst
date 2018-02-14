@@ -32,7 +32,10 @@ The API provided by the frame format bindings follows that of the LZMA, zlib,
 gzip and bzip2 compression libraries which are provided with the Python standard
 library. As such, these LZ4 bindings should provide a drop-in alternative to the
 compression libraries shipped with Python. The package provides context managers
-and file handlers support.
+and file handler support.
+
+The bindings drop the GIL when calling in to the underlying LZ4 library, and is
+thread safe. An extensive test suite is included.
 
 Documenation
 ============

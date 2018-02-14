@@ -1,4 +1,8 @@
 tox
 pytest
+pytest-runner
 setuptools_scm
 deprecation
+pkgconfig
+future
+
