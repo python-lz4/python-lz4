@@ -1506,7 +1506,7 @@ PyDoc_STRVAR
  "        default is False.\n"                                          \
  "\n"                                                                   \
  "Returns:\n"                                                           \
- "    bytes or bytearray: Compressed data\n\n"                          \
+ "    bytes or bytearray: Compressed data.\n\n"                          \
  "Notes:\n"                                                             \
  "    If auto flush is disabled (``auto_flush=False`` when calling\n" \
  "    `lz4.frame.compress_begin`) this function may buffer and retain\n" \
@@ -1539,8 +1539,8 @@ PyDoc_STRVAR
  "        The default is ``False``.\n"                                  \
  "\n"                                                                   \
  "Returns:\n"                                                           \
- "    bytes or bytearray: Remaining (buffered) compressed data, and\n"  \
- "        optionally an end frame marker and frame content checksum.\n" \
+ "    bytes or bytearray: Any buffered compressed data, and optionally\n" \
+ "        an end of frame marker and frame content checksum.\n"         \
  "\n"                                                                   \
  "Notes:\n"                                                             \
  "    If ``end_frame`` is ``False`` but the underlying LZ4 library doesn't" \
