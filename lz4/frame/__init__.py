@@ -32,55 +32,67 @@ except ImportError:
 
 
 BLOCKSIZE_DEFAULT = _BLOCKSIZE_DEFAULT
-"""Specifying ``block_size=lz4.frame.BLOCKSIZE_DEFAULT`` will instruct the LZ4
+"""Specifier for the default block size.
+
+Specifying ``block_size=lz4.frame.BLOCKSIZE_DEFAULT`` will instruct the LZ4
 library to use the default maximum blocksize. This is currently equivalent to
 `lz4.frame.BLOCKSIZE_MAX64KB`
 
 """
 
 BLOCKSIZE_MAX64KB = _BLOCKSIZE_MAX64KB
-"""Specifying ``block_size=lz4.frame.BLOCKSIZE_MAX64KB`` will instruct the LZ4
+"""Specifier for a maximum block size of 64 kB.
+
+Specifying ``block_size=lz4.frame.BLOCKSIZE_MAX64KB`` will instruct the LZ4
 library to create blocks containing a maximum of 64 kB of uncompressed data.
 
 """
 
 BLOCKSIZE_MAX256KB = _BLOCKSIZE_MAX256KB
-"""Specifying ``block_size=lz4.frame.BLOCKSIZE_MAX256KB`` will instruct the LZ4
-library to create blocks containing a maximum of 256 kB of uncompressed data.
+"""Specifier for a maximum block size of 256 kB.
 
-"""
-"""Specifying ``block_size=lz4.frame.BLOCKSIZE_DEFAULT`` will instruct the LZ4
-library to use the default maximum block size.
+Specifying ``block_size=lz4.frame.BLOCKSIZE_MAX256KB`` will instruct the LZ4
+library to create blocks containing a maximum of 256 kB of uncompressed data.
 
 """
 
 BLOCKSIZE_MAX1MB = _BLOCKSIZE_MAX1MB
-"""Specifying ``block_size=lz4.frame.BLOCKSIZE_MAX1MB`` will instruct the LZ4
+"""Specifier for a maximum block size of 1 MB.
+
+Specifying ``block_size=lz4.frame.BLOCKSIZE_MAX1MB`` will instruct the LZ4
 library to create blocks containing a maximum of 1 MB of uncompressed data.
 
 """
 
 BLOCKSIZE_MAX4MB = _BLOCKSIZE_MAX4MB
-"""Specifying ``block_size=lz4.frame.BLOCKSIZE_MAX4MB`` will instruct the LZ4
+"""Specifier for a maximum block size of 4 MB.
+
+Specifying ``block_size=lz4.frame.BLOCKSIZE_MAX4MB`` will instruct the LZ4
 library to create blocks containing a maximum of 4 MB of uncompressed data.
 
 """
 
 COMPRESSIONLEVEL_MIN = 0
-"""Specifying ``compression_level=lz4.frame.COMPRESSIONLEVEL_MIN`` will
+"""Specifier for the minimum compression level.
+
+Specifying ``compression_level=lz4.frame.COMPRESSIONLEVEL_MIN`` will
 instruct the LZ4 library to use a compression level of 0
 
 """
 
 COMPRESSIONLEVEL_MINHC = 3
-"""Specifying ``compression_level=lz4.frame.COMPRESSIONLEVEL_MINHC`` will
+"""Specifier for the minimum compression level for high compression mode.
+
+Specifying ``compression_level=lz4.frame.COMPRESSIONLEVEL_MINHC`` will
 instruct the LZ4 library to use a compression level of 3, the minimum for the
 high compression mode.
 
 """
 
 COMPRESSIONLEVEL_MAX = 16
-"""Specifying ``compression_level=lz4.frame.COMPRESSIONLEVEL_MAX`` will
+"""Specifier for the maximum compression level.
+
+Specifying ``compression_level=lz4.frame.COMPRESSIONLEVEL_MAX`` will
 instruct the LZ4 library to use a compression level of 16, the highest
 compression level available.
 
@@ -88,8 +100,9 @@ compression level available.
 
 
 class LZ4FrameCompressor(object):
-    """Create a LZ4 compressor object, which can be used to compress data
-    incrementally.
+    """Create a LZ4 frame compressor object.
+
+    This object can be used to compress data incrementally.
 
     Args:
         block_size (int): Specifies the maximum blocksize to use.
@@ -137,6 +150,7 @@ class LZ4FrameCompressor(object):
         return_bytearray (bool): When ``False`` a ``bytes`` object is returned
             from the calls to methods of this class. When ``True`` a
             ``bytearray`` object will be returned. The default is ``False``.
+
     """
 
     def __init__(self,
@@ -178,9 +192,11 @@ class LZ4FrameCompressor(object):
         self._started = False
 
     def begin(self, source_size=0):
-        """Begin a compression frame. The returned data contains frame header
-        information. The data returned from subsequent calls to ``compress()``
-        should be concatenated with this header.
+        """Begin a compression frame.
+
+        The returned data contains frame header information. The data returned
+        from subsequent calls to ``compress()`` should be concatenated with
+        this header.
 
         Keyword Args:
             source_size (int): Optionally specify the total size of the
@@ -190,6 +206,7 @@ class LZ4FrameCompressor(object):
 
         Returns:
             bytes or bytearray: frame header data
+
         """
 
         if self._started is False:
@@ -213,8 +230,10 @@ class LZ4FrameCompressor(object):
             )
 
     def compress(self, data):  # noqa: F811
-        """Compress ``data`` (a ``bytes`` object), returning a bytes object
-        containing compressed data the input.
+        """Compresses data and returns it.
+
+        This compresses ``data`` (a ``bytes`` object), returning a bytes or
+        bytearray object containing compressed data the input.
 
         If ``auto_flush`` has been set to ``False``, some of ``data`` may be
         buffered internally, for use in later calls to
@@ -245,16 +264,16 @@ class LZ4FrameCompressor(object):
         return result
 
     def flush(self):
-        """Finish the compression process, returning a bytes object containing
-        any data stored in the compressor's internal buffers and a frame
-        footer.
+        """Finish the compression process.
+
+        This returns a bytes or bytearray object containing any data stored in
+        the compressor's internal buffers and a frame footer.
 
         The LZ4FrameCompressor instance may be re-used after this method has
         been called to create a new frame of compressed data.
 
         Returns:
-            bytes or bytearray: any remaining buffered compressed data and
-                frame footer.
+            bytes or bytearray: compressed data and frame footer.
 
         """
         result = compress_flush(
@@ -271,17 +290,20 @@ class LZ4FrameCompressor(object):
                             details='Use the LZ4FrameCompressor.flush() method'
                             'instead')
     def finalize(self):
-        """This function is identical to `LZ4FrameCompressor.flush()` and is provided
-        for backwards compatibility only. You should migrate your code to use
-        `LZ4FrameCompressor.flush()`.
+        """This function is identical to `LZ4FrameCompressor.flush()`.
+
+        This is provided for backwards compatibility only. You should migrate
+        your code to use `LZ4FrameCompressor.flush()`.
 
         """
         result = self.flush()
         return result
 
     def reset(self):
-        """Reset the LZ4FrameCompressor instance allowing it to be re-used
-        after an error.
+        """Reset the `LZ4FrameCompressor` instance.
+
+        This allows the `LZ4FrameCompression` instance to be re-used after an
+        error.
 
         """
         self._context = None
@@ -289,8 +311,9 @@ class LZ4FrameCompressor(object):
 
 
 class LZ4FrameDecompressor(object):
-    """Create a LZ4 frame decompressor object, which can be used to decompress
-    data incrementally.
+    """Create a LZ4 frame decompressor object.
+
+    This can be used to decompress data incrementally.
 
     For a more convenient way of decompressing an entire compressed frame at
     once, see `lz4.frame.decompress()`.
@@ -332,8 +355,9 @@ class LZ4FrameDecompressor(object):
         self._return_bytearray = None
 
     def reset(self):
-        """Reset the decompressor state. This is useful after an error occurs, allowing
-        re-use of the instance.
+        """Reset the decompressor state.
+
+        This is useful after an error occurs, allowing re-use of the instance.
 
         """
         reset_decompression_context(self._context)
@@ -343,9 +367,10 @@ class LZ4FrameDecompressor(object):
         self._unconsumed_data = b''
 
     def decompress(self, data, max_length=-1):  # noqa: F811
-        """Decompresses part or all of an LZ4 frame of compressed data. The returned
-        data should be concatenated with the output of any previous calls to
-        `decompress()`.
+        """Decompresses part or all of an LZ4 frame of compressed data.
+
+        The returned data should be concatenated with the output of any
+        previous calls to `decompress()`.
 
         If ``max_length`` is non-negative, returns at most ``max_length`` bytes
         of decompressed data. If this limit is reached and further output can
@@ -625,9 +650,13 @@ class LZ4FrameFile(_compression.BaseStream):
         return self._buffer.read(size)
 
     def read1(self, size=-1):
-        """Read up to ``size`` uncompressed bytes, while trying to avoid making
-        multiple reads from the underlying stream. Reads up to a buffer's worth
-        of data if ``size`` is negative.
+        """Read up to ``size`` uncompressed bytes.
+
+        This method tries to avoid making multiple reads from the underlying
+        stream.
+
+        This method reads up to a buffer's worth of data if ``size`` is
+        negative.
 
         Returns ``b''`` if the file is at EOF.
 
