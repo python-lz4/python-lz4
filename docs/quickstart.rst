@@ -11,7 +11,7 @@ The recommended binding to use is the LZ4 frame format binding, since this
 provides interoperability with other implementations and language bindings.
 
 The simplest way to use the frame bindings is via the :py:func:`compress` and
-:py:func:`decompress` functions::
+:py:func:`decompress` functions:
 
 .. doctest::
 
@@ -34,7 +34,7 @@ Working with data in chunks
 ---------------------------
 
 It's often inconvenient to hold the full data in memory, and so functions are
-also provided to compress and decompress data in chunks::
+also provided to compress and decompress data in chunks:
 
 .. doctest::
 
@@ -61,7 +61,7 @@ can be disabled by specifying ``auto_flush=True`` when calling
 time without ending the frame by calling :py:func:`compress_flush` with
 ``end_frame=False``.
 
-Decompressing data can also be done in a chunked fashion::
+Decompressing data can also be done in a chunked fashion:
 
 .. doctest::
 
@@ -82,7 +82,7 @@ marker.
 Rather than managing compression and decompression context objects manually, it
 is more convenient to use the :py:class:`LZ4FrameCompressor` and
 :py:class:`LZ4FrameDecompressor` classes which provide context manager
-functionality::
+functionality:
 
 .. doctest::
 
@@ -108,7 +108,7 @@ The frame bindings provide capability for working with files containing LZ4
 frame compressed data. This functionality is intended to be a drop in
 replacement for that offered in the Python standard library for bz2, gzip and
 LZMA compressed files. The :py:func:`lz4.frame.open()` function is the most
-convenient way to work with compressed data files::
+convenient way to work with compressed data files:
 
 .. doctest::
 
