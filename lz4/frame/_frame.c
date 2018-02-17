@@ -1664,14 +1664,17 @@ PyDoc_STRVAR
  "        default is ``False``.\n"                                      \
  "\n"                                                                   \
  "Returns:\n"                                                           \
- "    tuple: (uncompressed data, bytes read, end of frame indicator)\n" \
+ "    tuple: uncompressed data, bytes read, end of frame indicator\n" \
+ "\n"                                                                   \
  "    This function returns a tuple consisting of:\n"                   \
  "\n"                                                                   \
- "    - bytes or bytearray: Uncompressed data\n"                        \
- "    - int: Number of bytes consumed from input ``data``\n"            \
- "    - bool: ``True`` if the end of the compressed frame has been\n"   \
- "          reached. ``False`` otherwise.\n"
- );
+ "    - The uncompressed data as a ``bytes`` or ``bytearray`` object\n" \
+ "    - The number of bytes consumed from input ``data`` as an ``int``\n" \
+ "    - The end of frame indicator as a ``bool``.\n"                    \
+ "\n"
+ "The end of frame indicator is ``True`` if the end of the compressed frame\n" \
+ "has been reached, or ``False`` otherwise\n"
+  );
 
 static PyMethodDef module_methods[] =
 {
