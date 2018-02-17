@@ -266,8 +266,8 @@ class LZ4FrameCompressor(object):
     def flush(self):
         """Finish the compression process.
 
-        This returns a bytes or bytearray object containing any data stored in
-        the compressor's internal buffers and a frame footer.
+        This returns a ``bytes`` or ``bytearray`` object containing any data
+        stored in the compressor's internal buffers and a frame footer.
 
         The LZ4FrameCompressor instance may be re-used after this method has
         been called to create a new frame of compressed data.
