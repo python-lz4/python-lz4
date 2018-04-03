@@ -12,6 +12,5 @@ Contents
     :members:
        library_version_number,
        library_version_string,
-       lz4version,
        version
 
