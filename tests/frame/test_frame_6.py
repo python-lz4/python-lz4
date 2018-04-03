@@ -41,7 +41,7 @@ def test_lz4frame_open_write_read_defaults(data):
     assert data_out == data
 
 def test_lz4frame_open_write_read_text():
-    data = 'This is a test string'
+    data = u'This is a test string'
     with lz4frame.open('testfile', mode='wt') as fp:
         fp.write(data)
     with lz4frame.open('testfile', mode='rt') as fp:
