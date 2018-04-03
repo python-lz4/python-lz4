@@ -123,9 +123,8 @@ lz4frame = Extension('lz4.frame._frame',
                      include_dirs=include_dirs,
 )
 
-install_requires=[
-    'deprecation',
-]
+install_requires=[]
+
 # On Python earlier than 3.0 the builtins package isn't included, but it is
 # provided by the future package
 if sys.version_info < (3, 0):

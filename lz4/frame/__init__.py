@@ -1,4 +1,3 @@
-import deprecation
 import lz4
 import io
 import os
@@ -283,20 +282,6 @@ class LZ4FrameCompressor(object):
         )
         self._context = None
         self._started = False
-        return result
-
-    @deprecation.deprecated(deprecated_in='0.23.1', removed_in='1.0',
-                            current_version=lz4.__version__,
-                            details='Use the LZ4FrameCompressor.flush() method'
-                            'instead')
-    def finalize(self):
-        """This function is identical to `LZ4FrameCompressor.flush()`.
-
-        This is provided for backwards compatibility only. You should migrate
-        your code to use `LZ4FrameCompressor.flush()`.
-
-        """
-        result = self.flush()
         return result
 
     def reset(self):
