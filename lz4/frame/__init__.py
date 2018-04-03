@@ -832,9 +832,11 @@ def open(filename, mode="rb",
         if newline is not None:
             raise ValueError("Argument 'newline' not supported in binary mode")
 
+    _mode = mode.replace('t', '')
+
     binary_file = LZ4FrameFile(
         filename,
-        mode=mode,
+        mode=_mode,
         block_size=block_size,
         block_linked=block_linked,
         compression_level=compression_level,

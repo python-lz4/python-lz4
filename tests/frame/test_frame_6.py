@@ -40,6 +40,14 @@ def test_lz4frame_open_write_read_defaults(data):
         data_out = fp.read()
     assert data_out == data
 
+def test_lz4frame_open_write_read_text():
+    data = 'This is a test string'
+    with lz4frame.open('testfile', mode='wt') as fp:
+        fp.write(data)
+    with lz4frame.open('testfile', mode='rt') as fp:
+        data_out = fp.read()
+    assert data_out == data
+
 def test_lz4frame_open_write_read(
         data,
         compression_level,
