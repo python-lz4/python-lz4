@@ -12,5 +12,6 @@ Contents
     :members:
        library_version_number,
        library_version_string,
-       version
+       __version__
+
 

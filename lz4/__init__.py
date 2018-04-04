@@ -1,5 +1,11 @@
 # Package version info, generated on install
-from .version import version as __version__
+from pkg_resources import get_distribution, DistributionNotFound
+try:
+    __version__ = get_distribution(__name__).version
+except DistributionNotFound:
+    # package is not installed
+    pass
+
 VERSION = __version__
 
 from ._version import (
