@@ -9,11 +9,11 @@ Status
    :target: https://travis-ci.org/python-lz4/python-lz4
    :alt: Build Status
 
-.. image:: https://ci.appveyor.com/api/projects/status/github/python-lz4/python-lz4?branch=master
-   :target: https://ci.appveyor.com/project/jonathanunderwood/python-lz4
+.. image:: https://ci.appveyor.com/api/projects/status/r2qvw9mlfo63lklo/branch/master?svg=true
+   :target: https://ci.appveyor.com/project/python-lz4/python-lz4
    :alt: Build Status Windows
 
-.. image:: https://readthedocs.org/projects/python-lz4/badge/?version=latest
+.. image:: https://readthedocs.org/projects/python-lz4/badge/?version=stable
    :target: https://readthedocs.org/projects/python-lz4/
    :alt: Documentation
 
@@ -40,7 +40,7 @@ thread safe. An extensive test suite is included.
 Documenation
 ============
 
-.. image:: https://readthedocs.org/projects/python-lz4/badge/?version=latest
+.. image:: https://readthedocs.org/projects/python-lz4/badge/?version=stable
    :target: https://readthedocs.org/projects/python-lz4/
    :alt: Documentation
 
