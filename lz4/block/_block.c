@@ -93,6 +93,32 @@ typedef enum
   HIGH_COMPRESSION
 } compression_type;
 
+static int
+lz4_compress_generic (int comp, char* source, char* dest, size_t source_size, size_t dest_size,
+		      char* dict, size_t dict_size, int acceleration, int compression)
+{
+    if (comp != HIGH_COMPRESSION)
+      {
+	LZ4_stream_t lz4_state;
+	LZ4_resetStream (&lz4_state);
+	if (dict) {
+	    LZ4_loadDict (&lz4_state, dict, dict_size);
+	}
+	if (comp != FAST)
+	  {
+	    acceleration = 1;
+	  }
+	return LZ4_compress_fast_continue (&lz4_state, source, dest, source_size, dest_size, acceleration);
+      } else {
+	LZ4_streamHC_t lz4_state;
+	LZ4_resetStreamHC (&lz4_state, compression);
+	if (dict) {
+	    LZ4_loadDictHC (&lz4_state, dict, dict_size);
+	}
+	return LZ4_compress_HC_continue (&lz4_state, source, dest, source_size, dest_size);
+      }
+}
+
 static PyObject *
 compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 {
@@ -108,6 +134,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   Py_buffer source;
   size_t source_size;
   int return_bytearray = 0;
+  Py_buffer dict = { NULL, NULL };
   static char *argnames[] = {
     "source",
     "mode",
@@ -115,23 +142,24 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     "acceleration",
     "compression",
     "return_bytearray",
+    "dict",
     NULL
   };
 
 
 #if IS_PY3
-  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "y*|spiip", argnames,
+  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "y*|spiipz*", argnames,
                                     &source,
                                     &mode, &store_size, &acceleration, &compression,
-                                    &return_bytearray))
+                                    &return_bytearray, &dict))
     {
       return NULL;
     }
 #else
-  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s*|siiii", argnames,
+  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s*|siiiiz*", argnames,
                                     &source,
                                     &mode, &store_size, &acceleration, &compression,
-                                    &return_bytearray))
+                                    &return_bytearray, &dict))
     {
       return NULL;
     }
@@ -144,6 +172,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   if (store_size && source_size > UINT_MAX)
     {
       PyBuffer_Release(&source);
+      PyBuffer_Release(&dict);
       PyErr_Format(PyExc_OverflowError,
                    "Input too large for storing size in 4 byte header");
       return NULL;
@@ -164,6 +193,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   else
     {
       PyBuffer_Release(&source);
+      PyBuffer_Release(&dict);
       PyErr_Format (PyExc_ValueError,
 		    "Invalid mode argument: %s. Must be one of: standard, fast, high_compression",
 		    mode);
@@ -199,25 +229,14 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       dest_start = dest;
     }
 
-  switch (comp)
-    {
-    case DEFAULT:
-      output_size = LZ4_compress_default (source.buf, dest_start, source_size,
-                                          dest_size);
-      break;
-    case FAST:
-      output_size = LZ4_compress_fast (source.buf, dest_start, source_size,
-                                       dest_size, acceleration);
-      break;
-    case HIGH_COMPRESSION:
-      output_size = LZ4_compress_HC (source.buf, dest_start, source_size,
-                                     dest_size, compression);
-      break;
-    }
+  output_size = lz4_compress_generic (comp, source.buf, dest_start, source_size,
+				      dest_size, dict.buf, dict.len, acceleration,
+				      compression);
 
   Py_END_ALLOW_THREADS
 
   PyBuffer_Release(&source);
+  PyBuffer_Release(&dict);
 
   if (output_size <= 0)
     {
