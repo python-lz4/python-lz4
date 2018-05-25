@@ -281,24 +281,26 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   size_t dest_size;
   int uncompressed_size = -1;
   int return_bytearray = 0;
+  Py_buffer dict = { NULL, NULL };
   static char *argnames[] = {
     "source",
     "uncompressed_size",
     "return_bytearray",
+    "dict",
     NULL
   };
 
 #if IS_PY3
-  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "y*|ip", argnames,
+  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "y*|ipz*", argnames,
                                     &source, &uncompressed_size,
-                                    &return_bytearray))
+                                    &return_bytearray, &dict))
     {
       return NULL;
     }
 #else
-  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s*|ii", argnames,
+  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s*|iiz*", argnames,
                                     &source, &uncompressed_size,
-                                    &return_bytearray))
+                                    &return_bytearray, &dict))
     {
       return NULL;
     }
@@ -315,6 +317,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       if (source_size < hdr_size)
         {
           PyBuffer_Release(&source);
+	  PyBuffer_Release(&dict);
           PyErr_SetString (PyExc_ValueError, "Input source data size too small");
           return NULL;
         }
@@ -326,6 +329,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   if (dest_size < 0 || dest_size > PY_SSIZE_T_MAX)
     {
       PyBuffer_Release(&source);
+      PyBuffer_Release(&dict);
       PyErr_Format (PyExc_ValueError, "Invalid size in header: 0x%zu",
                     dest_size);
       return NULL;
@@ -340,11 +344,13 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   Py_BEGIN_ALLOW_THREADS
 
   output_size =
-    LZ4_decompress_safe (source_start, dest, source_size, dest_size);
+    LZ4_decompress_safe_usingDict (source_start, dest, source_size, dest_size,
+				   dict.buf, dict.len);
 
   Py_END_ALLOW_THREADS
 
   PyBuffer_Release(&source);
+  PyBuffer_Release(&dict);
 
   if (output_size < 0)
     {
