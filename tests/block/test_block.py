@@ -157,3 +157,27 @@ def test_memoryview():
     compressed = lz4.block.compress(data)
     assert lz4.block.compress(memoryview(data)) == compressed
     assert lz4.block.decompress(memoryview(compressed)) == data
+
+def test_with_dict_none():
+    input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123" * 24
+    for mode in ['default', 'high_compression']:
+        assert lz4.block.decompress(lz4.block.compress(input_data, mode=mode, dict=None)) == input_data
+        assert lz4.block.decompress(lz4.block.compress(input_data, mode=mode), dict=None) == input_data
+        assert lz4.block.decompress(lz4.block.compress(input_data, mode=mode, dict=b'')) == input_data
+        assert lz4.block.decompress(lz4.block.compress(input_data, mode=mode), dict=b'') == input_data
+        assert lz4.block.decompress(lz4.block.compress(input_data, mode=mode, dict='')) == input_data
+        assert lz4.block.decompress(lz4.block.compress(input_data, mode=mode), dict='') == input_data
+
+def test_with_dict():
+    input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123" * 24
+    dict1 = input_data[10:30]
+    dict2 = input_data[20:40]
+    for mode in ['default', 'high_compression']:
+        compressed = lz4.block.compress(input_data, mode=mode, dict=dict1)
+        with pytest.raises(ValueError, message=r'Decompressor wrote \d+ bytes, but \d+ bytes expected from header)'):
+            lz4.block.decompress(compressed)
+        with pytest.raises(ValueError, message=r'Decompressor wrote \d+ bytes, but \d+ bytes expected from header)'):
+            lz4.block.decompress(compressed, dict=dict1[:2])
+        assert lz4.block.decompress(compressed, dict=dict2) != input_data
+        assert lz4.block.decompress(compressed, dict=dict1) == input_data
+    assert lz4.block.decompress(lz4.block.compress(input_data), dict=dict1) == input_data
