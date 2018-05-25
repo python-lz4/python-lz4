@@ -181,3 +181,17 @@ def test_with_dict():
         assert lz4.block.decompress(compressed, dict=dict2) != input_data
         assert lz4.block.decompress(compressed, dict=dict1) == input_data
     assert lz4.block.decompress(lz4.block.compress(input_data), dict=dict1) == input_data
+
+def test_known_decompress():
+    assert(lz4.block.decompress(
+        b'\x00\x00\x00\x00\x00') ==
+        b'')
+    assert(lz4.block.decompress(
+        b'\x01\x00\x00\x00\x10 ') ==
+        b' ')
+    assert(lz4.block.decompress(
+        b'h\x00\x00\x00\xff\x0bLorem ipsum dolor sit amet\x1a\x006P amet') ==
+        b'Lorem ipsum dolor sit amet' * 4)
+    assert(lz4.block.decompress(
+        b'\xb0\xb3\x00\x00\xff\x1fExcepteur sint occaecat cupidatat non proident.\x00' + (b'\xff' * 180) + b'\x1ePident') ==
+        b'Excepteur sint occaecat cupidatat non proident' * 1000)
