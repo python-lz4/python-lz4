@@ -97,26 +97,26 @@ static int
 lz4_compress_generic (int comp, char* source, char* dest, size_t source_size, size_t dest_size,
 		      char* dict, size_t dict_size, int acceleration, int compression)
 {
-    if (comp != HIGH_COMPRESSION)
-      {
-	LZ4_stream_t lz4_state;
-	LZ4_resetStream (&lz4_state);
-	if (dict) {
-	    LZ4_loadDict (&lz4_state, dict, dict_size);
-	}
-	if (comp != FAST)
-	  {
-	    acceleration = 1;
-	  }
-	return LZ4_compress_fast_continue (&lz4_state, source, dest, source_size, dest_size, acceleration);
-      } else {
-	LZ4_streamHC_t lz4_state;
-	LZ4_resetStreamHC (&lz4_state, compression);
-	if (dict) {
-	    LZ4_loadDictHC (&lz4_state, dict, dict_size);
-	}
-	return LZ4_compress_HC_continue (&lz4_state, source, dest, source_size, dest_size);
+  if (comp != HIGH_COMPRESSION)
+    {
+      LZ4_stream_t lz4_state;
+      LZ4_resetStream (&lz4_state);
+      if (dict) {
+	  LZ4_loadDict (&lz4_state, dict, dict_size);
       }
+      if (comp != FAST)
+	{
+	  acceleration = 1;
+	}
+      return LZ4_compress_fast_continue (&lz4_state, source, dest, source_size, dest_size, acceleration);
+    } else {
+      LZ4_streamHC_t lz4_state;
+      LZ4_resetStreamHC (&lz4_state, compression);
+      if (dict) {
+	  LZ4_loadDictHC (&lz4_state, dict, dict_size);
+      }
+      return LZ4_compress_HC_continue (&lz4_state, source, dest, source_size, dest_size);
+    }
 }
 
 static PyObject *
