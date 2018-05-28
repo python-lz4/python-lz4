@@ -94,8 +94,8 @@ typedef enum
 } compression_type;
 
 static int
-lz4_compress_generic (int comp, char* source, char* dest, size_t source_size, size_t dest_size,
-                      char* dict, size_t dict_size, int acceleration, int compression)
+lz4_compress_generic (int comp, char* source, char* dest, int source_size, int dest_size,
+                      char* dict, int dict_size, int acceleration, int compression)
 {
   if (comp != HIGH_COMPRESSION)
     {
@@ -134,9 +134,9 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   PyObject *py_dest;
   char *dest, *dest_start;
   compression_type comp;
-  size_t output_size;
+  int output_size;
   Py_buffer source;
-  size_t source_size;
+  int source_size;
   int return_bytearray = 0;
   Py_buffer dict = { NULL, NULL };
   static char *argnames[] = {
@@ -169,18 +169,25 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     }
 #endif
 
-  source_size = (size_t) source.len;
-
-  /* We're using 4 bytes for the size of the content in the header. This means
-     we can store a size as large as the maximum value of an unsinged int. */
-  if (store_size && source_size > UINT_MAX)
+  if (source.len > INT_MAX)
     {
       PyBuffer_Release(&source);
       PyBuffer_Release(&dict);
       PyErr_Format(PyExc_OverflowError,
-                   "Input too large for storing size in 4 byte header");
+                   "Input too large for LZ4 API");
       return NULL;
     }
+
+  if (dict.len > INT_MAX)
+    {
+      PyBuffer_Release(&source);
+      PyBuffer_Release(&dict);
+      PyErr_Format(PyExc_OverflowError,
+                   "Dictionary too large for LZ4 API");
+      return NULL;
+    }
+
+  source_size = source.len;
 
   if (!strncmp (mode, "default", sizeof ("default")))
     {
@@ -242,7 +249,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   PyBuffer_Release(&source);
   PyBuffer_Release(&dict);
 
-  if ((ssize_t)output_size <= 0)
+  if (output_size <= 0)
     {
       PyErr_SetString (PyExc_ValueError, "Compression failed");
       PyMem_Free (dest);
@@ -278,10 +285,10 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 {
   Py_buffer source;
   const char * source_start;
-  size_t source_size;
+  int source_size;
   PyObject *py_dest;
   char *dest;
-  size_t output_size;
+  int output_size;
   size_t dest_size;
   int uncompressed_size = -1;
   int return_bytearray = 0;
@@ -309,8 +316,27 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       return NULL;
     }
 #endif
+
+  if (source.len > INT_MAX)
+    {
+      PyBuffer_Release(&source);
+      PyBuffer_Release(&dict);
+      PyErr_Format(PyExc_OverflowError,
+                   "Input too large for LZ4 API");
+      return NULL;
+    }
+
+  if (dict.len > INT_MAX)
+    {
+      PyBuffer_Release(&source);
+      PyBuffer_Release(&dict);
+      PyErr_Format(PyExc_OverflowError,
+                   "Dictionary too large for LZ4 API");
+      return NULL;
+    }
+
   source_start = (const char *) source.buf;
-  source_size = (size_t) source.len;
+  source_size = source.len;
 
   if (uncompressed_size >= 0)
     {
@@ -356,7 +382,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   PyBuffer_Release(&source);
   PyBuffer_Release(&dict);
 
-  if ((ssize_t)output_size < 0)
+  if (output_size < 0)
     {
       PyErr_Format (PyExc_ValueError, "Corrupt input at byte %zu", -output_size);
       PyMem_Free (dest);

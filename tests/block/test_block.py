@@ -206,3 +206,15 @@ def test_known_decompress():
     assert(lz4.block.decompress(
         b'\xb0\xb3\x00\x00\xff\x1fExcepteur sint occaecat cupidatat non proident.\x00' + (b'\xff' * 180) + b'\x1ePident') ==
         b'Excepteur sint occaecat cupidatat non proident' * 1000)
+
+#def test_huge():
+#    if sys.maxsize > 0xffffffff:
+#        huge = b'\0' * 0x100000000
+#        with pytest.raises(OverflowError, match='Input too large for LZ4 API'):
+#            lz4.block.compress(huge)
+#        with pytest.raises(OverflowError, match='Dictionary too large for LZ4 API'):
+#            lz4.block.compress(b'', dict=huge)
+#        with pytest.raises(OverflowError, match='Input too large for LZ4 API'):
+#            lz4.block.decompress(huge)
+#        with pytest.raises(OverflowError, match='Dictionary too large for LZ4 API'):
+#            lz4.block.decompress(b'', dict=huge)
