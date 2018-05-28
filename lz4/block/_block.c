@@ -95,26 +95,30 @@ typedef enum
 
 static int
 lz4_compress_generic (int comp, char* source, char* dest, size_t source_size, size_t dest_size,
-		      char* dict, size_t dict_size, int acceleration, int compression)
+                      char* dict, size_t dict_size, int acceleration, int compression)
 {
   if (comp != HIGH_COMPRESSION)
     {
       LZ4_stream_t lz4_state;
       LZ4_resetStream (&lz4_state);
-      if (dict) {
-	  LZ4_loadDict (&lz4_state, dict, dict_size);
-      }
+      if (dict)
+        {
+          LZ4_loadDict (&lz4_state, dict, dict_size);
+        }
       if (comp != FAST)
-	{
-	  acceleration = 1;
-	}
+        {
+          acceleration = 1;
+        }
       return LZ4_compress_fast_continue (&lz4_state, source, dest, source_size, dest_size, acceleration);
-    } else {
+    }
+  else
+    {
       LZ4_streamHC_t lz4_state;
       LZ4_resetStreamHC (&lz4_state, compression);
-      if (dict) {
-	  LZ4_loadDictHC (&lz4_state, dict, dict_size);
-      }
+      if (dict)
+        {
+          LZ4_loadDictHC (&lz4_state, dict, dict_size);
+        }
       return LZ4_compress_HC_continue (&lz4_state, source, dest, source_size, dest_size);
     }
 }
@@ -195,8 +199,8 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       PyBuffer_Release(&source);
       PyBuffer_Release(&dict);
       PyErr_Format (PyExc_ValueError,
-		    "Invalid mode argument: %s. Must be one of: standard, fast, high_compression",
-		    mode);
+                    "Invalid mode argument: %s. Must be one of: standard, fast, high_compression",
+                    mode);
       return NULL;
     }
 
@@ -230,8 +234,8 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     }
 
   output_size = lz4_compress_generic (comp, source.buf, dest_start, source_size,
-				      dest_size, dict.buf, dict.len, acceleration,
-				      compression);
+                                      dest_size, dict.buf, dict.len, acceleration,
+                                      compression);
 
   Py_END_ALLOW_THREADS
 
@@ -317,7 +321,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       if (source_size < hdr_size)
         {
           PyBuffer_Release(&source);
-	  PyBuffer_Release(&dict);
+          PyBuffer_Release(&dict);
           PyErr_SetString (PyExc_ValueError, "Input source data size too small");
           return NULL;
         }
@@ -345,7 +349,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 
   output_size =
     LZ4_decompress_safe_usingDict (source_start, dest, source_size, dest_size,
-				   dict.buf, dict.len);
+                                   dict.buf, dict.len);
 
   Py_END_ALLOW_THREADS
 
