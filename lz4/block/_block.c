@@ -238,7 +238,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   PyBuffer_Release(&source);
   PyBuffer_Release(&dict);
 
-  if (output_size <= 0)
+  if ((ssize_t)output_size <= 0)
     {
       PyErr_SetString (PyExc_ValueError, "Compression failed");
       PyMem_Free (dest);
@@ -352,7 +352,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   PyBuffer_Release(&source);
   PyBuffer_Release(&dict);
 
-  if (output_size < 0)
+  if ((ssize_t)output_size < 0)
     {
       PyErr_Format (PyExc_ValueError, "Corrupt input at byte %zu", -output_size);
       PyMem_Free (dest);
