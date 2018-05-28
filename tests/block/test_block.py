@@ -28,25 +28,39 @@ def get_stored_size(buff):
 
 
 # Test single threaded usage with all valid variations of input
-def test_1(data, mode, store_size, c_return_bytearray, d_return_bytearray):
+def test_1(data, mode, store_size, c_return_bytearray, d_return_bytearray, dictionary):
     kwargs = {}
 
+    if dictionary:
+        if isinstance(dictionary, tuple):
+            kwargs['dict'] = data[dictionary[0]:dictionary[1]]
+        else:
+            kwargs['dict'] = dictionary
+
+    c_kwargs = dict(kwargs)
+
     if mode[0] != None:
-        kwargs['mode'] = mode[0]
+        c_kwargs['mode'] = mode[0]
     if mode[1] != None:
-        kwargs.update(mode[1])
+        c_kwargs.update(mode[1])
 
-    kwargs.update(store_size)
-    kwargs.update(c_return_bytearray)
+    c_kwargs.update(store_size)
+    c_kwargs.update(c_return_bytearray)
 
-    c = lz4.block.compress(data, **kwargs)
+    c = lz4.block.compress(data, **c_kwargs)
+
+    d_kwargs = dict(kwargs)
 
     if store_size['store_size']:
         assert get_stored_size(c) == len(data)
-        d = lz4.block.decompress(c, **d_return_bytearray)
+        d = lz4.block.decompress(c, **d_kwargs)
     else:
-        d = lz4.block.decompress(c, uncompressed_size=len(data),
-                                 **d_return_bytearray)
+        d_kwargs['uncompressed_size'] = len(data)
+
+    d_kwargs.update(d_return_bytearray)
+
+    d = lz4.block.decompress(c, **d_kwargs)
+
     assert d == data
     if d_return_bytearray['return_bytearray']:
         assert isinstance(d, bytearray)
@@ -89,9 +103,9 @@ def test_decompress_without_leak():
     # Verify that hand-crafted packet does not leak uninitialized(?) memory.
     data = lz4.block.compress(b'A' * 64)
     message=r'^Decompressor wrote 64 bytes, but 79 bytes expected from header$'
-    with pytest.raises(ValueError, message=message):
+    with pytest.raises(ValueError, match=message):
         lz4.block.decompress(b'\x4f' + data[1:])
-    with pytest.raises(ValueError, message=message):
+    with pytest.raises(ValueError, match=message):
         lz4.block.decompress(data[4:], uncompressed_size=79)
 
 
@@ -103,28 +117,25 @@ def test_decompress_truncated():
     #         lz4.block.decompress(compressed[:i])
     #     except:
     #         print(i, sys.exc_info()[0], sys.exc_info()[1])
-    with pytest.raises(ValueError, message='Input source data size too small'):
+    with pytest.raises(ValueError, match='Input source data size too small'):
         lz4.block.decompress(compressed[:0])
-        lz4.block.decompress(compressed[:1])
-    with pytest.raises(ValueError, message=r'^Corrupt input at byte'):
-        lz4.block.decompress(compressed[:24])
-        lz4.block.decompress(compressed[:25])
-        lz4.block.decompress(compressed[:-2])
-    with pytest.raises(ValueError, message=r'Decompressor wrote \d+ bytes, but \d+ bytes expected from header)'):
-        lz4.block.decompress(compressed[:27])
-        lz4.block.decompress(compressed[:67])
-        lz4.block.decompress(compressed[:85])
+    for n in [0, 1]:
+        with pytest.raises(ValueError, match='Input source data size too small'):
+            lz4.block.decompress(compressed[:n])
+    for n in [24, 25, -2, 27, 67, 85]:
+        with pytest.raises(ValueError, match=r'Corrupt input at byte \d+'):
+            lz4.block.decompress(compressed[:n])
 
 
 def test_decompress_with_trailer():
     data = b'A' * 64
     comp = lz4.block.compress(data)
     message=r'^Corrupt input at byte'
-    with pytest.raises(ValueError, message=message):
+    with pytest.raises(ValueError, match=message):
         lz4.block.decompress(comp + b'A')
-    with pytest.raises(ValueError, message=message):
+    with pytest.raises(ValueError, match=message):
         lz4.block.decompress(comp + comp)
-    with pytest.raises(ValueError, message=message):
+    with pytest.raises(ValueError, match=message):
         lz4.block.decompress(comp + comp[4:])
 
 
@@ -174,9 +185,9 @@ def test_with_dict():
     dict2 = input_data[20:40]
     for mode in ['default', 'high_compression']:
         compressed = lz4.block.compress(input_data, mode=mode, dict=dict1)
-        with pytest.raises(ValueError, message=r'Decompressor wrote \d+ bytes, but \d+ bytes expected from header)'):
+        with pytest.raises(ValueError, match=r'Corrupt input at byte \d+'):
             lz4.block.decompress(compressed)
-        with pytest.raises(ValueError, message=r'Decompressor wrote \d+ bytes, but \d+ bytes expected from header)'):
+        with pytest.raises(ValueError, match=r'Corrupt input at byte \d+'):
             lz4.block.decompress(compressed, dict=dict1[:2])
         assert lz4.block.decompress(compressed, dict=dict2) != input_data
         assert lz4.block.decompress(compressed, dict=dict1) == input_data
