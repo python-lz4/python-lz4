@@ -1,6 +1,7 @@
 import lz4.block
 import sys
 from multiprocessing.pool import ThreadPool
+from functools import partial
 import os
 import pytest
 if sys.version_info <= (3, 2):
@@ -27,17 +28,27 @@ def get_stored_size(buff):
         return struct.unpack('<I', b[:4])[0]
 
 
-# Test single threaded usage with all valid variations of input
-def test_1(data, mode, store_size, c_return_bytearray, d_return_bytearray, dictionary):
-    kwargs = {}
-
+def roundtrip(x, c_kwargs, d_kwargs, dictionary):
     if dictionary:
         if isinstance(dictionary, tuple):
-            kwargs['dict'] = data[dictionary[0]:dictionary[1]]
+            d = x[dictionary[0]:dictionary[1]]
         else:
-            kwargs['dict'] = dictionary
+            d = dictionary
+        c_kwargs['dict'] = d
+        d_kwargs['dict'] = d
 
-    c_kwargs = dict(kwargs)
+    c = lz4.block.compress(x, **c_kwargs)
+
+    if c_kwargs['store_size']:
+        assert get_stored_size(c) == len(x)
+    else:
+        d_kwargs['uncompressed_size'] = len(x)
+
+    return lz4.block.decompress(c, **d_kwargs)
+
+
+def setup_kwargs(mode, store_size, c_return_bytearray=None, d_return_bytearray=None):
+    c_kwargs = {}
 
     if mode[0] != None:
         c_kwargs['mode'] = mode[0]
@@ -45,21 +56,23 @@ def test_1(data, mode, store_size, c_return_bytearray, d_return_bytearray, dicti
         c_kwargs.update(mode[1])
 
     c_kwargs.update(store_size)
-    c_kwargs.update(c_return_bytearray)
 
-    c = lz4.block.compress(data, **c_kwargs)
+    if(c_return_bytearray):
+        c_kwargs.update(c_return_bytearray)
 
-    d_kwargs = dict(kwargs)
+    d_kwargs = {}
 
-    if store_size['store_size']:
-        assert get_stored_size(c) == len(data)
-        d = lz4.block.decompress(c, **d_kwargs)
-    else:
-        d_kwargs['uncompressed_size'] = len(data)
+    if(d_return_bytearray):
+        d_kwargs.update(d_return_bytearray)
 
-    d_kwargs.update(d_return_bytearray)
+    return (c_kwargs, d_kwargs)
 
-    d = lz4.block.decompress(c, **d_kwargs)
+
+# Test single threaded usage with all valid variations of input
+def test_1(data, mode, store_size, c_return_bytearray, d_return_bytearray, dictionary):
+    (c_kwargs, d_kwargs) = setup_kwargs(mode, store_size, c_return_bytearray, d_return_bytearray)
+
+    d = roundtrip(data, c_kwargs, d_kwargs, dictionary)
 
     assert d == data
     if d_return_bytearray['return_bytearray']:
@@ -67,28 +80,14 @@ def test_1(data, mode, store_size, c_return_bytearray, d_return_bytearray, dicti
 
 
 # Test multi threaded usage with all valid variations of input
-def test_threads2(data, mode, store_size):
-    kwargs = {}
-    if mode[0] != None:
-        kwargs['mode'] = mode[0]
-    if mode[1] != None:
-        kwargs.update(mode[1])
-
-    kwargs.update(store_size)
-
-    def roundtrip(x):
-        c = lz4.block.compress(x, **kwargs)
-        if store_size['store_size']:
-            assert get_stored_size(c) == len(data)
-            d = lz4.block.decompress(c)
-        else:
-            d = lz4.block.decompress(c, uncompressed_size=len(x))
-        return d
+def test_threads2(data, mode, store_size, dictionary):
+    (c_kwargs, d_kwargs) = setup_kwargs(mode, store_size)
 
     data_in = [data for i in range(32)]
 
     pool = ThreadPool(8)
-    data_out = pool.map(roundtrip, data_in)
+    rt = partial(roundtrip, c_kwargs=c_kwargs, d_kwargs=d_kwargs, dictionary=dictionary)
+    data_out = pool.map(rt, data_in)
     pool.close()
     assert data_in == data_out
 
@@ -209,7 +208,7 @@ def test_known_decompress():
 
 #def test_huge():
 #    if sys.maxsize > 0xffffffff:
-#        huge = b'\0' * 0x100000000
+#        huge = b'\0' * 0x100000000 # warning: this allocates 4GB of memory!
 #        with pytest.raises(OverflowError, match='Input too large for LZ4 API'):
 #            lz4.block.compress(huge)
 #        with pytest.raises(OverflowError, match='Dictionary too large for LZ4 API'):
