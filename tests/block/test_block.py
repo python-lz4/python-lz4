@@ -123,7 +123,7 @@ def test_decompress_truncated():
         with pytest.raises(ValueError, match='Input source data size too small'):
             lz4.block.decompress(compressed[:n])
     for n in [24, 25, -2, 27, 67, 85]:
-        with pytest.raises(ValueError, match=r'Corrupt input at byte \d+'):
+        with pytest.raises(ValueError, match=r'Corrupt input at byte \d+|Decompressor wrote \d+ bytes, but \d+ bytes expected from header'):
             lz4.block.decompress(compressed[:n])
 
 
