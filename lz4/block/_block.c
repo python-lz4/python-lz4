@@ -384,7 +384,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 
   if (output_size < 0)
     {
-      PyErr_Format (PyExc_ValueError, "Corrupt input at byte %zu", -output_size);
+      PyErr_Format (PyExc_ValueError, "Corrupt input at byte %u", -output_size);
       PyMem_Free (dest);
       return NULL;
     }
@@ -392,7 +392,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     {
       /* Better to fail explicitly than to allow fishy data to pass through. */
       PyErr_Format (PyExc_ValueError,
-                    "Decompressor wrote %zu bytes, but %zu bytes expected from header",
+                    "Decompressor wrote %u bytes, but %zu bytes expected from header",
                     output_size, dest_size);
       PyMem_Free (dest);
       return NULL;
