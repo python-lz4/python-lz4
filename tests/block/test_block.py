@@ -50,9 +50,9 @@ def roundtrip(x, c_kwargs, d_kwargs, dictionary):
 def setup_kwargs(mode, store_size, c_return_bytearray=None, d_return_bytearray=None):
     c_kwargs = {}
 
-    if mode[0] != None:
+    if mode[0] is not None:
         c_kwargs['mode'] = mode[0]
-    if mode[1] != None:
+    if mode[1] is not None:
         c_kwargs.update(mode[1])
 
     c_kwargs.update(store_size)
@@ -95,13 +95,13 @@ def test_threads2(data, mode, store_size, dictionary):
 def test_decompress_ui32_overflow():
     data = lz4.block.compress(b'A' * 64)
     with pytest.raises(OverflowError):
-        lz4.block.decompress(data[4:], uncompressed_size=((1<<32) + 64))
+        lz4.block.decompress(data[4:], uncompressed_size=((1 << 32) + 64))
 
 
 def test_decompress_without_leak():
     # Verify that hand-crafted packet does not leak uninitialized(?) memory.
     data = lz4.block.compress(b'A' * 64)
-    message=r'^Decompressor wrote 64 bytes, but 79 bytes expected from header$'
+    message = r'^Decompressor wrote 64 bytes, but 79 bytes expected from header$'
     with pytest.raises(ValueError, match=message):
         lz4.block.decompress(b'\x4f' + data[1:])
     with pytest.raises(ValueError, match=message):
