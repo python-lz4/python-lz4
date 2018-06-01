@@ -285,7 +285,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 {
   Py_buffer source;
   const char * source_start;
-  int source_size;
+  size_t source_size;
   PyObject *py_dest;
   char *dest;
   int output_size;
