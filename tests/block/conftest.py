@@ -81,3 +81,15 @@ def d_return_bytearray(return_bytearray):
 )
 def mode(request):
     return request.param
+
+@pytest.fixture(
+    params=[
+        None,
+        (0, 0),
+        (100, 200),
+        (0, 8 * 1024),
+        os.urandom(8 * 1024)
+    ]
+)
+def dictionary(request):
+    return request.param

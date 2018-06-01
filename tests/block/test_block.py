@@ -1,6 +1,7 @@
 import lz4.block
 import sys
 from multiprocessing.pool import ThreadPool
+from functools import partial
 import os
 import pytest
 if sys.version_info <= (3, 2):
@@ -27,54 +28,66 @@ def get_stored_size(buff):
         return struct.unpack('<I', b[:4])[0]
 
 
-# Test single threaded usage with all valid variations of input
-def test_1(data, mode, store_size, c_return_bytearray, d_return_bytearray):
-    kwargs = {}
+def roundtrip(x, c_kwargs, d_kwargs, dictionary):
+    if dictionary:
+        if isinstance(dictionary, tuple):
+            d = x[dictionary[0]:dictionary[1]]
+        else:
+            d = dictionary
+        c_kwargs['dict'] = d
+        d_kwargs['dict'] = d
+
+    c = lz4.block.compress(x, **c_kwargs)
+
+    if c_kwargs['store_size']:
+        assert get_stored_size(c) == len(x)
+    else:
+        d_kwargs['uncompressed_size'] = len(x)
+
+    return lz4.block.decompress(c, **d_kwargs)
+
+
+def setup_kwargs(mode, store_size, c_return_bytearray=None, d_return_bytearray=None):
+    c_kwargs = {}
 
     if mode[0] != None:
-        kwargs['mode'] = mode[0]
+        c_kwargs['mode'] = mode[0]
     if mode[1] != None:
-        kwargs.update(mode[1])
+        c_kwargs.update(mode[1])
 
-    kwargs.update(store_size)
-    kwargs.update(c_return_bytearray)
+    c_kwargs.update(store_size)
 
-    c = lz4.block.compress(data, **kwargs)
+    if(c_return_bytearray):
+        c_kwargs.update(c_return_bytearray)
 
-    if store_size['store_size']:
-        assert get_stored_size(c) == len(data)
-        d = lz4.block.decompress(c, **d_return_bytearray)
-    else:
-        d = lz4.block.decompress(c, uncompressed_size=len(data),
-                                 **d_return_bytearray)
+    d_kwargs = {}
+
+    if(d_return_bytearray):
+        d_kwargs.update(d_return_bytearray)
+
+    return (c_kwargs, d_kwargs)
+
+
+# Test single threaded usage with all valid variations of input
+def test_1(data, mode, store_size, c_return_bytearray, d_return_bytearray, dictionary):
+    (c_kwargs, d_kwargs) = setup_kwargs(mode, store_size, c_return_bytearray, d_return_bytearray)
+
+    d = roundtrip(data, c_kwargs, d_kwargs, dictionary)
+
     assert d == data
     if d_return_bytearray['return_bytearray']:
         assert isinstance(d, bytearray)
 
 
 # Test multi threaded usage with all valid variations of input
-def test_threads2(data, mode, store_size):
-    kwargs = {}
-    if mode[0] != None:
-        kwargs['mode'] = mode[0]
-    if mode[1] != None:
-        kwargs.update(mode[1])
-
-    kwargs.update(store_size)
-
-    def roundtrip(x):
-        c = lz4.block.compress(x, **kwargs)
-        if store_size['store_size']:
-            assert get_stored_size(c) == len(data)
-            d = lz4.block.decompress(c)
-        else:
-            d = lz4.block.decompress(c, uncompressed_size=len(x))
-        return d
+def test_threads2(data, mode, store_size, dictionary):
+    (c_kwargs, d_kwargs) = setup_kwargs(mode, store_size)
 
     data_in = [data for i in range(32)]
 
     pool = ThreadPool(8)
-    data_out = pool.map(roundtrip, data_in)
+    rt = partial(roundtrip, c_kwargs=c_kwargs, d_kwargs=d_kwargs, dictionary=dictionary)
+    data_out = pool.map(rt, data_in)
     pool.close()
     assert data_in == data_out
 
@@ -89,9 +102,9 @@ def test_decompress_without_leak():
     # Verify that hand-crafted packet does not leak uninitialized(?) memory.
     data = lz4.block.compress(b'A' * 64)
     message=r'^Decompressor wrote 64 bytes, but 79 bytes expected from header$'
-    with pytest.raises(ValueError, message=message):
+    with pytest.raises(ValueError, match=message):
         lz4.block.decompress(b'\x4f' + data[1:])
-    with pytest.raises(ValueError, message=message):
+    with pytest.raises(ValueError, match=message):
         lz4.block.decompress(data[4:], uncompressed_size=79)
 
 
@@ -103,28 +116,25 @@ def test_decompress_truncated():
     #         lz4.block.decompress(compressed[:i])
     #     except:
     #         print(i, sys.exc_info()[0], sys.exc_info()[1])
-    with pytest.raises(ValueError, message='Input source data size too small'):
+    with pytest.raises(ValueError, match='Input source data size too small'):
         lz4.block.decompress(compressed[:0])
-        lz4.block.decompress(compressed[:1])
-    with pytest.raises(ValueError, message=r'^Corrupt input at byte'):
-        lz4.block.decompress(compressed[:24])
-        lz4.block.decompress(compressed[:25])
-        lz4.block.decompress(compressed[:-2])
-    with pytest.raises(ValueError, message=r'Decompressor wrote \d+ bytes, but \d+ bytes expected from header)'):
-        lz4.block.decompress(compressed[:27])
-        lz4.block.decompress(compressed[:67])
-        lz4.block.decompress(compressed[:85])
+    for n in [0, 1]:
+        with pytest.raises(ValueError, match='Input source data size too small'):
+            lz4.block.decompress(compressed[:n])
+    for n in [24, 25, -2, 27, 67, 85]:
+        with pytest.raises(ValueError, match=r'Corrupt input at byte \d+|Decompressor wrote \d+ bytes, but \d+ bytes expected from header'):
+            lz4.block.decompress(compressed[:n])
 
 
 def test_decompress_with_trailer():
     data = b'A' * 64
     comp = lz4.block.compress(data)
     message=r'^Corrupt input at byte'
-    with pytest.raises(ValueError, message=message):
+    with pytest.raises(ValueError, match=message):
         lz4.block.decompress(comp + b'A')
-    with pytest.raises(ValueError, message=message):
+    with pytest.raises(ValueError, match=message):
         lz4.block.decompress(comp + comp)
-    with pytest.raises(ValueError, message=message):
+    with pytest.raises(ValueError, match=message):
         lz4.block.decompress(comp + comp[4:])
 
 
@@ -157,3 +167,53 @@ def test_memoryview():
     compressed = lz4.block.compress(data)
     assert lz4.block.compress(memoryview(data)) == compressed
     assert lz4.block.decompress(memoryview(compressed)) == data
+
+def test_with_dict_none():
+    input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123" * 24
+    for mode in ['default', 'high_compression']:
+        assert lz4.block.decompress(lz4.block.compress(input_data, mode=mode, dict=None)) == input_data
+        assert lz4.block.decompress(lz4.block.compress(input_data, mode=mode), dict=None) == input_data
+        assert lz4.block.decompress(lz4.block.compress(input_data, mode=mode, dict=b'')) == input_data
+        assert lz4.block.decompress(lz4.block.compress(input_data, mode=mode), dict=b'') == input_data
+        assert lz4.block.decompress(lz4.block.compress(input_data, mode=mode, dict='')) == input_data
+        assert lz4.block.decompress(lz4.block.compress(input_data, mode=mode), dict='') == input_data
+
+def test_with_dict():
+    input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123" * 24
+    dict1 = input_data[10:30]
+    dict2 = input_data[20:40]
+    for mode in ['default', 'high_compression']:
+        compressed = lz4.block.compress(input_data, mode=mode, dict=dict1)
+        with pytest.raises(ValueError, match=r'Corrupt input at byte \d+'):
+            lz4.block.decompress(compressed)
+        with pytest.raises(ValueError, match=r'Corrupt input at byte \d+'):
+            lz4.block.decompress(compressed, dict=dict1[:2])
+        assert lz4.block.decompress(compressed, dict=dict2) != input_data
+        assert lz4.block.decompress(compressed, dict=dict1) == input_data
+    assert lz4.block.decompress(lz4.block.compress(input_data), dict=dict1) == input_data
+
+def test_known_decompress():
+    assert(lz4.block.decompress(
+        b'\x00\x00\x00\x00\x00') ==
+        b'')
+    assert(lz4.block.decompress(
+        b'\x01\x00\x00\x00\x10 ') ==
+        b' ')
+    assert(lz4.block.decompress(
+        b'h\x00\x00\x00\xff\x0bLorem ipsum dolor sit amet\x1a\x006P amet') ==
+        b'Lorem ipsum dolor sit amet' * 4)
+    assert(lz4.block.decompress(
+        b'\xb0\xb3\x00\x00\xff\x1fExcepteur sint occaecat cupidatat non proident.\x00' + (b'\xff' * 180) + b'\x1ePident') ==
+        b'Excepteur sint occaecat cupidatat non proident' * 1000)
+
+#def test_huge():
+#    if sys.maxsize > 0xffffffff:
+#        huge = b'\0' * 0x100000000 # warning: this allocates 4GB of memory!
+#        with pytest.raises(OverflowError, match='Input too large for LZ4 API'):
+#            lz4.block.compress(huge)
+#        with pytest.raises(OverflowError, match='Dictionary too large for LZ4 API'):
+#            lz4.block.compress(b'', dict=huge)
+#        with pytest.raises(OverflowError, match='Input too large for LZ4 API'):
+#            lz4.block.decompress(huge)
+#        with pytest.raises(OverflowError, match='Dictionary too large for LZ4 API'):
+#            lz4.block.decompress(b'', dict=huge)
