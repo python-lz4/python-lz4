@@ -93,7 +93,7 @@ typedef enum
   HIGH_COMPRESSION
 } compression_type;
 
-static int
+static inline int
 lz4_compress_generic (int comp, char* source, char* dest, int source_size, int dest_size,
                       char* dict, int dict_size, int acceleration, int compression)
 {
