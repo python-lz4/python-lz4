@@ -444,16 +444,16 @@ PyDoc_STRVAR(compress__doc,
              "        block.\n"                                         \
              "    return_bytearray (bool): If ``False`` (the default) then the function\n" \
              "        will return a bytes object. If ``True``, then the function will\n" \
-             "        return a bytearray object.\n\n" \
+             "        return a bytearray object.\n\n"                   \
              "    dict (str, bytes or buffer-compatible object): If specified, perform\n" \
-             "        compression using this initial dictionary.\n" \
+             "        compression using this initial dictionary.\n"     \
              "Returns:\n"                                               \
              "    bytes or bytearray: Compressed data.\n");
 
 PyDoc_STRVAR(decompress__doc,
-             "decompress(source, uncompressed_size=-1, return_bytearray=False)\n\n"                                 \
+             "decompress(source, uncompressed_size=-1, return_bytearray=False)\n\n" \
              "Decompress source, returning the uncompressed data as a string.\n" \
-             "Raises an exception if any error occurs.\n"             \
+             "Raises an exception if any error occurs.\n"               \
              "\n"                                                       \
              "Args:\n"                                                  \
              "    source (str, bytes or buffer-compatible object): Data to decompress.\n" \
