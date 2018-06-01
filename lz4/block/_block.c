@@ -80,10 +80,6 @@ load_le32 (const char *c)
   return d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
 }
 
-#ifdef inline
-#undef inline
-#endif
-
 static const size_t hdr_size = sizeof (uint32_t);
 
 typedef enum
@@ -122,6 +118,10 @@ lz4_compress_generic (int comp, char* source, char* dest, int source_size, int d
       return LZ4_compress_HC_continue (&lz4_state, source, dest, source_size, dest_size);
     }
 }
+
+#ifdef inline
+#undef inline
+#endif
 
 static PyObject *
 compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
