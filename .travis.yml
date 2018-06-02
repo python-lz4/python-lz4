@@ -12,6 +12,7 @@ script:
   - # tox
   - pip install .
   - pip install pytest psutil
+  - python -c "import psutil; print(psutil.virtual_memory())"
   - python tests/block/test_block_2.py
   - pytest tests/block/test_block_2.py
   - make -C docs doctest html
