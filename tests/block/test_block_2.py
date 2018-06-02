@@ -1,4 +1,4 @@
-import pytest
+#import pytest
 import sys
 #import lz4.block
 
@@ -6,14 +6,15 @@ import sys
 #                     reason='Py_ssize_t too small for this test')
 def test_huge():
 
-    if sys.maxsize < 0xffffffff:
-        pytest.skip('Py_ssize_t too small for this test')
+    # if sys.maxsize < 0xffffffff:
+    #     pytest.skip('Py_ssize_t too small for this test')
 
     try:
         huge = b'\0' * 0x100000000  # warning: this allocates 4GB of memory!
     except MemoryError:
-        pytest.skip('Insufficient system memory for this test')
-
+        #pytest.skip('Insufficient system memory for this test')
+        print('OOM')
+        
     # with pytest.raises(
     #         OverflowError, match='Input too large for LZ4 API'
     # ):
