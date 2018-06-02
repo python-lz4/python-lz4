@@ -156,6 +156,7 @@ setup(
     ],
     tests_require=[
         'pytest',
+        'psutil',
     ],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
