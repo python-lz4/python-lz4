@@ -12,6 +12,7 @@ script:
   - pip install .[flake8]
   - flake8 --ignore=E501 lz4
   - flake8 --ignore=E501 tests
+  - flake8 --ignore=E501 setup.py
   - tox
   - pip install .
   - pip install .[tests]
