@@ -42,8 +42,8 @@ def test_reset_decompression_context_2():
         context = lz4frame.create_decompression_context()
         try:
             # Simulate an error by passing junk to decompress
-            d = lz4frame.decompress_chunk(context, c[1:3])
-        except:
+            d = lz4frame.decompress_chunk(context, c[4:])
+        except RuntimeError:
             pass
         r = lz4frame.reset_decompression_context(context)
         assert r is None

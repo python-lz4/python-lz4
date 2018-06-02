@@ -72,7 +72,7 @@ def test_frame_open_decompress_mem_usage(data):
 
     for i in range(1000):
         with lz4.frame.open('test.lz4', 'r') as f:
-            decompressed = f.read()
+            decompressed = f.read()  # noqa: F841
 
         if i % 100 == 0:
             snapshot = tracemalloc.take_snapshot()
@@ -84,7 +84,8 @@ def test_frame_open_decompress_mem_usage(data):
             prev_snapshot = snapshot
 
 
-# TODO: add many more memory usage tests along the lines of this one for other funcs
+# TODO: add many more memory usage tests along the lines of this one
+# for other funcs
 
 def test_dummy_always_pass():
     # If pytest finds all tests are skipped, then it exits with code 5 rather
