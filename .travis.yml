@@ -7,11 +7,12 @@ python:
 install:
   - pip install -U pip
   - pip install tox
-  - pip install .[tests]
   - pip install -r docs/requirements.txt
 script:
-  - tox
+  - # tox
   - pip install .
+  - pip install .[tests]
+  - pytest tests/block/test_block_2.py
   - make -C docs doctest html
 deploy:
   - provider: pypi
