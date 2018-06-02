@@ -9,10 +9,10 @@ install:
   - pip install tox
   - pip install -r docs/requirements.txt
 script:
-  - tox
   - pip install .
   - pip install .[tests]
   - pytest tests/block/test_block_2.py
+  - tox
   - make -C docs doctest html
 deploy:
   - provider: pypi
