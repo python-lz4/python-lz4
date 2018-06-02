@@ -2,9 +2,13 @@ import pytest
 import sys
 import lz4.block
 import psutil
+import os
 
 _4GB = 0x100000000  # 4GB
 
+
+@pytest.mark.skipif(os.environ.get('TRAVIS') is not None,
+                    'Skippin test on Travis due to insufficient memory')
 @pytest.mark.skipif(sys.maxsize < 0xffffffff,
                     reason='Py_ssize_t too small for this test')
 @pytest.mark.skipif(psutil.virtual_memory().total < _4GB,
