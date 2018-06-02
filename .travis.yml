@@ -5,11 +5,14 @@ python:
   - 3.5
   - 3.6
 install:
+  - pip install -U pip
   - pip install tox
   - pip install -r docs/requirements.txt
 script:
+  - pip install .
+  - pip install .[tests]
+  - pytest tests/block/test_block_2.py
   - tox
-  - python setup.py install
   - make -C docs doctest html
 deploy:
   - provider: pypi
