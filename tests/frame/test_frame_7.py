@@ -65,7 +65,7 @@ def test_roundtrip_multiframe_3(data):
     for _ in range(nframes):
         d, bytes_read, eof = lz4frame.decompress_chunk(ctx, compressed)
         decompressed += d
-        assert eof == True
+        assert eof is True
         assert bytes_read == len(compressed) // nframes
 
     assert len(decompressed) == nframes * len(data)
@@ -90,10 +90,10 @@ def test_roundtrip_multiframe_4(data):
             else:
                 d = decompressor.unused_data
             decompressed += decompressor.decompress(d)
-            assert decompressor.eof == True
-            assert decompressor.needs_input == True
+            assert decompressor.eof is True
+            assert decompressor.needs_input is True
             if i == nframes - 1:
-                assert decompressor.unused_data == None
+                assert decompressor.unused_data is None
             else:
                 assert len(decompressor.unused_data) == len(
                     compressed) * (nframes - i - 1) / nframes

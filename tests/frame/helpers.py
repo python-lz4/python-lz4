@@ -15,7 +15,7 @@ def get_frame_info_check(compressed_data,
     assert frame_info["content_checksum"] == content_checksum
     assert frame_info["block_checksum"] == block_checksum
 
-    assert frame_info["skippable"] == False
+    assert frame_info["skippable"] is False
 
     if store_size is True:
         assert frame_info["content_size"] == source_size

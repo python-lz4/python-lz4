@@ -1,5 +1,4 @@
 import lz4.frame
-import time
 import pytest
 
 test_data = [
@@ -26,7 +25,7 @@ def test_frame_decompress_mem_usage(data):
     prev_snapshot = None
 
     for i in range(1000):
-        decompressed = lz4.frame.decompress(compressed)
+        decompressed = lz4.frame.decompress(compressed)  # noqa: F841
 
         if i % 100 == 0:
             snapshot = tracemalloc.take_snapshot()
@@ -48,7 +47,9 @@ def test_frame_decompress_chunk_mem_usage(data):
 
     for i in range(1000):
         context = lz4.frame.create_decompression_context()
-        decompressed = lz4.frame.decompress_chunk(context, compressed)
+        decompressed = lz4.frame.decompress_chunk(  # noqa: F841
+            context, compressed
+        )
 
         if i % 100 == 0:
             snapshot = tracemalloc.take_snapshot()

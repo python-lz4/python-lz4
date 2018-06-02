@@ -51,7 +51,7 @@ def test_reset_decompression_context_2():
         d, bytes_read, eof = lz4frame.decompress_chunk(context, c)
         assert d == b'1234'
         assert bytes_read == len(c)
-        assert eof == True
+        assert eof is True
     else:
         pass
 
