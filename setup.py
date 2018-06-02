@@ -130,6 +130,16 @@ install_requires=[]
 if sys.version_info < (3, 0):
     install_requires.append('future')
 
+
+# Dependencies for testing. We define a list here, so that we can
+# refer to it for the tests_require and the extras_require arguments
+# to setup below. The latter enables us to use pip install .[tests] to
+# install testing dependencies.
+tests_require=[
+    'pytest',
+    'psutil',
+],
+
 # Finally call setup with the extension modules as defined above.
 setup(
     name='lz4',
@@ -154,10 +164,10 @@ setup(
         lz4block,
         lz4frame
     ],
-    tests_require=[
-        'pytest',
-        'psutil',
-    ],
+    tests_require=tests_require,
+    extras_require={
+        'tests': tests_require,
+    },
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: BSD License',
