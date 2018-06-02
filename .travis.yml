@@ -11,8 +11,8 @@ install:
 script:
   - # tox
   - pip install .
-  - python tests/block/test_block_2.py
   - pip install pytest psutil
+  - python tests/block/test_block_2.py
   - pytest tests/block/test_block_2.py
   - make -C docs doctest html
 deploy:
