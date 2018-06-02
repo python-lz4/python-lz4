@@ -9,13 +9,13 @@ install:
   - pip install tox
   - pip install -r docs/requirements.txt
 script:
+  - pip install .[flake8]
+  - flake8 --ignore=E501 lz4
+  - flake8 --ignore=E501 tests
   - tox
   - pip install .
   - pip install .[tests]
   - make -C docs doctest html
-  - pip install .[flake8]
-  - flake8 --ignore=E501 lz4
-  - flake8 --ignore=E501 tests
 deploy:
   - provider: pypi
     # server: https://test.pypi.org/legacy/
