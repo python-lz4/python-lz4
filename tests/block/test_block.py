@@ -208,9 +208,12 @@ def test_known_decompress():
 
 
 @pytest.mark.skipif(sys.maxsize < 0xffffffff,
-                    reason='Insufficient memory for this test')
+                    reason='Py_ssize_t too small for this test')
 def test_huge():
-    huge = b'\0' * 0x100000000  # warning: this allocates 4GB of memory!
+    try:
+        huge = b'\0' * 0x100000000  # warning: this allocates 4GB of memory!
+    except MemoryError:
+        pytest.skip('Insufficient system memory for this test')
 
     with pytest.raises(
             OverflowError, match='Input too large for LZ4 API'
