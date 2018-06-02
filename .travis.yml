@@ -12,6 +12,8 @@ script:
   - ls -R tests
   - tox
   - python setup.py install
+  - pip install pytest
+  - pytest tests/block/test_block.py
   - make -C docs doctest html
 deploy:
   - provider: pypi
