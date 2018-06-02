@@ -13,7 +13,7 @@ script:
   - tox
   - python setup.py install
   - pip install pytest
-  - pytest tests/block/test_block.py
+  - pytest tests/block/test_block_2.py
   - make -C docs doctest html
 deploy:
   - provider: pypi
