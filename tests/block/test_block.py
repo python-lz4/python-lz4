@@ -207,10 +207,9 @@ def test_known_decompress():
         b'Excepteur sint occaecat cupidatat non proident' * 1000)
 
 
+@pytest.mark.skipif(sys.maxsize < 0xffffffff,
+                    reason='Insufficient memory for this test')
 def test_huge():
-    if sys.maxsize < 0xffffffff:
-        pytest.skip('Insufficient memory for this test')
-
     huge = b'\0' * 0x100000000  # warning: this allocates 4GB of memory!
 
     with pytest.raises(
