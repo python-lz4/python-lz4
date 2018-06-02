@@ -10,7 +10,8 @@ install:
   - pip install -r docs/requirements.txt
 script:
   - tox
-  - python setup.py install
+  - python tests/block/test_block_2.py
+  - pip install .
   - pip install pytest pytest-faulthandler
   - PYTHONUNBUFFERED=x PYTEST_DEBUG=1 pytest --assert=plain tests/block/test_block_2.py
   - make -C docs doctest html
