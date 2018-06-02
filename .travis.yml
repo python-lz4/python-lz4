@@ -9,7 +9,7 @@ install:
   - pip install tox
   - pip install -r docs/requirements.txt
 script:
-  - # tox
+  - tox
   - pip install .
   - pip install .[tests]
   - pytest tests/block/test_block_2.py

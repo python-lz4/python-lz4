@@ -54,3 +54,7 @@ def test_huge():
             OverflowError, match='Dictionary too large for LZ4 API'
     ):
             lz4.block.decompress(b'', dict=huge)
+
+
+def test_dummy():
+    pass
