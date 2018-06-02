@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 from setuptools import setup, find_packages, Extension
-import subprocess
-import os
 import sys
 from distutils import ccompiler
 
@@ -104,26 +102,23 @@ lz4version = Extension('lz4._version',
                        extra_compile_args=extra_compile_args,
                        extra_link_args=extra_link_args,
                        libraries=libraries,
-                       include_dirs=include_dirs,
-)
+                       include_dirs=include_dirs)
 
 lz4block = Extension('lz4.block._block',
                      lz4block_sources,
                      extra_compile_args=extra_compile_args,
                      extra_link_args=extra_link_args,
                      libraries=libraries,
-                     include_dirs=include_dirs,
-)
+                     include_dirs=include_dirs)
 
 lz4frame = Extension('lz4.frame._frame',
                      lz4frame_sources,
                      extra_compile_args=extra_compile_args,
                      extra_link_args=extra_link_args,
                      libraries=libraries,
-                     include_dirs=include_dirs,
-)
+                     include_dirs=include_dirs)
 
-install_requires=[]
+install_requires = []
 
 # On Python earlier than 3.0 the builtins package isn't included, but it is
 # provided by the future package
@@ -135,7 +130,7 @@ if sys.version_info < (3, 0):
 # refer to it for the tests_require and the extras_require arguments
 # to setup below. The latter enables us to use pip install .[tests] to
 # install testing dependencies.
-tests_require=[
+tests_require = [
     'pytest',
     'psutil',
 ],
