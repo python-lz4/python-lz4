@@ -10,7 +10,7 @@ def test_huge():
     #     pytest.skip('Py_ssize_t too small for this test')
 
     try:
-        huge = b'\0' * 0x010000000 # 0x100000000  # warning: this allocates 4GB of memory!
+        huge = b'\0' * 0x100000000 # 0x100000000  # warning: this allocates 4GB of memory!
     except MemoryError:
         # pytest.skip('Insufficient system memory for this test')
         print('OOM')
