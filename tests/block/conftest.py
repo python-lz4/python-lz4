@@ -44,6 +44,7 @@ def data(request):
 def store_size(request):
     return request.param
 
+
 @pytest.fixture(
     params=[
         (

@@ -5,6 +5,7 @@ from functools import partial
 if sys.version_info <= (3, 2):
     import struct
 
+
 def get_stored_size(buff):
     if sys.version_info > (2, 7):
         if isinstance(buff, memoryview):
@@ -67,7 +68,8 @@ def setup_kwargs(mode, store_size, c_return_bytearray=None, d_return_bytearray=N
 
 # Test single threaded usage with all valid variations of input
 def test_1(data, mode, store_size, c_return_bytearray, d_return_bytearray, dictionary):
-    (c_kwargs, d_kwargs) = setup_kwargs(mode, store_size, c_return_bytearray, d_return_bytearray)
+    (c_kwargs, d_kwargs) = setup_kwargs(
+        mode, store_size, c_return_bytearray, d_return_bytearray)
 
     d = roundtrip(data, c_kwargs, d_kwargs, dictionary)
 
@@ -83,7 +85,8 @@ def test_2(data, mode, store_size, dictionary):
     data_in = [data for i in range(32)]
 
     pool = ThreadPool(8)
-    rt = partial(roundtrip, c_kwargs=c_kwargs, d_kwargs=d_kwargs, dictionary=dictionary)
+    rt = partial(roundtrip, c_kwargs=c_kwargs,
+                 d_kwargs=d_kwargs, dictionary=dictionary)
     data_out = pool.map(rt, data_in)
     pool.close()
     assert data_in == data_out

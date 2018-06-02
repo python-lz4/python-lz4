@@ -2,9 +2,10 @@ import lz4.frame
 import time
 import pytest
 
-test_data=[
+test_data = [
     (b'a' * 1024 * 1024),
 ]
+
 
 @pytest.fixture(
     params=test_data,
@@ -88,5 +89,3 @@ def test_dummy_always_pass():
     # If pytest finds all tests are skipped, then it exits with code 5 rather
     # than 0, which tox sees as an error. Here we add a dummy test that always passes.
     assert True
-
-

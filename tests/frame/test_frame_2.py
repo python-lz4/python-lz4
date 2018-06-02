@@ -8,7 +8,7 @@ from . helpers import (
 )
 
 
-test_data=[
+test_data = [
     (b'', 1, 1),
     (os.urandom(8 * 1024), 8, 1),
     (os.urandom(8 * 1024), 1, 8),

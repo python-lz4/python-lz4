@@ -34,7 +34,7 @@ def get_frame_info_check(compressed_data,
 
 def get_chunked(data, nchunks):
     size = len(data)
-    stride = int(math.ceil(float(size)/nchunks)) # no // on py 2.6
+    stride = int(math.ceil(float(size)/nchunks))  # no // on py 2.6
     start = 0
     end = start + stride
     while end < size:

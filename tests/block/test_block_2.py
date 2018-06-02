@@ -17,6 +17,8 @@ _4GB = 0x100000000  # 4GB
 # memory, so instead, as an ugly hack for detecting we're on Travis we
 # check for the TRAVIS environment variable being set. This is quite
 # fragile.
+
+
 @pytest.mark.skipif(
     os.environ.get('TRAVIS') is not None,
     reason='Skipping test on Travis due to insufficient memory'
@@ -34,7 +36,7 @@ def test_huge():
         huge = b'\0' * _4GB
     except MemoryError:
         pytest.skip('Insufficient system memory for this test')
-        
+
     with pytest.raises(
             OverflowError, match='Input too large for LZ4 API'
     ):
@@ -53,7 +55,7 @@ def test_huge():
     with pytest.raises(
             OverflowError, match='Dictionary too large for LZ4 API'
     ):
-            lz4.block.decompress(b'', dict=huge)
+        lz4.block.decompress(b'', dict=huge)
 
 
 def test_dummy():

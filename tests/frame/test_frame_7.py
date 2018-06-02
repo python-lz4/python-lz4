@@ -2,9 +2,10 @@ import lz4.frame as lz4frame
 import pytest
 import os
 
-test_data=[
+test_data = [
     (os.urandom(32) * 256),
 ]
+
 
 @pytest.fixture(
     params=test_data,
@@ -14,6 +15,7 @@ test_data=[
 )
 def data(request):
     return request.param
+
 
 def test_roundtrip_multiframe_1(data):
     nframes = 4
@@ -28,6 +30,7 @@ def test_roundtrip_multiframe_1(data):
 
     assert len(decompressed) == nframes * len(data)
     assert data * nframes == decompressed
+
 
 def test_roundtrip_multiframe_2(data):
     nframes = 4
@@ -45,6 +48,7 @@ def test_roundtrip_multiframe_2(data):
 
     assert len(decompressed) == nframes * len(data)
     assert data * nframes == decompressed
+
 
 def test_roundtrip_multiframe_3(data):
     nframes = 4
@@ -66,6 +70,7 @@ def test_roundtrip_multiframe_3(data):
 
     assert len(decompressed) == nframes * len(data)
     assert data * nframes == decompressed
+
 
 def test_roundtrip_multiframe_4(data):
     nframes = 4
@@ -90,7 +95,8 @@ def test_roundtrip_multiframe_4(data):
             if i == nframes - 1:
                 assert decompressor.unused_data == None
             else:
-                assert len(decompressor.unused_data) == len(compressed) * (nframes - i - 1) / nframes
+                assert len(decompressor.unused_data) == len(
+                    compressed) * (nframes - i - 1) / nframes
 
     assert len(decompressed) == nframes * len(data)
     assert data * nframes == decompressed

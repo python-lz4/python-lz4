@@ -3,9 +3,10 @@ import pytest
 import os
 import struct
 
-test_data=[
+test_data = [
     (os.urandom(256 * 1024)),
 ]
+
 
 @pytest.fixture(
     params=test_data,
@@ -24,8 +25,9 @@ def test_decompress_truncated(data):
     with pytest.raises(RuntimeError, message=message):
         lz4frame.decompress(compressed[:6])
 
-    for i in range(16, len(compressed) - 1, 5): # 15 is the max size of the header
-        message = r'^Frame incomplete. LZ4F_decompress returned: {0}'.format(len(compressed) - i)
+    for i in range(16, len(compressed) - 1, 5):  # 15 is the max size of the header
+        message = r'^Frame incomplete. LZ4F_decompress returned: {0}'.format(
+            len(compressed) - i)
         try:
             lz4frame.decompress(compressed[:i])
         except RuntimeError as r:

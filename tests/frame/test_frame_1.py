@@ -5,7 +5,7 @@ import pytest
 from .helpers import get_frame_info_check
 
 
-test_data=[
+test_data = [
     (b''),
     (os.urandom(8 * 1024)),
     (b'0' * 8 * 1024),
@@ -20,6 +20,7 @@ if sys.version_info > (2, 7):
         (memoryview(b'')),
         (memoryview(os.urandom(8 * 1024)))
     ]
+
 
 @pytest.fixture(
     params=test_data,
@@ -59,7 +60,8 @@ def test_roundtrip_1(
         content_checksum,
         block_checksum,
     )
-    decompressed, bytes_read = lz4frame.decompress(compressed, return_bytes_read=True)
+    decompressed, bytes_read = lz4frame.decompress(
+        compressed, return_bytes_read=True)
     assert bytes_read == len(compressed)
     assert decompressed == data
 
@@ -103,6 +105,7 @@ def test_roundtrip_2(data,
         content_checksum,
         block_checksum,
     )
-    decompressed, bytes_read = lz4frame.decompress(compressed, return_bytes_read=True)
+    decompressed, bytes_read = lz4frame.decompress(
+        compressed, return_bytes_read=True)
     assert bytes_read == len(compressed)
     assert decompressed == data

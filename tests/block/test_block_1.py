@@ -3,6 +3,7 @@ import pytest
 import sys
 import os
 
+
 def test_decompress_ui32_overflow():
     data = lz4.block.compress(b'A' * 64)
     with pytest.raises(OverflowError):
@@ -40,7 +41,7 @@ def test_decompress_truncated():
 def test_decompress_with_trailer():
     data = b'A' * 64
     comp = lz4.block.compress(data)
-    message=r'^Corrupt input at byte'
+    message = r'^Corrupt input at byte'
     with pytest.raises(ValueError, match=message):
         lz4.block.decompress(comp + b'A')
     with pytest.raises(ValueError, match=message):
@@ -54,11 +55,13 @@ def test_unicode():
         return  # skip
     DATA = b'x'
     with pytest.raises(TypeError):
-        lz4.block.compress (DATA.decode('latin1'))
+        lz4.block.compress(DATA.decode('latin1'))
         lz4.block.decompress(lz4.block.compress(DATA).decode('latin1'))
 
 # These next two are probably redundant given test_1 above but we'll keep them
 # for now
+
+
 def test_return_bytearray():
     if sys.version_info < (3,):
         return  # skip
@@ -80,15 +83,22 @@ def test_memoryview():
     assert lz4.block.compress(memoryview(data)) == compressed
     assert lz4.block.decompress(memoryview(compressed)) == data
 
+
 def test_with_dict_none():
     input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123" * 24
     for mode in ['default', 'high_compression']:
-        assert lz4.block.decompress(lz4.block.compress(input_data, mode=mode, dict=None)) == input_data
-        assert lz4.block.decompress(lz4.block.compress(input_data, mode=mode), dict=None) == input_data
-        assert lz4.block.decompress(lz4.block.compress(input_data, mode=mode, dict=b'')) == input_data
-        assert lz4.block.decompress(lz4.block.compress(input_data, mode=mode), dict=b'') == input_data
-        assert lz4.block.decompress(lz4.block.compress(input_data, mode=mode, dict='')) == input_data
-        assert lz4.block.decompress(lz4.block.compress(input_data, mode=mode), dict='') == input_data
+        assert lz4.block.decompress(lz4.block.compress(
+            input_data, mode=mode, dict=None)) == input_data
+        assert lz4.block.decompress(lz4.block.compress(
+            input_data, mode=mode), dict=None) == input_data
+        assert lz4.block.decompress(lz4.block.compress(
+            input_data, mode=mode, dict=b'')) == input_data
+        assert lz4.block.decompress(lz4.block.compress(
+            input_data, mode=mode), dict=b'') == input_data
+        assert lz4.block.decompress(lz4.block.compress(
+            input_data, mode=mode, dict='')) == input_data
+        assert lz4.block.decompress(lz4.block.compress(
+            input_data, mode=mode), dict='') == input_data
 
 
 def test_with_dict():
@@ -103,7 +113,8 @@ def test_with_dict():
             lz4.block.decompress(compressed, dict=dict1[:2])
         assert lz4.block.decompress(compressed, dict=dict2) != input_data
         assert lz4.block.decompress(compressed, dict=dict1) == input_data
-    assert lz4.block.decompress(lz4.block.compress(input_data), dict=dict1) == input_data
+    assert lz4.block.decompress(lz4.block.compress(
+        input_data), dict=dict1) == input_data
 
 
 def test_known_decompress():
