@@ -167,6 +167,9 @@ setup(
     tests_require=tests_require,
     extras_require={
         'tests': tests_require,
+        'flake8': [
+            'flake8',
+        ]
     },
     classifiers=[
         'Development Status :: 5 - Production/Stable',
