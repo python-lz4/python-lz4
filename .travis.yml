@@ -6,14 +6,11 @@ python:
   - 3.6
 install:
   - pip install -U pip
-  - pip install tox tox-travis
+  - pip install tox
   - pip install -r docs/requirements.txt
 script:
-  - ls -R tests
   - tox
   - python setup.py install
-  - pip install pytest
-  - pytest tests/block/test_block_2.py
   - make -C docs doctest html
 deploy:
   - provider: pypi
