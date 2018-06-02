@@ -2,8 +2,8 @@ import pytest
 import sys
 #import lz4.block
 
-@pytest.mark.skipif(sys.maxsize < 0xffffffff,
-                    reason='Py_ssize_t too small for this test')
+# @pytest.mark.skipif(sys.maxsize < 0xffffffff,
+#                     reason='Py_ssize_t too small for this test')
 def test_huge():
     try:
         huge = b'\0' * 0x100000000  # warning: this allocates 4GB of memory!
