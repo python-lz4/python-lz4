@@ -396,7 +396,7 @@ class LZ4FrameDecompressor(object):
             data,
             max_length=max_length,
             return_bytearray=self._return_bytearray,
-            )
+        )
 
         if bytes_read < len(data):
             if eoframe:
