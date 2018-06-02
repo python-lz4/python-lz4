@@ -10,6 +10,8 @@ install:
   - pip install -r docs/requirements.txt
 script:
   - tox
+  - pip install pytest
+  - PYTHONUNBUFFERED=x PYTEST_DEBUG=1 pytest tests/block/test_block_2.py
   - python setup.py install
   - make -C docs doctest html
 deploy:
