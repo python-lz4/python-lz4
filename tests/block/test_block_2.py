@@ -1,14 +1,17 @@
 import pytest
 import sys
 import lz4.block
+import psutil
 
-HUGE = 0x100000000
+_4GB = 0x100000000  # 4GB
 
 @pytest.mark.skipif(sys.maxsize < 0xffffffff,
                     reason='Py_ssize_t too small for this test')
+@pytest.mark.skipif(psutil.virtual_memory().total < _4GB,
+                    reason='Insufficient system memory for this test')
 def test_huge():
     try:
-        huge = b'\0' * HUGE
+        huge = b'\0' * _4GB
     except MemoryError:
         pytest.skip('Insufficient system memory for this test')
         
