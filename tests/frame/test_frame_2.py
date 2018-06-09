@@ -8,7 +8,7 @@ from . helpers import (
 )
 
 
-test_data=[
+test_data = [
     (b'', 1, 1),
     (os.urandom(8 * 1024), 8, 1),
     (os.urandom(8 * 1024), 1, 8),
@@ -103,5 +103,5 @@ def test_roundtrip_chunked(data, block_size, block_linked,
 
     assert bytes_read == len(compressed)
     assert decompressed == data
-    assert eofs[-1] == True
-    assert (True in eofs[:-2]) == False
+    assert eofs[-1] is True
+    assert (True in eofs[:-2]) is False

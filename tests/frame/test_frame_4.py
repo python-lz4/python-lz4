@@ -6,13 +6,14 @@ from . helpers import (
     get_chunked,
 )
 
-test_data=[
+test_data = [
     b'',
     (128 * (32 * os.urandom(32))),
     (256 * (32 * os.urandom(32))),
     (512 * (32 * os.urandom(32))),
     (1024 * (32 * os.urandom(32))),
 ]
+
 
 @pytest.fixture(
     params=test_data,
@@ -23,6 +24,7 @@ test_data=[
 def data(request):
     return request.param
 
+
 @pytest.fixture(
     params=[
         (True),
@@ -31,6 +33,7 @@ def data(request):
 )
 def reset(request):
     return request.param
+
 
 @pytest.fixture(
     params=[
@@ -86,7 +89,8 @@ def test_roundtrip_LZ4FrameCompressor(
         block_checksum,
     )
 
-    decompressed, bytes_read = lz4frame.decompress(compressed, return_bytes_read=True)
+    decompressed, bytes_read = lz4frame.decompress(
+        compressed, return_bytes_read=True)
     assert data == decompressed
     assert bytes_read == len(compressed)
 

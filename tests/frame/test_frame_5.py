@@ -1,10 +1,10 @@
 import lz4.frame
-import time
 import pytest
 
-test_data=[
+test_data = [
     (b'a' * 1024 * 1024),
 ]
+
 
 @pytest.fixture(
     params=test_data,
@@ -25,7 +25,7 @@ def test_frame_decompress_mem_usage(data):
     prev_snapshot = None
 
     for i in range(1000):
-        decompressed = lz4.frame.decompress(compressed)
+        decompressed = lz4.frame.decompress(compressed)  # noqa: F841
 
         if i % 100 == 0:
             snapshot = tracemalloc.take_snapshot()
@@ -47,7 +47,9 @@ def test_frame_decompress_chunk_mem_usage(data):
 
     for i in range(1000):
         context = lz4.frame.create_decompression_context()
-        decompressed = lz4.frame.decompress_chunk(context, compressed)
+        decompressed = lz4.frame.decompress_chunk(  # noqa: F841
+            context, compressed
+        )
 
         if i % 100 == 0:
             snapshot = tracemalloc.take_snapshot()
@@ -70,7 +72,7 @@ def test_frame_open_decompress_mem_usage(data):
 
     for i in range(1000):
         with lz4.frame.open('test.lz4', 'r') as f:
-            decompressed = f.read()
+            decompressed = f.read()  # noqa: F841
 
         if i % 100 == 0:
             snapshot = tracemalloc.take_snapshot()
@@ -82,11 +84,10 @@ def test_frame_open_decompress_mem_usage(data):
             prev_snapshot = snapshot
 
 
-# TODO: add many more memory usage tests along the lines of this one for other funcs
+# TODO: add many more memory usage tests along the lines of this one
+# for other funcs
 
 def test_dummy_always_pass():
     # If pytest finds all tests are skipped, then it exits with code 5 rather
     # than 0, which tox sees as an error. Here we add a dummy test that always passes.
     assert True
-
-

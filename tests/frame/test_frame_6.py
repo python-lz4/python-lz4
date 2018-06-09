@@ -2,11 +2,12 @@ import os
 import pytest
 import lz4.frame as lz4frame
 
-test_data=[
+test_data = [
     b'',
     (128 * (32 * os.urandom(32))),
     (5 * 128 * os.urandom(1024)),
 ]
+
 
 @pytest.fixture(
     params=test_data,
@@ -17,11 +18,14 @@ test_data=[
 def data(request):
     return request.param
 
+
 compression_levels = [
-        (lz4frame.COMPRESSIONLEVEL_MIN),
-        # (lz4frame.COMPRESSIONLEVEL_MINHC),
-        # (lz4frame.COMPRESSIONLEVEL_MAX),
-    ]
+    (lz4frame.COMPRESSIONLEVEL_MIN),
+    # (lz4frame.COMPRESSIONLEVEL_MINHC),
+    # (lz4frame.COMPRESSIONLEVEL_MAX),
+]
+
+
 @pytest.fixture(
     params=compression_levels
 )
@@ -33,12 +37,14 @@ def test_lz4frame_open_write(data):
     with lz4frame.open('testfile', mode='wb') as fp:
         fp.write(data)
 
+
 def test_lz4frame_open_write_read_defaults(data):
     with lz4frame.open('testfile', mode='wb') as fp:
         fp.write(data)
     with lz4frame.open('testfile', mode='r') as fp:
         data_out = fp.read()
     assert data_out == data
+
 
 def test_lz4frame_open_write_read_text():
     data = u'This is a test string'
@@ -47,6 +53,18 @@ def test_lz4frame_open_write_read_text():
     with lz4frame.open('testfile', mode='rt') as fp:
         data_out = fp.read()
     assert data_out == data
+
+
+def test_lz4frame_open_write_read_text_iter():
+    data = u'This is a test string'
+    with lz4frame.open('testfile', mode='wt') as fp:
+        fp.write(data)
+    data_out = ''
+    with lz4frame.open('testfile', mode='rt') as fp:
+        for line in fp:
+            data_out += line
+    assert data_out == data
+
 
 def test_lz4frame_open_write_read(
         data,

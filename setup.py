@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 from setuptools import setup, find_packages, Extension
-import subprocess
-import os
 import sys
 from distutils import ccompiler
 
@@ -104,31 +102,38 @@ lz4version = Extension('lz4._version',
                        extra_compile_args=extra_compile_args,
                        extra_link_args=extra_link_args,
                        libraries=libraries,
-                       include_dirs=include_dirs,
-)
+                       include_dirs=include_dirs)
 
 lz4block = Extension('lz4.block._block',
                      lz4block_sources,
                      extra_compile_args=extra_compile_args,
                      extra_link_args=extra_link_args,
                      libraries=libraries,
-                     include_dirs=include_dirs,
-)
+                     include_dirs=include_dirs)
 
 lz4frame = Extension('lz4.frame._frame',
                      lz4frame_sources,
                      extra_compile_args=extra_compile_args,
                      extra_link_args=extra_link_args,
                      libraries=libraries,
-                     include_dirs=include_dirs,
-)
+                     include_dirs=include_dirs)
 
-install_requires=[]
+install_requires = []
 
 # On Python earlier than 3.0 the builtins package isn't included, but it is
 # provided by the future package
 if sys.version_info < (3, 0):
     install_requires.append('future')
+
+
+# Dependencies for testing. We define a list here, so that we can
+# refer to it for the tests_require and the extras_require arguments
+# to setup below. The latter enables us to use pip install .[tests] to
+# install testing dependencies.
+tests_require = [
+    'pytest',
+    'psutil',
+],
 
 # Finally call setup with the extension modules as defined above.
 setup(
@@ -154,9 +159,13 @@ setup(
         lz4block,
         lz4frame
     ],
-    tests_require=[
-        'pytest',
-    ],
+    tests_require=tests_require,
+    extras_require={
+        'tests': tests_require,
+        'flake8': [
+            'flake8',
+        ]
+    },
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: BSD License',

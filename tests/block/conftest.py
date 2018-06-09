@@ -2,7 +2,8 @@ import pytest
 import os
 import sys
 
-test_data=[
+
+test_data = [
     (b''),
     (os.urandom(8 * 1024)),
     (b'0' * 8 * 1024),
@@ -15,6 +16,7 @@ if sys.version_info > (2, 7):
         (memoryview(os.urandom(8 * 1024)))
     ]
 
+
 @pytest.fixture(
     params=test_data,
     ids=[
@@ -23,6 +25,7 @@ if sys.version_info > (2, 7):
 )
 def data(request):
     return request.param
+
 
 @pytest.fixture(
     params=[
@@ -41,6 +44,7 @@ def data(request):
 def store_size(request):
     return request.param
 
+
 @pytest.fixture(
     params=[
         (
@@ -58,13 +62,16 @@ def store_size(request):
 def return_bytearray(request):
     return request.param
 
+
 @pytest.fixture
 def c_return_bytearray(return_bytearray):
     return return_bytearray
 
+
 @pytest.fixture
 def d_return_bytearray(return_bytearray):
     return return_bytearray
+
 
 @pytest.fixture(
     params=[
@@ -80,4 +87,17 @@ def d_return_bytearray(return_bytearray):
     ]
 )
 def mode(request):
+    return request.param
+
+
+@pytest.fixture(
+    params=[
+        None,
+        (0, 0),
+        (100, 200),
+        (0, 8 * 1024),
+        os.urandom(8 * 1024)
+    ]
+)
+def dictionary(request):
     return request.param

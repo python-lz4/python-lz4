@@ -4,6 +4,7 @@
 
 """Internal classes used by the gzip, lzma and bz2 modules"""
 
+import sys
 import io
 # Ensure super has Python 3 semantics even on Python 2
 from builtins import super
@@ -156,3 +157,13 @@ class DecompressReader(io.RawIOBase):
     def tell(self):
         """Return the current file position."""
         return self._pos
+
+
+if sys.version_info < (3, 3):
+    # memoryview.cast is added in 3.3
+    def readinto(self, b):
+        data = self.read(len(b))
+        b[:len(data)] = data
+        return len(data)
+
+    DecompressReader.readinto = readinto

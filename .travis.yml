@@ -5,11 +5,17 @@ python:
   - 3.5
   - 3.6
 install:
+  - pip install -U pip
   - pip install tox
   - pip install -r docs/requirements.txt
 script:
+  - pip install .[flake8]
+  - flake8 --ignore=E501 lz4
+  - flake8 --ignore=E501 tests
+  - flake8 --ignore=E501 setup.py
   - tox
-  - python setup.py install
+  - pip install .
+  - pip install .[tests]
   - make -C docs doctest html
 deploy:
   - provider: pypi
