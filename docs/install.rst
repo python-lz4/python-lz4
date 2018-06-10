@@ -1,7 +1,7 @@
 Install
 =======
 
-The package is hosted on `PyPI <http://pypi.python.org/pypi/lz4>`_ and so can be
+The package is hosted on `PyPI <https://pypi.org/project/lz4/>`_ and so can be
 installed via pip::
 
   $ pip install lz4
