@@ -471,6 +471,8 @@ compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
                             NULL
   };
 
+  memset (&compress_options, 0, sizeof compress_options);
+
 #if IS_PY3
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "Oy*|p", kwlist,
                                     &py_context,
@@ -594,6 +596,9 @@ compress_flush (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
                             "return_bytearray",
                             NULL
   };
+
+  memset (&compress_options, 0, sizeof compress_options);
+
 #if IS_PY3
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|pp", kwlist,
                                     &py_context,
@@ -1016,6 +1021,8 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
   LZ4F_frameInfo_t frame_info;
   LZ4F_decompressOptions_t options;
   int end_of_frame = 0;
+
+  memset(&options, 0, sizeof options);
 
   Py_BEGIN_ALLOW_THREADS
 
