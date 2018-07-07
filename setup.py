@@ -18,12 +18,21 @@ except ImportError:
     # pkgconfig is not installed. It will be installed by setup_requires.
     pass
 else:
-    try:
-        liblz4_found = pkgconfig.installed('liblz4', LZ4_REQUIRED_VERSION)
-        py3c_found = pkgconfig.installed('py3c', PY3C_REQUIRED_VERSION)
-    except EnvironmentError:
-        # Windows, no pkg-config present
-        pass
+    def pkgconfig_installed(lib, required_version, default):
+        installed = default
+        try:
+            installed = pkgconfig.installed(lib, required_version)
+        except EnvironmentError:
+            # Windows, no pkg-config present
+            pass
+        except ValueError:
+            # pkgconfig was unable to determine if
+            # required version of liblz4 is available
+            # Bundled version of liblz4 will be used
+            pass
+        return installed
+    liblz4_found = pkgconfig_installed('liblz4', LZ4_REQUIRED_VERSION, default=False)
+    py3c_found = pkgconfig_installed('py3c', PY3C_REQUIRED_VERSION, default=False)
 
 
 # Set up the extension modules. If a system wide lz4 library is found, and is
