@@ -471,6 +471,8 @@ compress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
                             NULL
   };
 
+  memset (&compress_options, 0, sizeof compress_options);
+
 #if IS_PY3
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "Oy*|p", kwlist,
                                     &py_context,
@@ -594,6 +596,9 @@ compress_flush (PyObject * Py_UNUSED (self), PyObject * args, PyObject * keywds)
                             "return_bytearray",
                             NULL
   };
+
+  memset (&compress_options, 0, sizeof compress_options);
+
 #if IS_PY3
   if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|pp", kwlist,
                                     &py_context,
@@ -1017,6 +1022,8 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
   LZ4F_decompressOptions_t options;
   int end_of_frame = 0;
 
+  memset(&options, 0, sizeof options);
+
   Py_BEGIN_ALLOW_THREADS
 
   source_cursor = source;
@@ -1082,7 +1089,10 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
 
   Py_UNBLOCK_THREADS
 
-  if (full_frame)
+  /* Only set stableDst = 1 if we are sure no PyMem_Realloc will be called since
+     when stableDst = 1 the LZ4 library stores a pointer to the last compressed
+     data, which may be invalid after a PyMem_Realloc. */
+  if (full_frame && max_length >= 0)
     {
       options.stableDst = 1;
     }
@@ -1644,12 +1654,12 @@ PyDoc_STRVAR
 PyDoc_STRVAR
 (
  decompress_chunk__doc,
- "decompress(context, data)\n"                                          \
+ "decompress_chunk(context, data)\n"                                    \
  "\n"                                                                   \
- "Decompresses part of a frame of compressed data.\n" \
- "\n" \
- "The returned uncompressed data should be concatenated with the data returned\n" \
- "from previous calls to `lz4.frame.decompress_chunk`\n"                \
+ "Decompresses part of a frame of compressed data.\n"                   \
+ "\n"                                                                   \
+ "The returned uncompressed data should be concatenated with the data\n" \
+ "returned from previous calls to `lz4.frame.decompress_chunk`\n"       \
  "\n"                                                                   \
  "Args:\n"                                                              \
  "    context (dCtx): decompression context\n"                          \
@@ -1664,7 +1674,7 @@ PyDoc_STRVAR
  "        default is ``False``.\n"                                      \
  "\n"                                                                   \
  "Returns:\n"                                                           \
- "    tuple: uncompressed data, bytes read, end of frame indicator\n" \
+ "    tuple: uncompressed data, bytes read, end of frame indicator\n"   \
  "\n"                                                                   \
  "    This function returns a tuple consisting of:\n"                   \
  "\n"                                                                   \
@@ -1672,8 +1682,8 @@ PyDoc_STRVAR
  "    - The number of bytes consumed from input ``data`` as an ``int``\n" \
  "    - The end of frame indicator as a ``bool``.\n"                    \
  "\n"
- "The end of frame indicator is ``True`` if the end of the compressed frame\n" \
- "has been reached, or ``False`` otherwise\n"
+ "The end of frame indicator is ``True`` if the end of the compressed\n" \
+ "frame has been reached, or ``False`` otherwise\n"
   );
 
 static PyMethodDef module_methods[] =
