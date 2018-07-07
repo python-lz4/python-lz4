@@ -1082,7 +1082,7 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
 
   Py_UNBLOCK_THREADS
 
-  if (full_frame)
+    if (full_frame && max_length >= 0)
     {
       options.stableDst = 1;
     }
