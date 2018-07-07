@@ -1082,7 +1082,10 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
 
   Py_UNBLOCK_THREADS
 
-    if (full_frame && max_length >= 0)
+  /* Only set stableDst = 1 if we are sure no PyMem_Realloc will be called since
+     when stableDst = 1 the LZ4 library stores a pointer to the last compressed
+     data, which may be invalid after a PyMem_Realloc. */
+  if (full_frame && max_length >= 0)
     {
       options.stableDst = 1;
     }
