@@ -1644,12 +1644,12 @@ PyDoc_STRVAR
 PyDoc_STRVAR
 (
  decompress_chunk__doc,
- "decompress(context, data)\n"                                          \
+ "decompress_chunk(context, data)\n"                                    \
  "\n"                                                                   \
- "Decompresses part of a frame of compressed data.\n" \
- "\n" \
- "The returned uncompressed data should be concatenated with the data returned\n" \
- "from previous calls to `lz4.frame.decompress_chunk`\n"                \
+ "Decompresses part of a frame of compressed data.\n"                   \
+ "\n"                                                                   \
+ "The returned uncompressed data should be concatenated with the data\n" \
+ "returned from previous calls to `lz4.frame.decompress_chunk`\n"       \
  "\n"                                                                   \
  "Args:\n"                                                              \
  "    context (dCtx): decompression context\n"                          \
@@ -1664,7 +1664,7 @@ PyDoc_STRVAR
  "        default is ``False``.\n"                                      \
  "\n"                                                                   \
  "Returns:\n"                                                           \
- "    tuple: uncompressed data, bytes read, end of frame indicator\n" \
+ "    tuple: uncompressed data, bytes read, end of frame indicator\n"   \
  "\n"                                                                   \
  "    This function returns a tuple consisting of:\n"                   \
  "\n"                                                                   \
@@ -1672,8 +1672,8 @@ PyDoc_STRVAR
  "    - The number of bytes consumed from input ``data`` as an ``int``\n" \
  "    - The end of frame indicator as a ``bool``.\n"                    \
  "\n"
- "The end of frame indicator is ``True`` if the end of the compressed frame\n" \
- "has been reached, or ``False`` otherwise\n"
+ "The end of frame indicator is ``True`` if the end of the compressed\n" \
+ "frame has been reached, or ``False`` otherwise\n"
   );
 
 static PyMethodDef module_methods[] =
