@@ -19,6 +19,12 @@ def test_decompress_without_leak():
     with pytest.raises(ValueError, match=message):
         lz4.block.decompress(data[4:], uncompressed_size=79)
 
+def test_decompress_without_known_size():
+    input_data = b'A' * 64
+    data = lz4.block.compress(input_data)
+    b = lz4.block.decompress(data[4:], max_buffer_size=128)
+    assert len(b) <= 128
+    assert b == input_data
 
 def test_decompress_truncated():
     input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123" * 24

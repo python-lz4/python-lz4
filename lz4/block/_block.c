@@ -290,6 +290,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   char *dest;
   int output_size;
   size_t dest_size;
+  size_t max_buffer_size = 0;
   int uncompressed_size = -1;
   int return_bytearray = 0;
   Py_buffer dict = { NULL, NULL };
@@ -298,20 +299,21 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     "uncompressed_size",
     "return_bytearray",
     "dict",
+    "max_buffer_size",
     NULL
   };
 
 #if IS_PY3
-  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "y*|ipz*", argnames,
+  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "y*|ipz*I", argnames,
                                     &source, &uncompressed_size,
-                                    &return_bytearray, &dict))
+                                    &return_bytearray, &dict, &max_buffer_size))
     {
       return NULL;
     }
 #else
-  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s*|iiz*", argnames,
+  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s*|iiz*I", argnames,
                                     &source, &uncompressed_size,
-                                    &return_bytearray, &dict))
+                                    &return_bytearray, &dict, &max_buffer_size))
     {
       return NULL;
     }
@@ -338,7 +340,11 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   source_start = (const char *) source.buf;
   source_size = source.len;
 
-  if (uncompressed_size >= 0)
+  if (max_buffer_size > 0)
+    {
+      dest_size = max_buffer_size;
+    }
+  else if (uncompressed_size >= 0)
     {
       dest_size = uncompressed_size;
     }
@@ -388,7 +394,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       PyMem_Free (dest);
       return NULL;
     }
-  else if ((size_t)output_size != dest_size)
+  else if (max_buffer_size == 0 && (size_t)output_size != dest_size)
     {
       /* Better to fail explicitly than to allow fishy data to pass through. */
       PyErr_Format (PyExc_ValueError,
@@ -451,7 +457,7 @@ PyDoc_STRVAR(compress__doc,
              "    bytes or bytearray: Compressed data.\n");
 
 PyDoc_STRVAR(decompress__doc,
-             "decompress(source, uncompressed_size=-1, return_bytearray=False)\n\n" \
+             "decompress(source, uncompressed_size=-1, return_bytearray=False, max_buffer_size=0)\n\n" \
              "Decompress source, returning the uncompressed data as a string.\n" \
              "Raises an exception if any error occurs.\n"               \
              "\n"                                                       \
@@ -467,6 +473,7 @@ PyDoc_STRVAR(decompress__doc,
              "        return a bytearray object.\n\n" \
              "    dict (str, bytes or buffer-compatible object): If specified, perform\n" \
              "        decompression using this initial dictionary.\n" \
+             "    max_buffer_size (int): If specified, it is used as the maximum size of the output buffer.\n" \
              "Returns:\n"                                               \
              "    bytes or bytearray: Decompressed data.\n");
 
