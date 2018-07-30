@@ -14,10 +14,17 @@ def test_decompress_without_leak():
     # Verify that hand-crafted packet does not leak uninitialized(?) memory.
     data = lz4.block.compress(b'A' * 64)
     message = r'^Decompressor wrote 64 bytes, but 79 bytes expected from header$'
-    with pytest.raises(ValueError, match=message):
+    with pytest.raises(lz4.block.LZ4BlockError, match=message):
         lz4.block.decompress(b'\x4f' + data[1:])
-    with pytest.raises(ValueError, match=message):
-        lz4.block.decompress(data[4:], uncompressed_size=79)
+
+
+def test_decompress_with_small_buffer():
+    data = lz4.block.compress(b'A' * 64, store_size=False)
+    message = r'^Decompression failed: corrupt input or insufficient space in destination buffer. Error code: \d+$'
+    with pytest.raises(lz4.block.LZ4BlockError, match=message):
+        lz4.block.decompress(data[4:], uncompressed_size=64)
+    with pytest.raises(lz4.block.LZ4BlockError, match=message):
+        lz4.block.decompress(data, uncompressed_size=60)
 
 
 def test_decompress_truncated():
@@ -34,19 +41,19 @@ def test_decompress_truncated():
         with pytest.raises(ValueError, match='Input source data size too small'):
             lz4.block.decompress(compressed[:n])
     for n in [24, 25, -2, 27, 67, 85]:
-        with pytest.raises(ValueError, match=r'Corrupt input at byte \d+|Decompressor wrote \d+ bytes, but \d+ bytes expected from header'):
+        with pytest.raises(lz4.block.LZ4BlockError):
             lz4.block.decompress(compressed[:n])
 
 
 def test_decompress_with_trailer():
     data = b'A' * 64
     comp = lz4.block.compress(data)
-    message = r'^Corrupt input at byte'
-    with pytest.raises(ValueError, match=message):
+    message = r'^Decompression failed: corrupt input or insufficient space in destination buffer. Error code: \d+$'
+    with pytest.raises(lz4.block.LZ4BlockError, match=message):
         lz4.block.decompress(comp + b'A')
-    with pytest.raises(ValueError, match=message):
+    with pytest.raises(lz4.block.LZ4BlockError, match=message):
         lz4.block.decompress(comp + comp)
-    with pytest.raises(ValueError, match=message):
+    with pytest.raises(lz4.block.LZ4BlockError, match=message):
         lz4.block.decompress(comp + comp[4:])
 
 
@@ -105,11 +112,12 @@ def test_with_dict():
     input_data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123" * 24
     dict1 = input_data[10:30]
     dict2 = input_data[20:40]
+    message = r'^Decompression failed: corrupt input or insufficient space in destination buffer. Error code: \d+$'
     for mode in ['default', 'high_compression']:
         compressed = lz4.block.compress(input_data, mode=mode, dict=dict1)
-        with pytest.raises(ValueError, match=r'Corrupt input at byte \d+'):
+        with pytest.raises(lz4.block.LZ4BlockError, match=message):
             lz4.block.decompress(compressed)
-        with pytest.raises(ValueError, match=r'Corrupt input at byte \d+'):
+        with pytest.raises(lz4.block.LZ4BlockError, match=message):
             lz4.block.decompress(compressed, dict=dict1[:2])
         assert lz4.block.decompress(compressed, dict=dict2) != input_data
         assert lz4.block.decompress(compressed, dict=dict1) == input_data
