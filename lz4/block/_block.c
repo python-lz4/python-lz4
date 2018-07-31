@@ -89,6 +89,8 @@ typedef enum
   HIGH_COMPRESSION
 } compression_type;
 
+static PyObject * LZ4BlockError;
+
 static inline int
 lz4_compress_generic (int comp, char* source, char* dest, int source_size, int dest_size,
                       char* dict, int dict_size, int acceleration, int compression)
@@ -251,7 +253,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 
   if (output_size <= 0)
     {
-      PyErr_SetString (PyExc_ValueError, "Compression failed");
+      PyErr_SetString (LZ4BlockError, "Compression failed");
       PyMem_Free (dest);
       return NULL;
     }
@@ -360,7 +362,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     {
       PyBuffer_Release(&source);
       PyBuffer_Release(&dict);
-      PyErr_Format (PyExc_ValueError, "Invalid size in header: 0x%zu",
+      PyErr_Format (PyExc_ValueError, "Invalid size: 0x%zu",
                     dest_size);
       return NULL;
     }
@@ -384,14 +386,15 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 
   if (output_size < 0)
     {
-      PyErr_Format (PyExc_ValueError, "Corrupt input at byte %u", -output_size);
+      PyErr_Format (LZ4BlockError,
+                    "Decompression failed: corrupt input or insufficient space in destination buffer. Error code: %u",
+                    -output_size);
       PyMem_Free (dest);
       return NULL;
     }
-  else if ((size_t)output_size != dest_size)
+  else if (((size_t)output_size != dest_size) && (uncompressed_size < 0))
     {
-      /* Better to fail explicitly than to allow fishy data to pass through. */
-      PyErr_Format (PyExc_ValueError,
+      PyErr_Format (LZ4BlockError,
                     "Decompressor wrote %u bytes, but %zu bytes expected from header",
                     output_size, dest_size);
       PyMem_Free (dest);
@@ -461,14 +464,24 @@ PyDoc_STRVAR(decompress__doc,
              "Keyword Args:\n"                                          \
              "    uncompressed_size (int): If not specified or negative, the uncompressed\n" \
              "        data size is read from the start of the source block. If specified,\n" \
-             "        it is assumed that the full source data is compressed data.\n" \
+             "        it is assumed that the full source data is compressed data. If this\n" \
+             "        argument is specified, it is considered to be a maximum possible size\n" \
+             "        for the buffer used to hold the uncompressed data, and so less data\n" \
+             "        may be returned. If `uncompressed_size` is too small, `LZ4BlockError`\n" \
+             "        will be raised. By catching `LZ4BlockError` it is possible to increase\n" \
+             "        `uncompressed_size` and try again.\n"             \
              "    return_bytearray (bool): If ``False`` (the default) then the function\n" \
              "        will return a bytes object. If ``True``, then the function will\n" \
              "        return a bytearray object.\n\n" \
              "    dict (str, bytes or buffer-compatible object): If specified, perform\n" \
-             "        decompression using this initial dictionary.\n" \
+             "        decompression using this initial dictionary.\n"   \
+             "\n"                                                       \
              "Returns:\n"                                               \
-             "    bytes or bytearray: Decompressed data.\n");
+             "    bytes or bytearray: Decompressed data.\n"             \
+             "\n"                                                       \
+             "Raises:\n"                                                \
+             "    LZ4BlockError: raised if the call to the LZ4 library fails. This can be\n" \
+             "        caused by `uncompressed_size` being too small, or invalid data.\n");
 
 PyDoc_STRVAR(lz4block__doc,
              "A Python wrapper for the LZ4 block protocol"
@@ -517,5 +530,13 @@ MODULE_INIT_FUNC (_block)
   PyModule_AddIntConstant (module, "HC_LEVEL_OPT_MIN", LZ4HC_CLEVEL_OPT_MIN);
   PyModule_AddIntConstant (module, "HC_LEVEL_MAX", LZ4HC_CLEVEL_MAX);
 
+  LZ4BlockError = PyErr_NewExceptionWithDoc("_block.LZ4BlockError", "Call to LZ4 library failed.", NULL, NULL);
+  if (LZ4BlockError == NULL)
+    {
+      return NULL;
+    }
+  Py_INCREF(LZ4BlockError);
+  PyModule_AddObject(module, "LZ4BlockError", LZ4BlockError);
+  
   return module;
 }
