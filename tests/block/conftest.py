@@ -9,7 +9,9 @@ test_data = [
     (b'0' * 8 * 1024),
     (bytearray(b'')),
     (bytearray(os.urandom(8 * 1024))),
+    (bytearray(open(os.path.join(os.path.dirname(__file__), 'numpy_byte_array.bin'), 'rb').read()))
 ]
+
 if sys.version_info > (2, 7):
     test_data += [
         (memoryview(b'')),
