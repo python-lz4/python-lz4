@@ -125,16 +125,25 @@ def test_with_dict():
         input_data), dict=dict1) == input_data
 
 
-def test_known_decompress():
-    assert(lz4.block.decompress(
-        b'\x00\x00\x00\x00\x00') ==
-        b'')
-    assert(lz4.block.decompress(
-        b'\x01\x00\x00\x00\x10 ') ==
-        b' ')
-    assert(lz4.block.decompress(
-        b'h\x00\x00\x00\xff\x0bLorem ipsum dolor sit amet\x1a\x006P amet') ==
-        b'Lorem ipsum dolor sit amet' * 4)
-    assert(lz4.block.decompress(
-        b'\xb0\xb3\x00\x00\xff\x1fExcepteur sint occaecat cupidatat non proident.\x00' + (b'\xff' * 180) + b'\x1ePident') ==
-        b'Excepteur sint occaecat cupidatat non proident' * 1000)
+def test_known_decompress_1():
+    input = b'\x00\x00\x00\x00\x00'
+    output = b''
+    assert lz4.block.decompress(input) == output
+
+
+def test_known_decompress_2():
+    input = b'\x01\x00\x00\x00\x10 '
+    output = b' '
+    assert lz4.block.decompress(input) == output
+
+
+def test_known_decompress_3():
+    input = b'h\x00\x00\x00\xff\x0bLorem ipsum dolor sit amet\x1a\x006P amet'
+    output = b'Lorem ipsum dolor sit amet' * 4
+    assert lz4.block.decompress(input) == output
+
+
+def test_known_decompress_4():
+    input = b'\xb0\xb3\x00\x00\xff\x1fExcepteur sint occaecat cupidatat non proident.\x00' + (b'\xff' * 180) + b'\x1ePident'
+    output = b'Excepteur sint occaecat cupidatat non proident' * 1000
+    assert lz4.block.decompress(input) == output
