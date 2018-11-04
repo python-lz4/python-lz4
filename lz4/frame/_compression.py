@@ -87,8 +87,9 @@ class DecompressReader(io.RawIOBase):
         # return any data. In this case, try again after reading another block.
         while True:
             if self._decompressor.eof:
-                rawblock = (self._decompressor.unused_data or
-                            self._fp.read(BUFFER_SIZE))
+                rawblock = (
+                    self._decompressor.unused_data or self._fp.read(BUFFER_SIZE)
+                )
                 if not rawblock:
                     break
                 # Continue to next stream.
