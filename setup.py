@@ -13,15 +13,17 @@ PY3C_REQUIRED_VERSION = '>= 1.0'
 liblz4_found = False
 py3c_found = False
 try:
-    import pkgconfig
+    from pkgconfig import installed as pkgconfig_installed
+    from pkgconfig import cflags as pkgconfig_cflags
+    from pkgconfig import libs as pkgconfig_libs
 except ImportError:
     # pkgconfig is not installed. It will be installed by setup_requires.
     pass
 else:
-    def pkgconfig_installed(lib, required_version, default):
+    def pkgconfig_installed_check(lib, required_version, default):
         installed = default
         try:
-            installed = pkgconfig.installed(lib, required_version)
+            installed = pkgconfig_installed(lib, required_version)
         except EnvironmentError:
             # Windows, no pkg-config present
             pass
@@ -31,8 +33,8 @@ else:
             # Bundled version of liblz4 will be used
             pass
         return installed
-    liblz4_found = pkgconfig_installed('liblz4', LZ4_REQUIRED_VERSION, default=False)
-    py3c_found = pkgconfig_installed('py3c', PY3C_REQUIRED_VERSION, default=False)
+    liblz4_found = pkgconfig_installed_check('liblz4', LZ4_REQUIRED_VERSION, default=False)
+    py3c_found = pkgconfig_installed_check('py3c', PY3C_REQUIRED_VERSION, default=False)
 
 
 # Set up the extension modules. If a system wide lz4 library is found, and is
@@ -93,9 +95,9 @@ if compiler == 'msvc':
     extra_compile_args = ['/Ot', '/Wall']
 elif compiler in ('unix', 'mingw32'):
     if liblz4_found:
-        extra_link_args.append(pkgconfig.libs('liblz4'))
-        if pkgconfig.cflags('liblz4'):
-            extra_compile_args.append(pkgconfig.cflags('liblz4'))
+        extra_link_args.append(pkgconfig_libs('liblz4'))
+        if pkgconfig_cflags('liblz4'):
+            extra_compile_args.append(pkgconfig_cflags('liblz4'))
     else:
         extra_compile_args = [
             '-O3',
