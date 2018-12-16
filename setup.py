@@ -146,6 +146,10 @@ tests_require = [
     'psutil',
 ],
 
+# Only require pytest-runner if actually running the tests
+needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
+pytest_runner = ['pytest-runner'] if needs_pytest else []
+
 # Finally call setup with the extension modules as defined above.
 setup(
     name='lz4',
@@ -156,8 +160,7 @@ setup(
     setup_requires=[
         'setuptools_scm',
         'pkgconfig',
-        'pytest-runner',
-    ],
+    ] + pytest_runner,
     install_requires=install_requires,
     description="LZ4 Bindings for Python",
     long_description=open('README.rst', 'r').read(),
