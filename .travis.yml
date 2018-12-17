@@ -1,5 +1,5 @@
 language: python
-cache: pip
+
 matrix:
   include:
     - name: linux-py27
@@ -115,7 +115,7 @@ script:
   - flake8 --ignore=E501 setup.py
   - ${PIP} install .
   - ${PIP} install .[tests]
-  - tox
+  - pytest
   - make -C docs doctest html
   - cibuildwheel --output-dir dist
 deploy:
