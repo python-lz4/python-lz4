@@ -141,8 +141,10 @@ if sys.version_info < (3, 0):
 # refer to it for the tests_require and the extras_require arguments
 # to setup below. The latter enables us to use pip install .[tests] to
 # install testing dependencies.
+# Note: pytest 3.3.0 contains a bug with null bytes in parameter IDs:
+# https://github.com/pytest-dev/pytest/issues/2957
 tests_require = [
-    'pytest',
+    'pytest!=3.3.0',
     'psutil',
 ],
 
