@@ -92,13 +92,19 @@ def mode(request):
     return request.param
 
 
+dictionary = [
+    None,
+    (0, 0),
+    (100, 200),
+    (0, 8 * 1024),
+    os.urandom(8 * 1024)
+]
+
+
 @pytest.fixture(
-    params=[
-        None,
-        (0, 0),
-        (100, 200),
-        (0, 8 * 1024),
-        os.urandom(8 * 1024)
+    params=dictionary,
+    ids=[
+        'dictionary' + str(i) for i in range(len(dictionary))
     ]
 )
 def dictionary(request):
