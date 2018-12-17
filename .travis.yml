@@ -1,8 +1,7 @@
-language: python
-
 matrix:
   include:
     - name: linux-py27
+      language: python
       python: 2.7
       sudo: required
       services:
@@ -11,6 +10,7 @@ matrix:
         - PIP=pip
         - CIBW_BUILD=cp27-*
     - name: linux-py34
+      language: python
       python: 3.4
       sudo: required
       services:
@@ -19,6 +19,7 @@ matrix:
         - PIP=pip
         - CIBW_BUILD=cp34-*
     - name: linux-py35
+      language: python
       python: 3.5
       sudo: required
       services:
@@ -27,6 +28,7 @@ matrix:
         - PIP=pip3
         - CIBW_BUILD=cp35-*
     - name: linux-py36
+      language: python
       python: 3.6
       sudo: required
       services:
@@ -35,6 +37,7 @@ matrix:
         - PIP=pip3
         - CIBW_BUILD=cp36-*
     - name: linux-py37
+      language: python
       python: 3.7
       dist: xenial
       sudo: required
@@ -105,11 +108,10 @@ matrix:
         - cibuildwheel --output-dir dist
 install:
   - ${PIP} install -U pip
-  - ${PIP} install tox
   - ${PIP} install -r docs/requirements.txt
   - ${PIP} install cibuildwheel==0.10.0
-script:
   - ${PIP} install .[flake8]
+script:
   - flake8 --ignore=E501 lz4
   - flake8 --ignore=E501 tests
   - flake8 --ignore=E501 setup.py
