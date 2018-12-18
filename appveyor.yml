@@ -75,6 +75,7 @@ test_script:
   # due to memory fragmentation resulting from many alloc/free cycles
   # ps: $env:is64bit = $env:PYTHON.Contains("-x64")
   # IF %is64bit% == True build.cmd tox
+  - "build.cmd python -m pip install -e ."
   - "build.cmd pytest tests"
 
 after_test:
