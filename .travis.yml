@@ -122,6 +122,7 @@ script:
   - pytest --cov=lz4 tests # coverage run --source=lz4 -m pytest tests
   - make -C docs doctest html
   - codecov
+  - git stash --all # Restore fresh checkout
   - cibuildwheel --output-dir dist
 deploy:
   - provider: pypi
