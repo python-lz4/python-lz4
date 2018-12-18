@@ -6,7 +6,7 @@
 
 environment:
   PYPI_PASSWORD:
-    secure: LGlG50Ta854XC2pxoPRxxQ==
+    secure: Sopzu1BZfXmABwhzM7mYSQ==
 
   matrix:
 
