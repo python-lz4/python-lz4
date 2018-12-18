@@ -50,7 +50,8 @@ matrix:
       os: osx
       language: generic
       env:
-        - PIP=pip2
+        - PATH="/Library/Frameworks/Python.framework/Versions/2.7/bin:$PATH"
+        - PIP=pip
         - CIBW_BUILD=cp27-*
         - CIBW_TEST_COMMAND="pytest {project}/tests"
         - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install .; $PIP install .[tests]"
