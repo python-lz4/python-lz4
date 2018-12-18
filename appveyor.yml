@@ -64,7 +64,7 @@ install:
   - "build.cmd python -m pip install twine"
 
   # We need tox to run tests
-  - "build.cmd python -m pip install tox"
+  - "build.cmd python -m pip install pytest"
 
 build_script:
   # Build the compiled extension
