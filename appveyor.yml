@@ -63,9 +63,6 @@ install:
   # We need twine installed to push wheels to PyPI
   - "build.cmd python -m pip install twine"
 
-  # We need tox to run tests
-  - "build.cmd python -m pip install tox"
-
 build_script:
   # Build the compiled extension
   - "build.cmd python setup.py build"
@@ -75,7 +72,9 @@ test_script:
   # due to memory fragmentation resulting from many alloc/free cycles
   # ps: $env:is64bit = $env:PYTHON.Contains("-x64")
   # IF %is64bit% == True build.cmd tox
-  - "build.cmd tox"
+  - "build.cmd python -m pip install -e ."
+  - "build.cmd python -m pip install -e .[tests]"
+  - "build.cmd pytest tests"
 
 after_test:
   # If tests are successful, create binary packages for the project.
