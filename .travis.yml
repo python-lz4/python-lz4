@@ -117,9 +117,9 @@ script:
   - flake8 --ignore=E501 lz4
   - flake8 --ignore=E501 tests
   - flake8 --ignore=E501 setup.py
-  - ${PIP} install .
+  - ${PIP} install -e .
   - ${PIP} install .[tests]
-  - pytest --cov=./lz4
+  - coverage run --source=lz4 -m pytest tests
   - make -C docs doctest html
   - codecov
   - cibuildwheel --output-dir dist
