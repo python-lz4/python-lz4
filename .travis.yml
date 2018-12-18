@@ -117,8 +117,8 @@ script:
   - flake8 --ignore=E501 lz4
   - flake8 --ignore=E501 tests
   - flake8 --ignore=E501 setup.py
-  - ${PIP} install -e .
   - ${PIP} install .[tests]
+  - ${PIP} install -e . # This needs to be IMMEDIATELY before coverage tests
   - pytest --cov=lz4 tests # coverage run --source=lz4 -m pytest tests
   - make -C docs doctest html
   - codecov
