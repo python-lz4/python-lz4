@@ -125,8 +125,10 @@ deploy:
     # server: https://test.pypi.org/legacy/
     user: jgu
     password:
-      secure: SS5kSQtsfHIYG5gLKC9jQ23bnNBgoejVgdrDxfaccNqojrIy5CtuUo+a7/P16bObWp1jCnlwUyX6mQj1S+abDsUHr+2+pNjl5MP8pWdREu19fBTcwMkZLXlUdSuWwcBjmZjaVpuKQRCKwajHrGjOE4s3vO1h/IOLETEX0d1rmuavSUftqYcea/TO/MNzDuxnUe7pkGsPkfbMxHY5oXNmx5zOvtG2h0eZowjwgE5YVZfTZ82fqfCfbqmoytwmQKd3rTmo/hpYvNcGweHizKouzLArw0+DDtkJt/jT459zM3lnUEh+TfaCSeqd+cTWmEZDiMR8MxnSJkpN3RGHcvxreF+HZjCAKhvAbZcWIpRC0cNp4VxWyVGZN/dLZA0WM3gJJKCjgCA70eslC+ccZh6WyG93effiVLhHYB9vyt7SfwsUzDrZo3++Czi6drCVNyI6pBdb587yfkuJYdomNIQ2DCesUKjuoFFt34VZC5bJOK82F81jMXYGaQn3BCWPdfMTmqJ3maimfji7KXts6bbyQUzgc+610Yd8eIRGvDQwmeBjovRT5uyYDJtXfDOIYXiv3n79wtDt+ygZzLOXNMvEt6/Wsy/xrWEsHFfA5bknSenurfgQoYCkLOjgKJEqxDV4nXdwhJxwbC740Fea/cGwem5L0mfz8SGtd7giFHDpgkg=
+      secure: "K1HppGu970i6WBKfnjQbCo0A0cYPih2rfM/rIDRzQXS8t+ZckyBywiKq/+4pkNJAfaHhQ8bHSz2J1GCq3Wz6DloGFHqEKAoHy5OgJxaK5nEp6avYvyHBSxrcZ6UfwFGMMMTAy4vfhnoJ3ARHaUFE4EIWYCVvP8/yCsE/6ir8AfozTssdYTUioJaYjSnowJ38nqa8H3hK3K5gke8aeclB+lnnWcyakgot65MfL2ov2mkkpWeiEn44ldV2iRKcl9a7Utgq3tJ1A634eUiNvIPpBYxnxPe++VRHA/mov9BWX0XfTmDuiVr+zDgMWdt3BK7f21r6P5DndpCZb8C2WzBFMKVz+rbuspbVJTol9Nt/9sVvSS6/fEBpXooRHRr9nP9EIt8Jlyv4CZ3iX/+T/912s84ZQCgqrhFNnRvECpmiVtHg49GecnMtJqC4jW57527c//oQPFyv/84Fd7fZ5jZg4LwhCl1C04Sqjmx8MFuMCR829CcZXJ2dAa5hQ/1v44SJAOKCQ0zDSdTqAy6x9RK/KNxnoQ9Nbn6ZFBUcjKx6rofyvXlwIcsQsjuzLw2mqmavZPduavVRi6cxK1WCEnaBVOXODWUSDatWchch1OcBm46X9UwwnHTsDHCVh6Bw+BDXhZuNw/72UA8z0sU/Val8iXBeThu33PMh3fo+uoqDf1g="
     distributions: "sdist"
+    skip_existing: true
+    skip_cleanup: true
     on:
       branch: master
       tags: true
