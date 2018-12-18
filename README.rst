@@ -17,6 +17,11 @@ Status
    :target: https://readthedocs.org/projects/python-lz4/
    :alt: Documentation
 
+.. image:: https://codecov.io/gh/python-lz4/python-lz4/branch/codecov/graph/badge.svg
+   :target: https://codecov.io/gh/python-lz4/python-lz4
+   :alt: CodeCov
+
+
 Introduction
 ============
 This package provides python bindings for the `LZ4 compression library

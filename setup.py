@@ -146,6 +146,7 @@ if sys.version_info < (3, 0):
 tests_require = [
     'pytest!=3.3.0',
     'psutil',
+    'pytest-cov',
 ],
 
 # Only require pytest-runner if actually running the tests

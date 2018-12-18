@@ -112,14 +112,16 @@ install:
   - ${PIP} install -r docs/requirements.txt
   - ${PIP} install cibuildwheel==0.10.0
   - ${PIP} install .[flake8]
+  - ${PIP} install codecov
 script:
   - flake8 --ignore=E501 lz4
   - flake8 --ignore=E501 tests
   - flake8 --ignore=E501 setup.py
   - ${PIP} install .
   - ${PIP} install .[tests]
-  - pytest
+  - pytest --cov=./lz4
   - make -C docs doctest html
+  - codecov
   - cibuildwheel --output-dir dist
 deploy:
   - provider: pypi
