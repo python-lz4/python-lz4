@@ -1,6 +1,8 @@
 import lz4.frame
 import pytest
 
+MEM_INCREASE_LIMIT = (1024 * 25)
+
 test_data = [
     (b'a' * 1024 * 1024),
 ]
@@ -32,7 +34,7 @@ def test_frame_decompress_mem_usage(data):
 
             if prev_snapshot:
                 stats = snapshot.compare_to(prev_snapshot, 'lineno')
-                assert stats[0].size_diff < (1024 * 20)
+                assert stats[0].size_diff < MEM_INCREASE_LIMIT
 
             prev_snapshot = snapshot
 
@@ -56,7 +58,7 @@ def test_frame_decompress_chunk_mem_usage(data):
 
             if prev_snapshot:
                 stats = snapshot.compare_to(prev_snapshot, 'lineno')
-                assert stats[0].size_diff < (1024 * 20)
+                assert stats[0].size_diff < MEM_INCREASE_LIMIT
 
             prev_snapshot = snapshot
 
@@ -79,7 +81,7 @@ def test_frame_open_decompress_mem_usage(data):
 
             if prev_snapshot:
                 stats = snapshot.compare_to(prev_snapshot, 'lineno')
-                assert stats[0].size_diff < (1024 * 20)
+                assert stats[0].size_diff < MEM_INCREASE_LIMIT
 
             prev_snapshot = snapshot
 
