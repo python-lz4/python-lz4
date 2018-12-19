@@ -112,14 +112,12 @@ install:
   - ${PIP} install -r docs/requirements.txt
   - ${PIP} install cibuildwheel==0.10.0
   - ${PIP} install .[flake8]
-  - ${PIP} install codecov
+  - ${PIP} install codecov tox
 script:
   - flake8 --ignore=E501 lz4
   - flake8 --ignore=E501 tests
   - flake8 --ignore=E501 setup.py
-  - ${PIP} install .[tests]
-  - ${PIP} install -e . # This needs to be IMMEDIATELY before coverage tests
-  - pytest --cov=lz4 tests # coverage run --source=lz4 -m pytest tests
+  - tox tests
   - make -C docs doctest html
   - codecov
   - git stash --all # Restore fresh checkout
