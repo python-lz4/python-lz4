@@ -50,10 +50,11 @@ matrix:
       os: osx
       language: generic
       env:
-        - PIP=pip2
+        - PATH="/Library/Frameworks/Python.framework/Versions/2.7/bin:$PATH"
+        - PIP=pip
         - CIBW_BUILD=cp27-*
-        - CIBW_TEST_COMMAND="pytest {project}/tests"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install .; $PIP install .[tests]"
+        - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
+        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox"
       install:
         - ${PIP} install cibuildwheel==0.10.0
       script:
@@ -64,8 +65,8 @@ matrix:
       env:
         - PIP=pip2
         - CIBW_BUILD=cp34-*
-        - CIBW_TEST_COMMAND="pytest {project}/tests"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install .; $PIP install .[tests]"
+        - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
+        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox"
       install:
         - ${PIP} install cibuildwheel==0.10.0
       script:
@@ -76,8 +77,8 @@ matrix:
       env:
         - PIP=pip2
         - CIBW_BUILD=cp35-*
-        - CIBW_TEST_COMMAND="pytest {project}/tests"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install .; $PIP install .[tests]"
+        - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
+        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox"
       install:
         - ${PIP} install cibuildwheel==0.10.0
       script:
@@ -88,8 +89,8 @@ matrix:
       env:
         - PIP=pip2
         - CIBW_BUILD=cp36-*
-        - CIBW_TEST_COMMAND="pytest {project}/tests"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install .; $PIP install .[tests]"
+        - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
+        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox"
       install:
         - ${PIP} install cibuildwheel==0.10.0
       script:
@@ -100,25 +101,20 @@ matrix:
       env:
         - PIP=pip2
         - CIBW_BUILD=cp37-*
-        - CIBW_TEST_COMMAND="pytest {project}/tests"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install .; $PIP install .[tests]"
+        - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
+        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox"
       install:
         - ${PIP} install cibuildwheel==0.10.0
       script:
         - cibuildwheel --output-dir dist
 install:
   - ${PIP} install -U pip
-  - ${PIP} install -r docs/requirements.txt
   - ${PIP} install cibuildwheel==0.10.0
-  - ${PIP} install .[flake8]
+  - ${PIP} install codecov tox
 script:
-  - flake8 --ignore=E501 lz4
-  - flake8 --ignore=E501 tests
-  - flake8 --ignore=E501 setup.py
-  - ${PIP} install .
-  - ${PIP} install .[tests]
-  - pytest
-  - make -C docs doctest html
+  - tox tests
+  - codecov
+  - git stash --all # Restore fresh checkout
   - cibuildwheel --output-dir dist
 deploy:
   - provider: pypi

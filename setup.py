@@ -146,6 +146,7 @@ if sys.version_info < (3, 0):
 tests_require = [
     'pytest!=3.3.0',
     'psutil',
+    'pytest-cov',
 ],
 
 # Only require pytest-runner if actually running the tests
@@ -178,6 +179,10 @@ setup(
     tests_require=tests_require,
     extras_require={
         'tests': tests_require,
+        'docs': [
+            'sphinx >= 1.6.0',
+            'sphinx_bootstrap_theme',
+        ],
         'flake8': [
             'flake8',
         ]

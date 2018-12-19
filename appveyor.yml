@@ -60,22 +60,18 @@ install:
   # We need wheel installed to build wheels, and this isn't pulled in by setup.py
   - "build.cmd python -m pip install wheel"
 
+  # Install tox for testing
+  - "build.cmd python -m pip install tox"
+  
   # We need twine installed to push wheels to PyPI
   - "build.cmd python -m pip install twine"
-
-  # We need tox to run tests
-  - "build.cmd python -m pip install tox"
 
 build_script:
   # Build the compiled extension
   - "build.cmd python setup.py build"
 
 test_script:
-  # Run the project tests. Test only for 64 bit Python as the 32 bit tests fail
-  # due to memory fragmentation resulting from many alloc/free cycles
-  # ps: $env:is64bit = $env:PYTHON.Contains("-x64")
-  # IF %is64bit% == True build.cmd tox
-  - "build.cmd tox"
+  - "build.cmd tox -e py tests"
 
 after_test:
   # If tests are successful, create binary packages for the project.
