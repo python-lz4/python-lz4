@@ -109,17 +109,13 @@ matrix:
         - cibuildwheel --output-dir dist
 install:
   - ${PIP} install -U pip
-  - ${PIP} install -r docs/requirements.txt
   - ${PIP} install cibuildwheel==0.10.0
-  - ${PIP} install .[flake8]
   - ${PIP} install codecov tox
 script:
-  - flake8 --ignore=E501 lz4
-  - flake8 --ignore=E501 tests
-  - flake8 --ignore=E501 setup.py
+  - tox -e flake8
   - tox tests
-  - make -C docs doctest html
   - codecov
+  - tox -e docs
   - git stash --all # Restore fresh checkout
   - cibuildwheel --output-dir dist
 deploy:
