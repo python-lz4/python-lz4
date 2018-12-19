@@ -112,10 +112,8 @@ install:
   - ${PIP} install cibuildwheel==0.10.0
   - ${PIP} install codecov tox
 script:
-  - tox -e flake8
   - tox tests
   - codecov
-  - tox -e docs
   - git stash --all # Restore fresh checkout
   - cibuildwheel --output-dir dist
 deploy:
