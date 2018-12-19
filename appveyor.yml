@@ -71,7 +71,7 @@ build_script:
   - "build.cmd python setup.py build"
 
 test_script:
-  - "build.cmd tox tests"
+  - "build.cmd tox -e py tests"
 
 after_test:
   # If tests are successful, create binary packages for the project.
