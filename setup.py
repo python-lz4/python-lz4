@@ -179,6 +179,10 @@ setup(
     tests_require=tests_require,
     extras_require={
         'tests': tests_require,
+        'docs': [
+            'sphinx >= 1.6.0',
+            'sphinx_bootstrap_theme',
+        ],
         'flake8': [
             'flake8',
         ]
