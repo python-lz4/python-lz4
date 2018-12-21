@@ -93,8 +93,8 @@ matrix:
         - PIP=pip2
         - CIBW_BUILD=cp36-*
         - CIBW_BEFORE_BUILD="${PIP} install -U pip"
-        - CIBW_TEST_REQUIRES="pytest!=3.3.0 psutil"
-        - CIBW_TEST_COMMAND="pytest {project}/tests"
+        - CIBW_TEST_REQUIRES="pytest!=3.3.0 pytest-cov codecov psutil"
+        - CIBW_TEST_COMMAND="pytest --cov=lz4 {project}/tests; codecov --required"
       install:
         - ${PIP} install cibuildwheel==0.10.0
       script:
