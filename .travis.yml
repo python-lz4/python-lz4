@@ -53,8 +53,9 @@ matrix:
         - PATH="/Library/Frameworks/Python.framework/Versions/2.7/bin:$PATH"
         - PIP=pip
         - CIBW_BUILD=cp27-*
-        - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox"
+        - CIBW_BEFORE_BUILD="${PIP} install -U pip"
+        - CIBW_TEST_REQUIRES="pytest!=3.3.0 psutil"
+        - CIBW_TEST_COMMAND="pytest {project}/tests"
       install:
         - ${PIP} install cibuildwheel==0.10.0
       script:
@@ -65,8 +66,9 @@ matrix:
       env:
         - PIP=pip2
         - CIBW_BUILD=cp34-*
-        - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox"
+        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install pytest!=3.3.0 psutil"
+        - CIBW_TEST_REQUIRES="pytest!=3.3.0 psutil"
+        - CIBW_TEST_COMMAND="pytest {project}/tests"
       install:
         - ${PIP} install cibuildwheel==0.10.0
       script:
@@ -77,8 +79,9 @@ matrix:
       env:
         - PIP=pip2
         - CIBW_BUILD=cp35-*
-        - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox"
+        - CIBW_BEFORE_BUILD="${PIP} install -U pip"
+        - CIBW_TEST_REQUIRES="pytest!=3.3.0 psutil"
+        - CIBW_TEST_COMMAND="pytest {project}/tests"
       install:
         - ${PIP} install cibuildwheel==0.10.0
       script:
@@ -89,8 +92,9 @@ matrix:
       env:
         - PIP=pip2
         - CIBW_BUILD=cp36-*
-        - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox"
+        - CIBW_BEFORE_BUILD="${PIP} install -U pip"
+        - CIBW_TEST_REQUIRES="pytest!=3.3.0 psutil"
+        - CIBW_TEST_COMMAND="pytest {project}/tests"
       install:
         - ${PIP} install cibuildwheel==0.10.0
       script:
@@ -101,8 +105,9 @@ matrix:
       env:
         - PIP=pip2
         - CIBW_BUILD=cp37-*
-        - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox"
+        - CIBW_BEFORE_BUILD="${PIP} install -U pip"
+        - CIBW_TEST_REQUIRES="pytest!=3.3.0 psutil"
+        - CIBW_TEST_COMMAND="pytest {project}/tests"
       install:
         - ${PIP} install cibuildwheel==0.10.0
       script:
