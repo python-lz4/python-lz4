@@ -2,7 +2,7 @@ env:
   global:
     - CIBW_BEFORE_BUILD="pip install -U pip"
     - CIBW_TEST_REQUIRES="pytest!=3.3.0 pytest-cov codecov psutil coveralls"
-    - CIBW_TEST_COMMAND="pytest --cov=lz4 {project}/tests && codecov --required ; coveralls"
+    - CIBW_TEST_COMMAND="pytest --cov=lz4 {project}/tests && codecov --required --root {project}; coveralls"
 
 matrix:
   include:
