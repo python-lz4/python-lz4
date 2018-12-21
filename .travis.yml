@@ -113,7 +113,7 @@ install:
   - ${PIP} install codecov tox
 script:
   - tox tests
-  - codecov
+  - codecov --required
   - git stash --all # Restore fresh checkout
   - cibuildwheel --output-dir dist
 deploy:
