@@ -2,7 +2,7 @@ env:
   global:
     - CIBW_BEFORE_BUILD="pip install -U pip"
     - CIBW_TEST_REQUIRES="pytest!=3.3.0 pytest-cov codecov psutil coveralls"
-    - CIBW_TEST_COMMAND="pytest --cov=lz4 {project}/tests && cp .coverage {project} && pushd {project} && source local_env.sh && codecov --required; coveralls"
+    - CIBW_TEST_COMMAND="env && pytest --cov=lz4 {project}/tests && cp .coverage {project} && pushd {project} && codecov --required; coveralls"
 
 matrix:
   include:
@@ -96,7 +96,6 @@ matrix:
 install:
   - ${PIP} install cibuildwheel==0.10.0
 script:
-  - env > local_env.sh
   - cibuildwheel --output-dir dist
 deploy:
   - provider: pypi
