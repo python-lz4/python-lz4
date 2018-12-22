@@ -1,3 +1,9 @@
+env:
+  global:
+    - CIBW_BEFORE_BUILD="pip install -U pip"
+    - CIBW_TEST_REQUIRES="pytest!=3.3.0 pytest-cov codecov psutil coveralls"
+    - CIBW_TEST_COMMAND="env && pytest --cov=lz4 {project}/tests && cp .coverage {project} && pushd {project} && codecov --required; coveralls"
+
 matrix:
   include:
     - name: linux-py27
@@ -9,6 +15,7 @@ matrix:
       env:
         - PIP=pip
         - CIBW_BUILD=cp27-*
+
     - name: linux-py34
       language: python
       python: 3.4
@@ -18,6 +25,7 @@ matrix:
       env:
         - PIP=pip
         - CIBW_BUILD=cp34-*
+
     - name: linux-py35
       language: python
       python: 3.5
@@ -27,6 +35,7 @@ matrix:
       env:
         - PIP=pip3
         - CIBW_BUILD=cp35-*
+
     - name: linux-py36
       language: python
       python: 3.6
@@ -36,6 +45,7 @@ matrix:
       env:
         - PIP=pip3
         - CIBW_BUILD=cp36-*
+
     - name: linux-py37
       language: python
       python: 3.7
@@ -46,6 +56,7 @@ matrix:
       env:
         - PIP=pip3
         - CIBW_BUILD=cp37-*
+
     - name: osx-py27
       os: osx
       language: generic
@@ -53,68 +64,38 @@ matrix:
         - PATH="/Library/Frameworks/Python.framework/Versions/2.7/bin:$PATH"
         - PIP=pip
         - CIBW_BUILD=cp27-*
-        - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox"
-      install:
-        - ${PIP} install cibuildwheel==0.10.0
-      script:
-        - cibuildwheel --output-dir dist
+
     - name: osx-py34
       os: osx
       language: generic
       env:
         - PIP=pip2
         - CIBW_BUILD=cp34-*
-        - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox"
-      install:
-        - ${PIP} install cibuildwheel==0.10.0
-      script:
-        - cibuildwheel --output-dir dist
+
     - name: osx-py35
       os: osx
       language: generic
       env:
         - PIP=pip2
         - CIBW_BUILD=cp35-*
-        - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox"
-      install:
-        - ${PIP} install cibuildwheel==0.10.0
-      script:
-        - cibuildwheel --output-dir dist
+
     - name: osx-py36
       os: osx
       language: generic
       env:
         - PIP=pip2
         - CIBW_BUILD=cp36-*
-        - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox"
-      install:
-        - ${PIP} install cibuildwheel==0.10.0
-      script:
-        - cibuildwheel --output-dir dist
+
     - name: osx-py37
       os: osx
       language: generic
       env:
         - PIP=pip2
         - CIBW_BUILD=cp37-*
-        - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox"
-      install:
-        - ${PIP} install cibuildwheel==0.10.0
-      script:
-        - cibuildwheel --output-dir dist
+
 install:
-  - ${PIP} install -U pip
   - ${PIP} install cibuildwheel==0.10.0
-  - ${PIP} install codecov tox
 script:
-  - tox tests
-  - codecov
-  - git stash --all # Restore fresh checkout
   - cibuildwheel --output-dir dist
 deploy:
   - provider: pypi
