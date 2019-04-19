@@ -28,8 +28,8 @@ This package provides python bindings for the `LZ4 compression library
 <https://lz4.github.io/lz4/>`_.
 
 The bindings provided in this package cover the `frame format
-<http://lz4.github.io/lz4/lz4_Frame_format.html>`_ and the `block format
-<http://lz4.github.io/lz4/lz4_Block_format.html>`_ specifications. The frame
+<https://github.com/lz4/lz4/blob/master/doc/lz4_Frame_format.md>`_ and the `block format
+<https://github.com/lz4/lz4/blob/dev/doc/lz4_Block_format.md>`_ specifications. The frame
 format bindings are the recommended ones to use, as this guarantees
 interoperability with other implementations and language bindings.
 
