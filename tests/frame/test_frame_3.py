@@ -22,7 +22,7 @@ def test_decompress_truncated(data):
     compressed = lz4frame.compress(data)
 
     message = r'^LZ4F_getFrameInfo failed with code: ERROR_frameHeader_incomplete'
-    with pytest.raises(RuntimeError, message=message):
+    with pytest.raises(RuntimeError, match=message):
         lz4frame.decompress(compressed[:6])
 
     for i in range(16, len(compressed) - 1, 5):  # 15 is the max size of the header
@@ -32,14 +32,14 @@ def test_decompress_truncated(data):
             lz4frame.decompress(compressed[:i])
         except RuntimeError as r:
             print(r)
-        with pytest.raises(RuntimeError, message=message):
+        with pytest.raises(RuntimeError, match=message):
             lz4frame.decompress(compressed[:i])
 
 
 def test_content_checksum_failure(data):
     compressed = lz4frame.compress(data, content_checksum=True)
     message = r'^LZ4F_decompress failed with code: ERROR_contentChecksum_invalid$'
-    with pytest.raises(RuntimeError, message=message):
+    with pytest.raises(RuntimeError, match=message):
         last = struct.unpack('B', compressed[-1:])[0]
         lz4frame.decompress(compressed[:-1] + struct.pack('B', last ^ 0x42))
 
@@ -53,6 +53,6 @@ def test_block_checksum_failure(data):
     )
     message = r'^LZ4F_decompress failed with code: ERROR_blockChecksum_invalid$'
     if len(compressed) > 32:
-        with pytest.raises(RuntimeError, message=message):
+        with pytest.raises(RuntimeError, match=message):
             compressed[18] = compressed[18] ^ 0x42
             lz4frame.decompress(compressed)
