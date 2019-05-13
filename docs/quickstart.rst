@@ -218,7 +218,7 @@ This is the default.
 
 When ``auto_flush`` is ``True``, the compression functions will return
 compressed data immediately.
- 
+
 Availability: :py:func:`lz4.frame.compress()`,
 :py:func:`lz4.frame.compress_begin()`, :py:func:`lz4.frame.open()`,
 :py:class:`lz4.frame.LZ4FrameCompressor`, :py:class:`lz4.frame.LZ4FrameFile`.
@@ -244,3 +244,41 @@ header.
 Availability of ``source_size``: :py:meth:`lz4.frame.LZ4FrameCompressor.begin()`,
 :py:func:`lz4.frame.compress_begin()`, :py:func:`lz4.frame.open()`,
 :py:class:`lz4.frame.LZ4FrameFile`.
+
+
+Working with streamed compressed data
+-------------------------------------
+
+The stream bindings provide capability for working with stream compressed LZ4
+data. This functionality is based on the usage of a ring-buffer (not implemented
+yet) or a double-buffer, with the length of each block preceding the compressed
+payload in the stream.
+
+The stream compression reuses a context between each processed block for
+performance gain.
+
+Most of the arguments used to initialize the LZ4 stream context are shared with
+the block API. Hereafter, those specific to the LZ4 stream API are detailed.
+
+
+Controlling the buffer size
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``buffer_size`` argument represents the base buffer size used internally for
+memory allocation:
+
+* In the case of the double-buffer strategy, this is the size of each buffer of
+  the double-buffer.
+
+When compressing, this size is the maximal length of the input uncompressed
+chunks.
+
+When decompressing, this size is the maximal length of the decompressed data.
+
+
+Storing the compressed data size in the block
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``store_comp_size`` argument allows tuning of the size (in bytes) of the
+compressed block, which is prepended to the actual LZ4 compressed payload.
+This size can be either on ``1``, ``2`` or ``4`` bytes.
