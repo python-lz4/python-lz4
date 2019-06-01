@@ -1654,7 +1654,7 @@ PyDoc_STRVAR
 PyDoc_STRVAR
 (
  decompress_chunk__doc,
- "decompress_chunk(context, data)\n"                                    \
+ "decompress_chunk(context, data, max_length=-1)\n"                     \
  "\n"                                                                   \
  "Decompresses part of a frame of compressed data.\n"                   \
  "\n"                                                                   \
@@ -1667,7 +1667,7 @@ PyDoc_STRVAR
  "        frame of compressed data\n"                                   \
  "\n"                                                                   \
  "Keyword Args:\n"                                                      \
- "    max_length (int): if non-negative this specifies the maximum number" \
+ "    max_length (int): if non-negative this specifies the maximum number\n" \
  "         of bytes of uncompressed data to return. Default is ``-1``.\n" \
  "    return_bytearray (bool): If ``True`` a bytearray object will be\n" \
  "        returned.If ``False``, a string of bytes is returned. The\n"  \
