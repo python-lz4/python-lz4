@@ -290,7 +290,7 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
                 PyObject * keywds)
 {
   PyObject *py_context = NULL;
-  Py_ssize_t source_size = 0;
+  Py_ssize_t source_size = (Py_ssize_t) 0;
   int return_bytearray = 0;
   int content_checksum = 0;
   int block_checksum = 0;
@@ -1067,9 +1067,9 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
     }
   else
     {
-      if (max_length >= 0)
+      if (max_length >= (Py_ssize_t) 0)
         {
-          destination_size = max_length;
+          destination_size = (size_t) max_length;
         }
       else
         {
@@ -1092,7 +1092,7 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
   /* Only set stableDst = 1 if we are sure no PyMem_Realloc will be called since
      when stableDst = 1 the LZ4 library stores a pointer to the last compressed
      data, which may be invalid after a PyMem_Realloc. */
-  if (full_frame && max_length >= 0)
+  if (full_frame && max_length >= (Py_ssize_t) 0)
     {
       options.stableDst = 1;
     }
@@ -1157,7 +1157,7 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
           /* Destination buffer is full. So, stop decompressing if
              max_length is set. Otherwise expand the destination
              buffer. */
-          if (max_length >= 0)
+          if (max_length >= (Py_ssize_t) 0)
             {
               break;
             }
@@ -1339,7 +1339,7 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
   Py_buffer py_source;
   char * source;
   size_t source_size;
-  Py_ssize_t max_length = -1;
+  Py_ssize_t max_length = (Py_ssize_t) -1;
   int return_bytearray = 0;
   static char *kwlist[] = { "context",
                             "data",
@@ -1349,7 +1349,7 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
                           };
 
 #if IS_PY3
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Oy*|kp", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Oy*|np", kwlist,
                                     &py_context,
                                     &py_source,
                                     &max_length,
@@ -1359,7 +1359,7 @@ decompress_chunk (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 #else
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os*|ki", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "Os*|ni", kwlist,
                                     &py_context,
                                     &py_source,
                                     &max_length,
