@@ -92,7 +92,7 @@ extra_link_args = []
 extra_compile_args = []
 
 if compiler == 'msvc':
-    extra_compile_args = ['/Ot', '/Wall']
+    extra_compile_args = ['/Ot', '/Wall', '/wd4711', '/wd4820']
 elif compiler in ('unix', 'mingw32'):
     if liblz4_found:
         extra_link_args.append(pkgconfig_libs('liblz4'))

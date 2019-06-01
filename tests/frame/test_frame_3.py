@@ -26,8 +26,7 @@ def test_decompress_truncated(data):
         lz4frame.decompress(compressed[:6])
 
     for i in range(16, len(compressed) - 1, 5):  # 15 is the max size of the header
-        message = r'^Frame incomplete. LZ4F_decompress returned: {0}'.format(
-            len(compressed) - i)
+        message = r'^Frame incomplete. LZ4F_decompress returned:'
         try:
             lz4frame.decompress(compressed[:i])
         except RuntimeError as r:
@@ -54,5 +53,5 @@ def test_block_checksum_failure(data):
     message = r'^LZ4F_decompress failed with code: ERROR_blockChecksum_invalid$'
     if len(compressed) > 32:
         with pytest.raises(RuntimeError, match=message):
-            compressed[18] = compressed[18] ^ 0x42
+            compressed[22] = compressed[18] ^ 0x42
             lz4frame.decompress(compressed)
