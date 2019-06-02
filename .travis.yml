@@ -54,7 +54,7 @@ matrix:
         - PIP=pip
         - CIBW_BUILD=cp27-*
         - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox"
+        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox twine"
       install:
         - ${PIP} install cibuildwheel==0.10.0
       script:
@@ -66,7 +66,7 @@ matrix:
         - PIP=pip2
         - CIBW_BUILD=cp34-*
         - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox"
+        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox twine"
       install:
         - ${PIP} install cibuildwheel==0.10.0
       script:
@@ -78,7 +78,7 @@ matrix:
         - PIP=pip2
         - CIBW_BUILD=cp35-*
         - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox"
+        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox twine"
       install:
         - ${PIP} install cibuildwheel==0.10.0
       script:
@@ -90,7 +90,7 @@ matrix:
         - PIP=pip2
         - CIBW_BUILD=cp36-*
         - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox"
+        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox twine"
       install:
         - ${PIP} install cibuildwheel==0.10.0
       script:
@@ -102,7 +102,7 @@ matrix:
         - PIP=pip2
         - CIBW_BUILD=cp37-*
         - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox"
+        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox twine"
       install:
         - ${PIP} install cibuildwheel==0.10.0
       script:
@@ -110,7 +110,7 @@ matrix:
 install:
   - ${PIP} install -U pip
   - ${PIP} install cibuildwheel==0.10.0
-  - ${PIP} install codecov tox
+  - ${PIP} install codecov tox twine
 script:
   - tox tests
   - codecov
@@ -128,4 +128,3 @@ deploy:
     on:
       branch: master
       tags: true
-
