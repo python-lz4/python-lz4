@@ -1,5 +1,6 @@
 import lz4.frame
 import pytest
+import gc
 
 MEM_INCREASE_LIMIT = (1024 * 25)
 
@@ -30,6 +31,7 @@ def test_frame_decompress_mem_usage(data):
         decompressed = lz4.frame.decompress(compressed)  # noqa: F841
 
         if i % 100 == 0:
+            gc.collect()
             snapshot = tracemalloc.take_snapshot()
 
             if prev_snapshot:
@@ -54,6 +56,7 @@ def test_frame_decompress_chunk_mem_usage(data):
         )
 
         if i % 100 == 0:
+            gc.collect()
             snapshot = tracemalloc.take_snapshot()
 
             if prev_snapshot:
@@ -77,6 +80,7 @@ def test_frame_open_decompress_mem_usage(data):
             decompressed = f.read()  # noqa: F841
 
         if i % 100 == 0:
+            gc.collect()
             snapshot = tracemalloc.take_snapshot()
 
             if prev_snapshot:
