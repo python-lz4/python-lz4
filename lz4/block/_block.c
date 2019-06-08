@@ -140,7 +140,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   Py_buffer source;
   int source_size;
   int return_bytearray = 0;
-  Py_buffer dict = { NULL, NULL };
+  Py_buffer dict = {0};
   static char *argnames[] = {
     "source",
     "mode",
@@ -189,7 +189,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       return NULL;
     }
 
-  source_size = source.len;
+  source_size = (int) source.len;
 
   if (!strncmp (mode, "default", sizeof ("default")))
     {
@@ -243,8 +243,8 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     }
 
   output_size = lz4_compress_generic (comp, source.buf, dest_start, source_size,
-                                      dest_size, dict.buf, dict.len, acceleration,
-                                      compression);
+                                      (int) dest_size, dict.buf, (int) dict.len,
+                                      acceleration, compression);
 
   Py_END_ALLOW_THREADS
 
@@ -260,7 +260,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 
   if (store_size)
     {
-      output_size += hdr_size;
+      output_size += (int) hdr_size;
     }
 
   if (return_bytearray)
@@ -294,7 +294,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   size_t dest_size;
   int uncompressed_size = -1;
   int return_bytearray = 0;
-  Py_buffer dict = { NULL, NULL };
+  Py_buffer dict = {0};
   static char *argnames[] = {
     "source",
     "uncompressed_size",
@@ -338,7 +338,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     }
 
   source_start = (const char *) source.buf;
-  source_size = source.len;
+  source_size = (int) source.len;
 
   if (uncompressed_size >= 0)
     {
@@ -358,7 +358,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
       source_size -= hdr_size;
     }
 
-  if (dest_size < 0 || dest_size > PY_SSIZE_T_MAX)
+  if (dest_size > INT_MAX)
     {
       PyBuffer_Release(&source);
       PyBuffer_Release(&dict);
@@ -376,8 +376,8 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   Py_BEGIN_ALLOW_THREADS
 
   output_size =
-    LZ4_decompress_safe_usingDict (source_start, dest, source_size, dest_size,
-                                   dict.buf, dict.len);
+    LZ4_decompress_safe_usingDict (source_start, dest, source_size, (int) dest_size,
+                                   dict.buf, (int) dict.len);
 
   Py_END_ALLOW_THREADS
 
