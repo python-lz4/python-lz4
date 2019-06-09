@@ -56,7 +56,7 @@ matrix:
         - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
         - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox twine"
       install:
-        - ${PIP} install cibuildwheel==0.10.0
+        - ${PIP} install cibuildwheel==0.11.1
       script:
         - cibuildwheel --output-dir dist
     - name: osx-py34
@@ -68,7 +68,7 @@ matrix:
         - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
         - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox twine"
       install:
-        - ${PIP} install cibuildwheel==0.10.0
+        - ${PIP} install cibuildwheel==0.11.1
       script:
         - cibuildwheel --output-dir dist
     - name: osx-py35
@@ -80,7 +80,7 @@ matrix:
         - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
         - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox twine"
       install:
-        - ${PIP} install cibuildwheel==0.10.0
+        - ${PIP} install cibuildwheel==0.11.1
       script:
         - cibuildwheel --output-dir dist
     - name: osx-py36
@@ -92,7 +92,7 @@ matrix:
         - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
         - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox twine"
       install:
-        - ${PIP} install cibuildwheel==0.10.0
+        - ${PIP} install cibuildwheel==0.11.1
       script:
         - cibuildwheel --output-dir dist
     - name: osx-py37
@@ -104,12 +104,12 @@ matrix:
         - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
         - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox twine"
       install:
-        - ${PIP} install cibuildwheel==0.10.0
+        - ${PIP} install cibuildwheel==0.11.1
       script:
         - cibuildwheel --output-dir dist
 install:
   - ${PIP} install -U pip
-  - ${PIP} install cibuildwheel==0.10.0
+  - ${PIP} install cibuildwheel==0.11.1
   - ${PIP} install codecov tox twine
 script:
   - tox tests
