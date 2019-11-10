@@ -6,3 +6,4 @@ User Guide
    lz4
    lz4.frame
    lz4.block
+   lz4.stream

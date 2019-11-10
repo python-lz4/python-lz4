@@ -59,6 +59,10 @@ lz4frame_sources = [
     'lz4/frame/_frame.c'
 ]
 
+lz4stream_sources = [
+    'lz4/stream/_stream.c'
+]
+
 if liblz4_found is True:
     libraries.append('lz4')
 else:
@@ -80,6 +84,12 @@ else:
             'lz4libs/lz4hc.c',
             'lz4libs/lz4frame.c',
             'lz4libs/xxhash.c',
+        ]
+    )
+    lz4stream_sources.extend(
+        [
+            'lz4libs/lz4.c',
+            'lz4libs/lz4hc.c',
         ]
     )
 
@@ -129,6 +139,13 @@ lz4frame = Extension('lz4.frame._frame',
                      libraries=libraries,
                      include_dirs=include_dirs)
 
+lz4stream = Extension('lz4.stream._stream',
+                      lz4stream_sources,
+                      extra_compile_args=extra_compile_args,
+                      extra_link_args=extra_link_args,
+                      libraries=libraries,
+                      include_dirs=include_dirs)
+
 install_requires = []
 
 # On Python earlier than 3.0 the builtins package isn't included, but it is
@@ -174,7 +191,8 @@ setup(
     ext_modules=[
         lz4version,
         lz4block,
-        lz4frame
+        lz4frame,
+        lz4stream
     ],
     tests_require=tests_require,
     extras_require={
