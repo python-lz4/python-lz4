@@ -1,23 +1,5 @@
 matrix:
   include:
-    - name: linux-py27
-      language: python
-      python: 2.7
-      sudo: required
-      services:
-        - docker
-      env:
-        - PIP=pip
-        - CIBW_BUILD=cp27-*
-    - name: linux-py34
-      language: python
-      python: 3.4
-      sudo: required
-      services:
-        - docker
-      env:
-        - PIP=pip
-        - CIBW_BUILD=cp34-*
     - name: linux-py35
       language: python
       python: 3.5
@@ -46,31 +28,16 @@ matrix:
       env:
         - PIP=pip3
         - CIBW_BUILD=cp37-*
-    - name: osx-py27
-      os: osx
-      language: generic
+    - name: linux-py38
+      language: python
+      python: 3.8
+      dist: xenial
+      sudo: required
+      services:
+        - docker
       env:
-        - PATH="/Library/Frameworks/Python.framework/Versions/2.7/bin:$PATH"
-        - PIP=pip
-        - CIBW_BUILD=cp27-*
-        - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox twine"
-      install:
-        - ${PIP} install cibuildwheel==0.11.1
-      script:
-        - cibuildwheel --output-dir dist
-    - name: osx-py34
-      os: osx
-      language: generic
-      env:
-        - PIP=pip2
-        - CIBW_BUILD=cp34-*
-        - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox twine"
-      install:
-        - ${PIP} install cibuildwheel==0.11.1
-      script:
-        - cibuildwheel --output-dir dist
+        - PIP=pip3
+        - CIBW_BUILD=cp38-*
     - name: osx-py35
       os: osx
       language: generic
@@ -101,6 +68,18 @@ matrix:
       env:
         - PIP=pip2
         - CIBW_BUILD=cp37-*
+        - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
+        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox twine"
+      install:
+        - ${PIP} install cibuildwheel==0.11.1
+      script:
+        - cibuildwheel --output-dir dist
+    - name: osx-py38
+      os: osx
+      language: generic
+      env:
+        - PIP=pip2
+        - CIBW_BUILD=cp38-*
         - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
         - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox twine"
       install:
