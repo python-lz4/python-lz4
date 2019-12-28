@@ -42,54 +42,50 @@ matrix:
       os: osx
       language: generic
       env:
-        - PIP=pip2
         - CIBW_BUILD=cp35-*
         - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox twine"
+        - CIBW_BEFORE_BUILD="python -m pip install -U pip; python -m pip install tox twine"
       install:
-        - ${PIP} install cibuildwheel==1.1.0
+        - python -m pip install cibuildwheel==1.1.0
       script:
         - cibuildwheel --output-dir dist
     - name: osx-py36
       os: osx
       language: generic
       env:
-        - PIP=pip2
         - CIBW_BUILD=cp36-*
         - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox twine"
+        - CIBW_BEFORE_BUILD="python -m pip install -U pip; python -m pip install tox twine"
       install:
-        - ${PIP} install cibuildwheel==1.1.0
+        - python -m pip install cibuildwheel==1.1.0
       script:
         - cibuildwheel --output-dir dist
     - name: osx-py37
       os: osx
       language: generic
       env:
-        - PIP=pip2
         - CIBW_BUILD=cp37-*
         - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox twine"
+        - CIBW_BEFORE_BUILD="python -m pip install -U pip; python -m pip install tox twine"
       install:
-        - ${PIP} install cibuildwheel==1.1.0
+        - python -m pip install cibuildwheel==1.1.0
       script:
         - cibuildwheel --output-dir dist
     - name: osx-py38
       os: osx
       language: generic
       env:
-        - PIP=pip2
         - CIBW_BUILD=cp38-*
         - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="${PIP} install -U pip; ${PIP} install tox twine"
+        - CIBW_BEFORE_BUILD="python -m pip install -U pip; python -m pip install tox twine"
       install:
-        - ${PIP} install cibuildwheel==1.1.0
+        - python -m pip install cibuildwheel==1.1.0
       script:
         - cibuildwheel --output-dir dist
 install:
-  - ${PIP} install -U pip
-  - ${PIP} install cibuildwheel==1.1.0
-  - ${PIP} install codecov tox twine
+  - python -m pip install -U pip
+  - python -m pip install cibuildwheel==1.1.0
+  - python -m pip install codecov tox twine
 script:
   - tox tests
   - codecov
