@@ -7,7 +7,6 @@ matrix:
       services:
         - docker
       env:
-        - PIP=pip3
         - CIBW_BUILD=cp35-*
     - name: linux-py36
       language: python
@@ -16,7 +15,6 @@ matrix:
       services:
         - docker
       env:
-        - PIP=pip3
         - CIBW_BUILD=cp36-*
     - name: linux-py37
       language: python
@@ -26,7 +24,6 @@ matrix:
       services:
         - docker
       env:
-        - PIP=pip3
         - CIBW_BUILD=cp37-*
     - name: linux-py38
       language: python
@@ -36,7 +33,6 @@ matrix:
       services:
         - docker
       env:
-        - PIP=pip3
         - CIBW_BUILD=cp38-*
     - name: osx-py35
       os: osx
