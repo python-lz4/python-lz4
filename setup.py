@@ -6,12 +6,11 @@ from distutils import ccompiler
 # Note: if updating LZ4_REQUIRED_VERSION you need to update docs/install.rst as
 # well.
 LZ4_REQUIRED_VERSION = '>= 1.7.5'
-PY3C_REQUIRED_VERSION = '>= 1.0'
 
-# Check to see if we have a lz4 and py3c libraries installed on the system, and
-# of suitable versions, and use if so. If not, we'll use the bundled libraries.
+# Check to see if we have a suitable lz4 library installed on the system and
+# use if so. If not, we'll use the bundled libraries.
 liblz4_found = False
-py3c_found = False
+
 try:
     from pkgconfig import installed as pkgconfig_installed
     from pkgconfig import cflags as pkgconfig_cflags
@@ -34,8 +33,6 @@ else:
             pass
         return installed
     liblz4_found = pkgconfig_installed_check('liblz4', LZ4_REQUIRED_VERSION, default=False)
-    py3c_found = pkgconfig_installed_check('py3c', PY3C_REQUIRED_VERSION, default=False)
-
 
 # Set up the extension modules. If a system wide lz4 library is found, and is
 # recent enough, we'll use that. Otherwise we'll build with the bundled one. If
@@ -92,9 +89,6 @@ else:
             'lz4libs/lz4hc.c',
         ]
     )
-
-if py3c_found is False:
-    include_dirs.append('py3c')
 
 compiler = ccompiler.get_default_compiler()
 
