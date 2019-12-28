@@ -29,12 +29,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if defined(_WIN32) && defined(_MSC_VER)
-#define inline __inline
-#elif defined(__SUNPRO_C) || defined(__hpux) || defined(_AIX)
-#define inline
-#endif
-
 #include <Python.h>
 
 #include <stdlib.h>
