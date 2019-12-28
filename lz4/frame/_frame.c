@@ -41,14 +41,6 @@
 #include <lz4.h> /* Needed for LZ4_VERSION_NUMBER only. */
 #include <lz4frame.h>
 
-#ifndef Py_UNUSED		/* This is already defined for Python 3.4 onwards */
-#ifdef __GNUC__
-#define Py_UNUSED(name) _unused_ ## name __attribute__((unused))
-#else
-#define Py_UNUSED(name) _unused_ ## name
-#endif
-#endif
-
 static const char * compression_context_capsule_name = "_frame.LZ4F_cctx";
 static const char * decompression_context_capsule_name = "_frame.LZ4F_dctx";
 
