@@ -43,6 +43,7 @@ matrix:
         - CIBW_BEFORE_BUILD="python -m pip install -U pip; python -m pip install tox twine"
       install:
         - python -m pip install cibuildwheel==1.1.0
+        - python -m pip install twine
       script:
         - cibuildwheel --output-dir dist
     - name: osx-py36
@@ -54,6 +55,7 @@ matrix:
         - CIBW_BEFORE_BUILD="python -m pip install -U pip; python -m pip install tox twine"
       install:
         - python -m pip install cibuildwheel==1.1.0
+        - python -m pip install twine
       script:
         - cibuildwheel --output-dir dist
     - name: osx-py37
@@ -65,6 +67,7 @@ matrix:
         - CIBW_BEFORE_BUILD="python -m pip install -U pip; python -m pip install tox twine"
       install:
         - python -m pip install cibuildwheel==1.1.0
+        - python -m pip install twine
       script:
         - cibuildwheel --output-dir dist
     - name: osx-py38
@@ -76,6 +79,7 @@ matrix:
         - CIBW_BEFORE_BUILD="python -m pip install -U pip; python -m pip install tox twine"
       install:
         - python -m pip install cibuildwheel==1.1.0
+        - python -m pip install twine
       script:
         - cibuildwheel --output-dir dist
 install:
