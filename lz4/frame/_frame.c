@@ -1021,6 +1021,7 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
   LZ4F_frameInfo_t frame_info;
   LZ4F_decompressOptions_t options;
   int end_of_frame = 0;
+  int resize_factor = 1;
 
   memset(&options, 0, sizeof options);
 
@@ -1163,11 +1164,18 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
             }
           else
             {
-              /* Expand destination buffer. result is an indication of number of
-                 source bytes remaining, so we'll use this to estimate the new
-                 size of the destination buffer. */
+              /* Expand the destination buffer. We've tried various strategies
+                 here to estimate the compression ratio so far and adjust the
+                 buffer size accordingly. However, that grows the buffer too
+                 slowly. The best choices found were to either double the buffer
+                 size each time, or to grow faster by multiplying the buffer
+                 size by 2^N, where N is the number of resizes. We take the
+                 latter approach, though the former approach may actually be
+                 good enough in practice. */
               char * buff;
-              destination_size += 3 * result;
+
+              resize_factor *= 2;
+              destination_size *= resize_factor;
 
               Py_BLOCK_THREADS
               buff = PyMem_Realloc (destination, destination_size);
