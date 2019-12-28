@@ -35,8 +35,8 @@
 #define inline
 #endif
 
-#include <py3c.h>
-#include <py3c/capsulethunk.h>
+#include <Python.h>
+
 #include <stdlib.h>
 #include <math.h>
 #include <lz4.h>
@@ -805,19 +805,13 @@ _create_context (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwds)
     NULL
   };
 
-#if IS_PY3
-#define _ARG_FMT "ssI|sIIpIz*"
-#else
-#define _ARG_FMT "ssI|sIIiIz*"
-#endif
-  if (!PyArg_ParseTupleAndKeywords (args, kwds, _ARG_FMT, argnames,
+  if (!PyArg_ParseTupleAndKeywords (args, kwds, "ssI|sIIpIz*", argnames,
                                     &strategy_name, &direction, &buffer_size,
                                     &mode, &acceleration, &compression_level, &return_bytearray,
                                     &store_comp_size, &dict))
     {
       goto abort_now;
     }
-#undef _ARG_FMT
 
   /* Sanity checks on arguments */
   if (dict.len > INT_MAX)
@@ -1074,17 +1068,10 @@ _compress_bound (PyObject * Py_UNUSED (self), PyObject * args)
   /* Positional arguments: input_size
    * Keyword arguments   : none
    */
-#if IS_PY3
-#define _ARG_FMT "OI"
-#else
-#define _ARG_FMT "OI"
-#endif
-  if (!PyArg_ParseTuple (args, _ARG_FMT,
-                         &input_size))
+  if (!PyArg_ParseTuple (args, "OI", &input_size))
     {
       goto exit_now;
     }
-#undef _ARG_FMT
 
   py_dest = PyLong_FromUnsignedLong (get_compress_bound (input_size));
 
@@ -1106,17 +1093,10 @@ _input_bound (PyObject * Py_UNUSED (self), PyObject * args)
   /* Positional arguments: compress_max_size
    * Keyword arguments   : none
    */
-#if IS_PY3
-#define _ARG_FMT "I"
-#else
-#define _ARG_FMT "I"
-#endif
-  if (!PyArg_ParseTuple (args, _ARG_FMT,
-                         &compress_max_size))
+  if (!PyArg_ParseTuple (args, "I", &compress_max_size))
     {
       goto exit_now;
     }
-#undef _ARG_FMT
 
   py_dest = PyLong_FromUnsignedLong (get_input_bound (compress_max_size));
 
@@ -1171,17 +1151,10 @@ _compress (PyObject * Py_UNUSED (self), PyObject * args)
   /* Positional arguments: capsule_context, source
    * Keyword arguments   : none
    */
-#if IS_PY3
-#define _ARG_FMT "Oy*"
-#else
-#define _ARG_FMT "Os*"
-#endif
-  if (!PyArg_ParseTuple (args, _ARG_FMT,
-                         &py_context, &source))
+  if (!PyArg_ParseTuple (args, "Oy*", &py_context, &source))
     {
       goto exit_now;
     }
-#undef _ARG_FMT
 
   context = _PyCapsule_get_context (py_context);
   if ((context == NULL) || (context->lz4_state.context == NULL))
@@ -1269,17 +1242,10 @@ _get_block (PyObject * Py_UNUSED (self), PyObject * args)
    * Keyword arguments   : none
    */
 
-#if IS_PY3
-#define _ARG_FMT "Oy*"
-#else
-#define _ARG_FMT "Os*"
-#endif
-  if (!PyArg_ParseTuple (args, _ARG_FMT,
-                         &py_context, &source))
+  if (!PyArg_ParseTuple (args, "Oy*", &py_context, &source))
     {
       goto exit_now;
     }
-#undef _ARG_FMT
 
   context = _PyCapsule_get_context (py_context);
   if ((context == NULL) || (context->lz4_state.context == NULL))
@@ -1348,17 +1314,10 @@ _decompress (PyObject * Py_UNUSED (self), PyObject * args)
   /* Positional arguments: capsule_context, source
    * Keyword arguments   : none
    */
-#if IS_PY3
-#define _ARG_FMT "Oy*"
-#else
-#define _ARG_FMT "Os*"
-#endif
-  if (!PyArg_ParseTuple (args, _ARG_FMT,
-                         &py_context, &source))
+  if (!PyArg_ParseTuple (args, "Oy*", &py_context, &source))
     {
       goto exit_now;
     }
-#undef _ARG_FMT
 
   context = _PyCapsule_get_context (py_context);
   if ((context == NULL) || (context->lz4_state.context == NULL))
@@ -1649,16 +1608,10 @@ static PyModuleDef moduledef = {
 };
 
 
-MODULE_INIT_FUNC (_stream)
+PyMODINIT_FUNC
+PyInit__stream(void)
 {
-  PyObject * module = NULL;
-
-#if IS_PY3
-  module = PyModule_Create (&moduledef);
-#else
-  (void) moduledef; /* unused in python2 */
-  module = Py_InitModule("_stream", module_methods);
-#endif
+  PyObject * module = PyModule_Create (&moduledef);
 
   if (module == NULL)
     {
