@@ -35,8 +35,7 @@
 #define inline
 #endif
 
-#include <py3c.h>
-#include <py3c/capsulethunk.h>
+#include <Python.h>
 
 #include <stdlib.h>
 #include <math.h>
@@ -152,8 +151,6 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     NULL
   };
 
-
-#if IS_PY3
   if (!PyArg_ParseTupleAndKeywords (args, kwargs, "y*|spiipz*", argnames,
                                     &source,
                                     &mode, &store_size, &acceleration, &compression,
@@ -161,15 +158,6 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     {
       return NULL;
     }
-#else
-  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s*|siiiiz*", argnames,
-                                    &source,
-                                    &mode, &store_size, &acceleration, &compression,
-                                    &return_bytearray, &dict))
-    {
-      return NULL;
-    }
-#endif
 
   if (source.len > INT_MAX)
     {
@@ -303,21 +291,12 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     NULL
   };
 
-#if IS_PY3
   if (!PyArg_ParseTupleAndKeywords (args, kwargs, "y*|ipz*", argnames,
                                     &source, &uncompressed_size,
                                     &return_bytearray, &dict))
     {
       return NULL;
     }
-#else
-  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "s*|iiz*", argnames,
-                                    &source, &uncompressed_size,
-                                    &return_bytearray, &dict))
-    {
-      return NULL;
-    }
-#endif
 
   if (source.len > INT_MAX)
     {
@@ -518,7 +497,8 @@ static struct PyModuleDef moduledef =
   module_methods
 };
 
-MODULE_INIT_FUNC (_block)
+PyMODINIT_FUNC
+PyInit__block(void)
 {
   PyObject *module = PyModule_Create (&moduledef);
 
@@ -537,6 +517,6 @@ MODULE_INIT_FUNC (_block)
     }
   Py_INCREF(LZ4BlockError);
   PyModule_AddObject(module, "LZ4BlockError", LZ4BlockError);
-  
+
   return module;
 }
