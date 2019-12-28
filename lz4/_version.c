@@ -41,14 +41,6 @@
 #include <lz4.h>
 #include <lz4hc.h>
 
-#ifndef Py_UNUSED /* This is already defined for Python 3.4 onwards */
-#ifdef __GNUC__
-#define Py_UNUSED(name) _unused_ ## name __attribute__((unused))
-#else
-#define Py_UNUSED(name) _unused_ ## name
-#endif
-#endif
-
 static PyObject *
 library_version_number (PyObject * Py_UNUSED (self), PyObject * Py_UNUSED (args))
 {
