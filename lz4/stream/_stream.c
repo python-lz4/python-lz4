@@ -76,14 +76,6 @@ typedef unsigned __int64 uint64_t;
 #endif /* __CHAR_BIT__ */
 #endif /* _WIN32 && _MSC_VER */
 
-#ifndef Py_UNUSED /* This is already defined for Python 3.4 onwards */
-#ifdef __GNUC__
-#define Py_UNUSED(name) _unused_ ## name __attribute__((unused))
-#else
-#define Py_UNUSED(name) _unused_ ## name
-#endif
-#endif
-
 #define LZ4_VERSION_NUMBER_1_9_0 10900
 
 static const char * stream_context_capsule_name = "_stream.LZ4S_ctx";
