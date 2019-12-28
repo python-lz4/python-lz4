@@ -35,8 +35,7 @@
 #define inline
 #endif
 
-#include <py3c.h>
-#include <py3c/capsulethunk.h>
+#include <Python.h>
 
 #include <stdlib.h>
 #include <lz4.h>
@@ -120,7 +119,8 @@ static struct PyModuleDef moduledef =
     module_methods
   };
 
-MODULE_INIT_FUNC (_version)
+PyMODINIT_FUNC
+PyInit__version(void)
 {
   PyObject *module = PyModule_Create (&moduledef);
 
