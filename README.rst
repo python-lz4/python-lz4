@@ -28,10 +28,13 @@ This package provides python bindings for the `LZ4 compression library
 <https://lz4.github.io/lz4/>`_.
 
 The bindings provided in this package cover the `frame format
-<https://github.com/lz4/lz4/blob/master/doc/lz4_Frame_format.md>`_ and the `block format
-<https://github.com/lz4/lz4/blob/dev/doc/lz4_Block_format.md>`_ specifications. The frame
-format bindings are the recommended ones to use, as this guarantees
-interoperability with other implementations and language bindings.
+<https://github.com/lz4/lz4/blob/master/doc/lz4_Frame_format.md>`_, the `block
+format <https://github.com/lz4/lz4/blob/dev/doc/lz4_Block_format.md>`_, and the
+`streaming
+format<https://github.com/lz4/lz4/blob/master/examples/streaming_api_basics.md>`_
+specifications. The frame format bindings are the recommended ones to use, as
+this guarantees interoperability with other implementations and language
+bindings.
 
 The API provided by the frame format bindings follows that of the LZMA, zlib,
 gzip and bzip2 compression libraries which are provided with the Python standard
