@@ -1396,7 +1396,7 @@ PyDoc_STRVAR
 (
  compress_begin__doc,
  "compress_begin(context, source_size=0, compression_level=0, block_size=0,\n" \
- "content_checksum=0, content_size=1, block_mode=0, frame_type=0,\n"    \
+ "content_checksum=0, content_size=1, block_linked=0, frame_type=0,\n"    \
  "auto_flush=1)\n"                                                      \
  "\n"                                                                   \
  "Creates a frame header from a compression context.\n\n"               \
