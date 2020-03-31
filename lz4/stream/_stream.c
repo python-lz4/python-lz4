@@ -1253,6 +1253,13 @@ _get_block (PyObject * Py_UNUSED (self), PyObject * args)
       goto exit_now;
     }
 
+  if (context->config.store_comp_size == 0)
+    {
+      PyErr_Format (LZ4StreamError,
+                    "LZ4 context is configured for storing block size out-of-band");
+      goto exit_now;
+    }
+
   if (source.len < context->config.store_comp_size)
     {
       PyErr_Format (LZ4StreamError,
