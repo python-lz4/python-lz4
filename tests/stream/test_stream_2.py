@@ -20,10 +20,14 @@ _4GB = 0xffffffff  # actually 4GB - 1B, the maximum size on 4 bytes.
 # check for the TRAVIS environment variable being set. This is quite
 # fragile.
 
-try:
-    huge = b'\0' * _4GB
-except (MemoryError, OverflowError):
+if os.environ.get('TRAVIS') is not None or sys.maxsize < _4GB or \
+   psutil.virtual_memory().available < _4GB:
     huge = None
+else:
+    try:
+        huge = b'\0' * _4GB
+    except (MemoryError, OverflowError):
+        huge = None
 
 
 @pytest.mark.skipif(
