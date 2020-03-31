@@ -783,6 +783,7 @@ _create_context (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwds)
 
   int status = 0;
   int total_size = 0;
+  uint32_t store_max_size;
 
   static char * argnames[] = {
     "strategy",
@@ -817,10 +818,11 @@ _create_context (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwds)
    *   https://github.com/lz4/lz4/blob/dev/lib/lz4.h#L161
    *
    * So, restrict the block length bitwise to 32 (signed 32 bit integer). */
-  if ((store_comp_size != 1) && (store_comp_size != 2) && (store_comp_size != 4))
+  if ((store_comp_size != 0) && (store_comp_size != 1) &&
+      (store_comp_size != 2) && (store_comp_size != 4))
     {
       PyErr_Format (PyExc_ValueError,
-                    "Invalid store_comp_size, valid values: 1, 2 or 4");
+                    "Invalid store_comp_size, valid values: 0, 1, 2 or 4");
       goto abort_now;
     }
 
@@ -888,11 +890,22 @@ _create_context (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwds)
       goto abort_now;
     }
 
-  /* Initialize the output buffer */
+  /* Initialize the output buffer
+   *
+   * In out-of-band block size case, use a best-effort strategy for scaling
+   * buffers.
+   */
+  if (store_comp_size == 0)
+    {
+      store_max_size = _GET_MAX_UINT32(4);
+    }
+  else
+    {
+      store_max_size = _GET_MAX_UINT32(store_comp_size);
+    }
+
   if (context->config.direction == COMPRESS)
     {
-      uint32_t store_max_size = _GET_MAX_UINT32(store_comp_size);
-
       context->output.len = get_compress_bound (buffer_size);
       total_size = context->output.len + context->config.store_comp_size;
 
@@ -919,7 +932,6 @@ _create_context (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwds)
     }
   else /* context->config.direction == DECOMPRESS */
     {
-      uint32_t store_max_size = _GET_MAX_UINT32(store_comp_size);
       if (store_max_size > LZ4_MAX_INPUT_SIZE)
         {
           store_max_size = LZ4_MAX_INPUT_SIZE;
@@ -1308,6 +1320,7 @@ _decompress (PyObject * Py_UNUSED (self), PyObject * args)
   PyObject * py_context = NULL;
   PyObject * py_dest = NULL;
   int output_size = 0;
+  uint32_t source_size_max = 0;
   Py_buffer source = { NULL, NULL, };
 
   /* Positional arguments: capsule_context, source
@@ -1325,7 +1338,19 @@ _decompress (PyObject * Py_UNUSED (self), PyObject * args)
       goto exit_now;
     }
 
-  if (source.len > _GET_MAX_UINT32(context->config.store_comp_size))
+  /* In out-of-band block size case, use a best-effort strategy for scaling
+   * buffers.
+   */
+  if (context->config.store_comp_size == 0)
+    {
+      source_size_max = _GET_MAX_UINT32(4);
+    }
+  else
+    {
+      source_size_max = _GET_MAX_UINT32(context->config.store_comp_size);
+    }
+
+  if (source.len > source_size_max)
     {
       PyErr_Format (PyExc_OverflowError,
                     "Source length (%ld) too large for LZ4 store_comp_size (%d) value",

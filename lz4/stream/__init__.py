@@ -26,7 +26,8 @@ class LZ4StreamDecompressor:
                     will return a ``bytes`` object. If ``True``, then the function will
                     return a ``bytearray`` object.
                 store_comp_size (int): Specify the size in bytes of the following
-                    compressed block. Can be: ``1``, ``2`` or ``4`` (default: ``4``).
+                    compressed block. Can be: ``0`` (meaning out-of-band block size),
+                    ``1``, ``2`` or ``4`` (default: ``4``).
                 dictionary (str, bytes or buffer-compatible object): If specified,
                     perform decompression using this initial dictionary.
 
@@ -140,8 +141,9 @@ class LZ4StreamCompressor:
                 return_bytearray (bool): If ``False`` (the default) then the function
                     will return a bytes object. If ``True``, then the function will
                     return a bytearray object.
-                store_comp_size (int): Specify the size in bytes of  the following
-                    compressed block. Can be: ``1``, ``2`` or ``4`` (default: ``4``).
+                store_comp_size (int): Specify the size in bytes of the following
+                    compressed block. Can be: ``0`` (meaning out-of-band block size),
+                    ``1``, ``2`` or ``4`` (default: ``4``).
                 dictionary (str, bytes or buffer-compatible object): If specified,
                     perform compression using this initial dictionary.
 
