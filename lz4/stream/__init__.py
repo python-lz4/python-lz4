@@ -104,6 +104,8 @@ class LZ4StreamDecompressor:
                 MemoryError: raised if the output buffer cannot be allocated.
                 OverflowError: raised if the source is too large for being handled by
                     the given context.
+                LZ4StreamError: raised if used while in an out-of-band block size record
+                    configuration.
 
         """
         return _get_block(self._context, stream)

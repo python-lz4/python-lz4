@@ -281,4 +281,5 @@ Storing the compressed data size in the block
 
 The ``store_comp_size`` argument allows tuning of the size (in bytes) of the
 compressed block, which is prepended to the actual LZ4 compressed payload.
-This size can be either on ``1``, ``2`` or ``4`` bytes.
+This size can be either on ``1``, ``2`` or ``4`` bytes, or ``0`` for out-of-band
+block size record.
