@@ -45,8 +45,8 @@ and file handler support.
 The bindings drop the GIL when calling in to the underlying LZ4 library, and is
 thread safe. An extensive test suite is included.
 
-Documenation
-============
+Documentation
+=============
 
 .. image:: https://readthedocs.org/projects/python-lz4/badge/?version=stable
    :target: https://readthedocs.org/projects/python-lz4/
