@@ -35,7 +35,7 @@ except (MemoryError, OverflowError):
     reason='Py_ssize_t too small for this test'
 )
 @pytest.mark.skipif(
-    psutil.virtual_memory().total < _4GB or huge is None,
+    psutil.virtual_memory().available < _4GB or huge is None,
     reason='Insufficient system memory for this test'
 )
 def test_huge_1():
@@ -47,7 +47,7 @@ def test_huge_1():
         'dictionary': huge,
     }
 
-    if psutil.virtual_memory().total < 3 * kwargs['buffer_size']:
+    if psutil.virtual_memory().available < 3 * kwargs['buffer_size']:
         # The internal LZ4 context will request at least 3 times buffer_size
         # as memory (2 buffer_size for the double-buffer, and 1.x buffer_size
         # for the output buffer)
@@ -74,7 +74,7 @@ def test_huge_1():
     reason='Py_ssize_t too small for this test'
 )
 @pytest.mark.skipif(
-    psutil.virtual_memory().total < _4GB or huge is None,
+    psutil.virtual_memory().available < _4GB or huge is None,
     reason='Insufficient system memory for this test'
 )
 def test_huge_2():
@@ -86,7 +86,7 @@ def test_huge_2():
         'dictionary': b'',
     }
 
-    if psutil.virtual_memory().total < 3 * kwargs['buffer_size']:
+    if psutil.virtual_memory().available < 3 * kwargs['buffer_size']:
         # The internal LZ4 context will request at least 3 times buffer_size
         # as memory (2 buffer_size for the double-buffer, and 1.x buffer_size
         # for the output buffer)
@@ -114,7 +114,7 @@ def test_huge_2():
     reason='Py_ssize_t too small for this test'
 )
 @pytest.mark.skipif(
-    psutil.virtual_memory().total < _4GB or huge is None,
+    psutil.virtual_memory().available < _4GB or huge is None,
     reason='Insufficient system memory for this test'
 )
 def test_huge_3():
@@ -126,7 +126,7 @@ def test_huge_3():
         'dictionary': huge,
     }
 
-    if psutil.virtual_memory().total < 3 * kwargs['buffer_size']:
+    if psutil.virtual_memory().available < 3 * kwargs['buffer_size']:
         # The internal LZ4 context will request at least 3 times buffer_size
         # as memory (2 buffer_size for the double-buffer, and 1.x buffer_size
         # for the output buffer)

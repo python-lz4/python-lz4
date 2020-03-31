@@ -89,7 +89,7 @@ def test_block_decompress_mem_usage(data, buffer_size):
     if sys.maxsize < 0xffffffff:
         pytest.skip('Py_ssize_t too small for this test')
 
-    if psutil.virtual_memory().total < 3 * kwargs['buffer_size']:
+    if psutil.virtual_memory().available < 3 * kwargs['buffer_size']:
         # The internal LZ4 context will request at least 3 times buffer_size
         # as memory (2 buffer_size for the double-buffer, and 1.x buffer_size
         # for the output buffer)
