@@ -150,7 +150,7 @@ def test_invalid_config_c_4(store_comp_size):
         if sys.maxsize < 0xffffffff:
             pytest.skip('Py_ssize_t too small for this test')
 
-        if psutil.virtual_memory().total < 3 * c_kwargs['buffer_size']:
+        if psutil.virtual_memory().available < 3 * c_kwargs['buffer_size']:
             # The internal LZ4 context will request at least 3 times buffer_size
             # as memory (2 buffer_size for the double-buffer, and 1.x buffer_size
             # for the output buffer)
@@ -210,7 +210,7 @@ def test_invalid_config_c_5():
     if sys.maxsize < 0xffffffff:
         pytest.skip('Py_ssize_t too small for this test')
 
-    if psutil.virtual_memory().total < 3 * c_kwargs['buffer_size']:
+    if psutil.virtual_memory().available < 3 * c_kwargs['buffer_size']:
         # The internal LZ4 context will request at least 3 times buffer_size
         # as memory (2 buffer_size for the double-buffer, and 1.x buffer_size
         # for the output buffer)
@@ -243,7 +243,7 @@ def test_invalid_config_d_5():
     if sys.maxsize < 0xffffffff:
         pytest.skip('Py_ssize_t too small for this test')
 
-    if psutil.virtual_memory().total < 3 * d_kwargs['buffer_size']:
+    if psutil.virtual_memory().available < 3 * d_kwargs['buffer_size']:
         # The internal LZ4 context will request at least 3 times buffer_size
         # as memory (2 buffer_size for the double-buffer, and 1.x buffer_size
         # for the output buffer)
@@ -260,7 +260,7 @@ def test_invalid_config_d_5():
     if sys.maxsize < 0xffffffff:
         pytest.skip('Py_ssize_t too small for this test')
 
-    if psutil.virtual_memory().total < 3 * d_kwargs['buffer_size']:
+    if psutil.virtual_memory().available < 3 * d_kwargs['buffer_size']:
         # The internal LZ4 context will request at least 3 times buffer_size
         # as memory (2 buffer_size for the double-buffer, and 1.x buffer_size
         # for the output buffer)

@@ -5,9 +5,9 @@ import sys
 test_data = [
     (b''),
     (os.urandom(8 * 1024)),
-    (b'0' * 8 * 1024),
-    (bytearray(b'')),
-    (bytearray(os.urandom(8 * 1024))),
+    # (b'0' * 8 * 1024),
+    # (bytearray(b'')),
+    # (bytearray(os.urandom(8 * 1024))),
     (bytearray(open(os.path.join(os.path.dirname(__file__), 'numpy_byte_array.bin'), 'rb').read()))
 ]
 
@@ -43,15 +43,16 @@ test_buffer_size = sorted(
      # 4,
      # 8,
      # 64,
-     256,
+     # 256,
      941,
-     1 * 1024,
+     # 1 * 1024,
      # 4 * 1024,
      # 8 * 1024,
      # 16 * 1024,
      # 32 * 1024,
      64 * 1024,
-     128 * 1024]
+     # 128 * 1024
+     ]
 )
 
 
@@ -122,11 +123,11 @@ def d_return_bytearray(return_bytearray):
     ] + [
         ('fast', None)
     ] + [
-        ('fast', {'acceleration': s}) for s in range(10)
+        ('fast', {'acceleration': 2 * s}) for s in range(5)
     ] + [
         ('high_compression', None)
     ] + [
-        ('high_compression', {'compression_level': s}) for s in range(17)
+        ('high_compression', {'compression_level': 2 * s}) for s in range(9)
     ] + [
         (None, None)
     ]

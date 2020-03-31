@@ -28,7 +28,7 @@ _4GB = 0x100000000  # 4GB
     reason='Py_ssize_t too small for this test'
 )
 @pytest.mark.skipif(
-    psutil.virtual_memory().total < _4GB,
+    psutil.virtual_memory().available < _4GB,
     reason='Insufficient system memory for this test'
 )
 def test_huge():
