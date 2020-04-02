@@ -89,7 +89,7 @@ def test_invalid_config_c_1():
         lz4.stream.LZ4StreamCompressor(**c_kwargs)
 
 
-def test_invalid_config_d_1(store_comp_size):
+def test_invalid_config_d_1():
     d_kwargs = {}
     d_kwargs['strategy'] = "ring_buffer"
     d_kwargs['buffer_size'] = 1024
@@ -107,7 +107,7 @@ def test_invalid_config_c_2():
         lz4.stream.LZ4StreamCompressor(**c_kwargs)
 
 
-def test_invalid_config_d_2(store_comp_size):
+def test_invalid_config_d_2():
     d_kwargs = {}
     d_kwargs['strategy'] = "foo"
     d_kwargs['buffer_size'] = 1024
