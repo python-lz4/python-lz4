@@ -402,9 +402,9 @@ def test_decompress_truncated():
                 decompress(compressed[:n], d_kwargs)
 
 
-# This next is probably redundant given test_decompress_truncated above since
-# the trailing bytes will be considered as the truncated last block, but we'll
-# keep them for now
+# This next test is probably redundant given test_decompress_truncated above
+# since the trailing bytes will be considered as the truncated last block, but
+# we will keep them for now
 
 
 def test_decompress_with_trailer():
