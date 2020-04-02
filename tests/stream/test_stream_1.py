@@ -143,18 +143,8 @@ def test_invalid_config_c_4(store_comp_size):
     c_kwargs.update(store_comp_size)
 
     if store_comp_size['store_comp_size'] >= 4:
-
-        if os.environ.get('TRAVIS') is not None:
-            pytest.skip('Skipping test on Travis due to insufficient memory')
-
-        if sys.maxsize < 0xffffffff:
-            pytest.skip('Py_ssize_t too small for this test')
-
-        if psutil.virtual_memory().available < 3 * c_kwargs['buffer_size']:
-            # The internal LZ4 context will request at least 3 times buffer_size
-            # as memory (2 buffer_size for the double-buffer, and 1.x buffer_size
-            # for the output buffer)
-            pytest.skip('Insufficient system memory for this test')
+        # No need for skiping this test case, since arguments check is
+        # expecting to raise an error.
 
         # Make sure the page size is larger than what the input bound will be,
         # but still fit in 4 bytes
