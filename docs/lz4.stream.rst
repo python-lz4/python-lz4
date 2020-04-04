@@ -49,6 +49,39 @@ To use the lz4 stream format bindings is straightforward:
    >>> decompressed_stream == origin_stream
    True
 
+Out-of-band block size record example
+-------------------------------------
+.. doctest::
+
+   >>> from lz4.stream import LZ4StreamCompressor, LZ4StreamDecompressor
+   >>> import os
+   >>> page_size = 8192 # LZ4 context double buffer page size
+   >>> out_of_band_block_sizes = [] # Store the block sizes
+   >>> origin_stream = 10 * 1024 * os.urandom(1024) # 10MiB
+   >>> # LZ4 stream compression of origin_stream into compressed_stream:
+   >>> compressed_stream = bytearray()
+   >>> with LZ4StreamCompressor("double_buffer", page_size, store_comp_size=0) as proc:
+   ...     offset = 0
+   ...     while offset < len(origin_stream):
+   ...         chunk = origin_stream[offset:offset + page_size]
+   ...         block = proc.compress(chunk)
+   ...         out_of_band_block_sizes.append(len(block))
+   ...         compressed_stream.extend(block)
+   ...         offset += page_size
+   >>> # LZ4 stream decompression of compressed_stream into decompressed_stream:
+   >>> decompressed_stream = bytearray()
+   >>> with LZ4StreamDecompressor("double_buffer", page_size, store_comp_size=0) as proc:
+   ...     offset = 0
+   ...     for block_len in out_of_band_block_sizes:
+   ...         # Sanity check:
+   ...         if offset >= len(compressed_stream):
+   ...             raise LZ4StreamError("Truncated stream")
+   ...         block = compressed_stream[offset:offset + block_len]
+   ...         chunk = proc.decompress(block)
+   ...         decompressed_stream.extend(chunk)
+   ...         offset += block_len
+   >>> decompressed_stream == origin_stream
+   True
 
 Contents
 ----------------
