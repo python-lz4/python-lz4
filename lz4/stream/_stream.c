@@ -782,7 +782,7 @@ _create_context (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwds)
   Py_buffer dict = { NULL, NULL, };
 
   int status = 0;
-  int total_size = 0;
+  unsigned int total_size = 0;
   uint32_t store_max_size;
 
   static char * argnames[] = {
@@ -907,7 +907,7 @@ _create_context (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwds)
   if (context->config.direction == COMPRESS)
     {
       context->output.len = get_compress_bound (buffer_size);
-      total_size = context->output.len + context->config.store_comp_size;
+      total_size = context->output.len + store_comp_size;
 
       if (context->output.len == 0)
         {

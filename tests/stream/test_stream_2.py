@@ -3,6 +3,24 @@ import sys
 import lz4.stream
 import psutil
 import os
+import gc
+
+
+def run_gc(func):
+    if os.environ.get('TRAVIS') is not None or os.environ.get('APPVEYOR') is not None:
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+    else:
+        def wrapper(*args, **kwargs):
+            gc.collect()
+            try:
+                result = func(*args, **kwargs)
+            finally:
+                gc.collect()
+            return result
+
+    wrapper.__name__ = func.__name__
+    return wrapper
 
 
 # This test requires allocating a big lump of memory. In order to
@@ -42,6 +60,7 @@ else:
     psutil.virtual_memory().available < _4GB or huge is None,
     reason='Insufficient system memory for this test'
 )
+@run_gc
 def test_huge_1():
     data = b''
     kwargs = {
@@ -81,6 +100,7 @@ def test_huge_1():
     psutil.virtual_memory().available < _4GB or huge is None,
     reason='Insufficient system memory for this test'
 )
+@run_gc
 def test_huge_2():
     data = huge
     kwargs = {
@@ -121,6 +141,7 @@ def test_huge_2():
     psutil.virtual_memory().available < _4GB or huge is None,
     reason='Insufficient system memory for this test'
 )
+@run_gc
 def test_huge_3():
     data = huge
     kwargs = {

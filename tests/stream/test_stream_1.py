@@ -3,6 +3,8 @@ import pytest
 import sys
 import os
 import psutil
+import gc
+
 
 if sys.version_info < (3, ):
     from struct import pack, unpack
@@ -40,6 +42,40 @@ _4GB = 0x100000000  # 4GB
 # memory, so instead, as an ugly hack for detecting we're on Travis we
 # check for the TRAVIS environment variable being set. This is quite
 # fragile.
+
+
+def run_gc(func):
+    if os.environ.get('TRAVIS') is not None or os.environ.get('APPVEYOR') is not None:
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+    else:
+        def wrapper(*args, **kwargs):
+            gc.collect()
+            try:
+                result = func(*args, **kwargs)
+            finally:
+                gc.collect()
+            return result
+
+    wrapper.__name__ = func.__name__
+    return wrapper
+
+
+def run_gc_param_store_comp_size(func):
+    if os.environ.get('TRAVIS') is not None:
+        def wrapper(store_comp_size, *args, **kwargs):
+            return func(store_comp_size, *args, **kwargs)
+    else:
+        def wrapper(store_comp_size, *args, **kwargs):
+            gc.collect()
+            try:
+                result = func(store_comp_size, *args, **kwargs)
+            finally:
+                gc.collect()
+            return result
+
+    wrapper.__name__ = func.__name__
+    return wrapper
 
 
 def compress(x, c_kwargs, return_block_offset=False, check_block_type=False):
@@ -80,6 +116,7 @@ def decompress(x, d_kwargs, check_chunk_type=False):
     return d
 
 
+@run_gc
 def test_invalid_config_c_1():
     c_kwargs = {}
     c_kwargs['strategy'] = "ring_buffer"
@@ -89,7 +126,8 @@ def test_invalid_config_c_1():
         lz4.stream.LZ4StreamCompressor(**c_kwargs)
 
 
-def test_invalid_config_d_1(store_comp_size):
+@run_gc
+def test_invalid_config_d_1():
     d_kwargs = {}
     d_kwargs['strategy'] = "ring_buffer"
     d_kwargs['buffer_size'] = 1024
@@ -98,6 +136,7 @@ def test_invalid_config_d_1(store_comp_size):
         lz4.stream.LZ4StreamDecompressor(**d_kwargs)
 
 
+@run_gc
 def test_invalid_config_c_2():
     c_kwargs = {}
     c_kwargs['strategy'] = "foo"
@@ -107,7 +146,8 @@ def test_invalid_config_c_2():
         lz4.stream.LZ4StreamCompressor(**c_kwargs)
 
 
-def test_invalid_config_d_2(store_comp_size):
+@run_gc
+def test_invalid_config_d_2():
     d_kwargs = {}
     d_kwargs['strategy'] = "foo"
     d_kwargs['buffer_size'] = 1024
@@ -116,6 +156,7 @@ def test_invalid_config_d_2(store_comp_size):
         lz4.stream.LZ4StreamDecompressor(**d_kwargs)
 
 
+@run_gc_param_store_comp_size
 def test_invalid_config_c_3(store_comp_size):
     c_kwargs = {}
     c_kwargs['strategy'] = "double_buffer"
@@ -126,6 +167,7 @@ def test_invalid_config_c_3(store_comp_size):
         lz4.stream.LZ4StreamCompressor(**c_kwargs)
 
 
+@run_gc_param_store_comp_size
 def test_invalid_config_d_3(store_comp_size):
     d_kwargs = {}
     d_kwargs['strategy'] = "double_buffer"
@@ -136,6 +178,7 @@ def test_invalid_config_d_3(store_comp_size):
         lz4.stream.LZ4StreamDecompressor(**d_kwargs)
 
 
+@run_gc_param_store_comp_size
 def test_invalid_config_c_4(store_comp_size):
     c_kwargs = {}
     c_kwargs['strategy'] = "double_buffer"
@@ -143,18 +186,8 @@ def test_invalid_config_c_4(store_comp_size):
     c_kwargs.update(store_comp_size)
 
     if store_comp_size['store_comp_size'] >= 4:
-
-        if os.environ.get('TRAVIS') is not None:
-            pytest.skip('Skipping test on Travis due to insufficient memory')
-
-        if sys.maxsize < 0xffffffff:
-            pytest.skip('Py_ssize_t too small for this test')
-
-        if psutil.virtual_memory().available < 3 * c_kwargs['buffer_size']:
-            # The internal LZ4 context will request at least 3 times buffer_size
-            # as memory (2 buffer_size for the double-buffer, and 1.x buffer_size
-            # for the output buffer)
-            pytest.skip('Insufficient system memory for this test')
+        # No need for skiping this test case, since arguments check is
+        # expecting to raise an error.
 
         # Make sure the page size is larger than what the input bound will be,
         # but still fit in 4 bytes
@@ -171,6 +204,7 @@ def test_invalid_config_c_4(store_comp_size):
         lz4.stream.LZ4StreamCompressor(**c_kwargs)
 
 
+@run_gc_param_store_comp_size
 def test_invalid_config_d_4(store_comp_size):
     d_kwargs = {}
     d_kwargs['strategy'] = "double_buffer"
@@ -199,6 +233,7 @@ def test_invalid_config_d_4(store_comp_size):
     lz4.stream.LZ4StreamDecompressor(**d_kwargs)
 
 
+@run_gc
 def test_invalid_config_c_5():
     c_kwargs = {}
     c_kwargs['strategy'] = "double_buffer"
@@ -230,6 +265,7 @@ def test_invalid_config_c_5():
         lz4.stream.LZ4StreamCompressor(**c_kwargs)
 
 
+@run_gc
 def test_invalid_config_d_5():
     d_kwargs = {}
     d_kwargs['strategy'] = "double_buffer"
@@ -286,6 +322,7 @@ def test_invalid_config_d_5():
     lz4.stream.LZ4StreamDecompressor(**d_kwargs)
 
 
+@run_gc
 def test_decompress_corrupted_input_1():
     c_kwargs = {'strategy': "double_buffer", 'buffer_size': 128, 'store_comp_size': 4}
 
@@ -301,6 +338,7 @@ def test_decompress_corrupted_input_1():
         decompress(data[4:], d_kwargs)
 
 
+@run_gc
 def test_decompress_corrupted_input_2():
     c_kwargs = {'strategy': "double_buffer", 'buffer_size': 128, 'store_comp_size': 4}
 
@@ -325,6 +363,7 @@ def test_decompress_corrupted_input_2():
         decompress(data, d_kwargs)
 
 
+@run_gc
 def test_decompress_corrupted_input_3():
     c_kwargs = {'strategy': "double_buffer", 'buffer_size': 128, 'store_comp_size': 4}
 
@@ -354,6 +393,7 @@ def test_decompress_corrupted_input_3():
         decompress(data, d_kwargs)
 
 
+@run_gc
 def test_decompress_corrupted_input_4():
     c_kwargs = {'strategy': "double_buffer", 'buffer_size': 128, 'store_comp_size': 4}
 
@@ -385,6 +425,7 @@ def test_decompress_corrupted_input_4():
         decompress(data, d_kwargs)
 
 
+@run_gc
 def test_decompress_truncated():
     c_kwargs = {'strategy': "double_buffer", 'buffer_size': 128, 'store_comp_size': 4}
 
@@ -412,11 +453,12 @@ def test_decompress_truncated():
                 decompress(compressed[:n], d_kwargs)
 
 
-# This next is probably redundant given test_decompress_truncated above since
-# the trailing bytes will be considered as the truncated last block, but we'll
-# keep them for now
+# This next test is probably redundant given test_decompress_truncated above
+# since the trailing bytes will be considered as the truncated last block, but
+# we will keep them for now
 
 
+@run_gc
 def test_decompress_with_trailer():
     c_kwargs = {'strategy': "double_buffer", 'buffer_size': 128, 'store_comp_size': 4}
 
@@ -443,6 +485,7 @@ def test_decompress_with_trailer():
             decompress(comp + b'\x00' * n, d_kwargs)
 
 
+@run_gc
 def test_unicode():
     if sys.version_info < (3,):
         return  # skip
@@ -462,6 +505,7 @@ def test_unicode():
 # for now
 
 
+@run_gc
 def test_return_bytearray():
     if sys.version_info < (3,):
         return  # skip
@@ -483,6 +527,7 @@ def test_return_bytearray():
     assert bytes(b) == data
 
 
+@run_gc
 def test_memoryview():
     if sys.version_info < (2, 7):
         return  # skip
@@ -498,6 +543,7 @@ def test_memoryview():
     assert decompress(memoryview(compressed), d_kwargs) == data
 
 
+@run_gc
 def test_with_dict_none():
     kwargs = {'strategy': "double_buffer", 'buffer_size': 128, 'store_comp_size': 4}
 
@@ -540,6 +586,7 @@ def test_with_dict_none():
         assert decompress(compress(input_data, c_kwargs), d_kwargs) == input_data
 
 
+@run_gc
 def test_with_dict():
     kwargs = {'strategy': "double_buffer", 'buffer_size': 128, 'store_comp_size': 4}
 
@@ -578,6 +625,7 @@ def test_with_dict():
     assert decompress(compress(input_data, c_kwargs), d_kwargs) == input_data
 
 
+@run_gc
 def test_known_decompress_1():
     d_kwargs = {'strategy': "double_buffer", 'buffer_size': 128, 'store_comp_size': 4}
 
@@ -592,6 +640,7 @@ def test_known_decompress_1():
     assert decompress(input, d_kwargs) == output
 
 
+@run_gc
 def test_known_decompress_2():
     d_kwargs = {'strategy': "double_buffer", 'buffer_size': 128, 'store_comp_size': 4}
 
@@ -600,6 +649,7 @@ def test_known_decompress_2():
     assert decompress(input, d_kwargs) == output
 
 
+@run_gc
 def test_known_decompress_3():
     d_kwargs = {'strategy': "double_buffer", 'buffer_size': 128, 'store_comp_size': 4}
 
@@ -609,6 +659,7 @@ def test_known_decompress_3():
     assert decompress(input, d_kwargs) == output
 
 
+@run_gc
 def test_known_decompress_4():
     d_kwargs = {'strategy': "double_buffer", 'buffer_size': 128, 'store_comp_size': 4}
 
