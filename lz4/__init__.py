@@ -11,10 +11,9 @@
 #     pass
 
 from .version import version as __version__
-VERSION = __version__
-
-
 from ._version import (  # noqa: F401
     library_version_number,
     library_version_string,
 )
+
+VERSION = __version__
