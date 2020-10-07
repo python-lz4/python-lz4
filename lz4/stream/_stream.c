@@ -44,10 +44,8 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#if defined(_WIN32) && defined(_MSC_VER)
-#if _MSC_VER >= 1600
-#include <stdint.h>
-#else /* _MSC_VER >= 1600 */
+#if defined(_WIN32) && defined(_MSC_VER) && _MSC_VER < 1600
+/* MSVC 2008 and earlier lacks stdint.h */
 typedef signed __int8 int8_t;
 typedef signed __int16 int16_t;
 typedef signed __int32 int32_t;
@@ -69,12 +67,14 @@ typedef unsigned __int64 uint64_t;
 #if !defined(INT32_MAX)
 #define INT32_MAX 0x7fffffff
 #endif
-#endif /* _MSC_VER >= 1600 */
+#if !defined(CHAR_BIT)
+#define CHAR_BIT 8
+#endif
 
-#if !defined(__CHAR_BIT__)
-#define __CHAR_BIT__ 8
-#endif /* __CHAR_BIT__ */
-#endif /* _WIN32 && _MSC_VER */
+#else
+/* Not MSVC, or MSVC 2010 or higher */
+#include <stdint.h>
+#endif /* _WIN32 && _MSC_VER && _MSC_VER < 1600 */
 
 #define LZ4_VERSION_NUMBER_1_9_0 10900
 
@@ -107,7 +107,7 @@ static PyObject * LZ4StreamError;
 #define DOUBLE_BUFFER_INDEX_MIN (0)
 #define DOUBLE_BUFFER_INDEX_INVALID (-1)
 
-#define _GET_MAX_UINT(byte_depth, type) (type)( ( 1ULL << ( __CHAR_BIT__ * (byte_depth) ) ) - 1 )
+#define _GET_MAX_UINT(byte_depth, type) (type)( ( 1ULL << ( CHAR_BIT * (byte_depth) ) ) - 1 )
 #define _GET_MAX_UINT32(byte_depth) _GET_MAX_UINT((byte_depth), uint32_t)
 
 typedef struct {
