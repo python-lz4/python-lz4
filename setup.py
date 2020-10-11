@@ -13,8 +13,7 @@ liblz4_found = False
 
 try:
     from pkgconfig import installed as pkgconfig_installed
-    from pkgconfig import cflags as pkgconfig_cflags
-    from pkgconfig import libs as pkgconfig_libs
+    from pkgconfig import parse as pkgconfig_parse
 except ImportError:
     # pkgconfig is not installed. It will be installed by setup_requires.
     pass
@@ -100,8 +99,7 @@ if compiler == 'msvc':
     ]
 elif compiler in ('unix', 'mingw32'):
     if liblz4_found:
-        extension_kwargs['extra_link_args'] = pkgconfig_libs('liblz4').split()
-        extension_kwargs['extra_compile_args'] = pkgconfig_cflags('liblz4').split()
+        extension_kwargs = pkgconfig_parse('liblz4')
     else:
         extension_kwargs['extra_compile_args'] = [
             '-O3',
