@@ -13,8 +13,7 @@ liblz4_found = False
 
 try:
     from pkgconfig import installed as pkgconfig_installed
-    from pkgconfig import cflags as pkgconfig_cflags
-    from pkgconfig import libs as pkgconfig_libs
+    from pkgconfig import parse as pkgconfig_parse
 except ImportError:
     # pkgconfig is not installed. It will be installed by setup_requires.
     pass
@@ -41,8 +40,7 @@ else:
 # against the bundled lz4 files, we'll set the compiler flags to be consistent
 # with what upstream lz4 recommends.
 
-include_dirs = []
-libraries = []
+extension_kwargs = {}
 
 lz4version_sources = [
     'lz4/_version.c'
@@ -61,9 +59,9 @@ lz4stream_sources = [
 ]
 
 if liblz4_found is True:
-    libraries.append('lz4')
+    extension_kwargs['libraries'] = ['lz4']
 else:
-    include_dirs.append('lz4libs')
+    extension_kwargs['include_dirs'] = ['lz4libs']
     lz4version_sources.extend(
         [
             'lz4libs/lz4.c',
@@ -92,17 +90,18 @@ else:
 
 compiler = ccompiler.get_default_compiler()
 
-extra_link_args = []
-extra_compile_args = []
-
 if compiler == 'msvc':
-    extra_compile_args = ['/Ot', '/Wall', '/wd4711', '/wd4820']
+    extension_kwargs['extra_compile_args'] = [
+        '/Ot',
+        '/Wall',
+        '/wd4711',
+        '/wd4820',
+    ]
 elif compiler in ('unix', 'mingw32'):
     if liblz4_found:
-        extra_link_args.extend(pkgconfig_libs('liblz4').split())
-        extra_compile_args.extend(pkgconfig_cflags('liblz4').split())
+        extension_kwargs = pkgconfig_parse('liblz4')
     else:
-        extra_compile_args = [
+        extension_kwargs['extra_compile_args'] = [
             '-O3',
             '-Wall',
             '-Wundef'
@@ -113,31 +112,19 @@ else:
 
 lz4version = Extension('lz4._version',
                        lz4version_sources,
-                       extra_compile_args=extra_compile_args,
-                       extra_link_args=extra_link_args,
-                       libraries=libraries,
-                       include_dirs=include_dirs)
+                       **extension_kwargs)
 
 lz4block = Extension('lz4.block._block',
                      lz4block_sources,
-                     extra_compile_args=extra_compile_args,
-                     extra_link_args=extra_link_args,
-                     libraries=libraries,
-                     include_dirs=include_dirs)
+                     **extension_kwargs)
 
 lz4frame = Extension('lz4.frame._frame',
                      lz4frame_sources,
-                     extra_compile_args=extra_compile_args,
-                     extra_link_args=extra_link_args,
-                     libraries=libraries,
-                     include_dirs=include_dirs)
+                     **extension_kwargs)
 
 lz4stream = Extension('lz4.stream._stream',
                       lz4stream_sources,
-                      extra_compile_args=extra_compile_args,
-                      extra_link_args=extra_link_args,
-                      libraries=libraries,
-                      include_dirs=include_dirs)
+                      **extension_kwargs)
 
 install_requires = []
 
