@@ -29,31 +29,31 @@ def run_gc_param_data_buffer_size(func):
 
 
 def compress(x, c_kwargs):
-    if c_kwargs.get('return_bytearray', False):
-        c = bytearray()
-    else:
-        c = bytes()
+    c = []
     with lz4.stream.LZ4StreamCompressor(**c_kwargs) as proc:
         for start in range(0, len(x), c_kwargs['buffer_size']):
             chunk = x[start:start + c_kwargs['buffer_size']]
             block = proc.compress(chunk)
-            c += block
-    return c
+            c.append(block)
+    if c_kwargs.get('return_bytearray', False):
+        return bytearray().join(c)
+    else:
+        return bytes().join(c)
 
 
 def decompress(x, d_kwargs):
-    if d_kwargs.get('return_bytearray', False):
-        d = bytearray()
-    else:
-        d = bytes()
+    d = []
     with lz4.stream.LZ4StreamDecompressor(**d_kwargs) as proc:
         start = 0
         while start < len(x):
             block = proc.get_block(x[start:])
             chunk = proc.decompress(block)
-            d += chunk
+            d.append(chunk)
             start += d_kwargs['store_comp_size'] + len(block)
-    return d
+    if d_kwargs.get('return_bytearray', False):
+        return bytearray().join(d)
+    else:
+        return bytes().join(d)
 
 
 test_buffer_size = sorted(
