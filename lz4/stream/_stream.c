@@ -524,9 +524,6 @@ double_buffer_release_resources (stream_context_t * context)
 
   if (context->strategy.data.double_buffer.buf != NULL)
     {
-      memset (context->strategy.data.double_buffer.buf,
-              0x0,
-              context->strategy.data.double_buffer.page_size * DOUBLE_BUFFER_PAGE_COUNT);
       PyMem_Free (context->strategy.data.double_buffer.buf);
     }
   context->strategy.data.double_buffer.buf = NULL;
@@ -550,10 +547,6 @@ double_buffer_reserve_resources (stream_context_t * context, unsigned int buffer
       status = -1;
       goto exit_now;
     }
-
-  memset (context->strategy.data.double_buffer.buf,
-          0x0,
-          context->strategy.data.double_buffer.page_size * DOUBLE_BUFFER_PAGE_COUNT);
 
   for (i = DOUBLE_BUFFER_INDEX_MIN;
        i < (DOUBLE_BUFFER_INDEX_MIN + DOUBLE_BUFFER_PAGE_COUNT);
@@ -738,14 +731,12 @@ destroy_context (stream_context_t * context)
   /* Release output buffer */
   if (context->output.buf != NULL)
     {
-      memset (context->output.buf, 0x0, context->output.len);
       PyMem_Free (context->output.buf);
     }
   context->output.buf = NULL;
   context->output.len = 0;
 
   /* Release python memory */
-  memset (context, 0x0, sizeof (stream_context_t));
   PyMem_Free (context);
 }
 
