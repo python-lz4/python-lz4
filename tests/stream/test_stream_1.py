@@ -2,7 +2,6 @@ import lz4.stream
 import pytest
 import sys
 import os
-import psutil
 
 
 if sys.version_info < (3, ):
@@ -34,13 +33,6 @@ else:
 # create outside the scope of the function below. See:
 # https://bugs.python.org/issue21074
 _4GB = 0x100000000  # 4GB
-
-# This test will be killed on Travis due to the 3GB memory limit
-# there. Unfortunately psutil reports the host memory, not the memory
-# available to the container, and so can't be used to detect available
-# memory, so instead, as an ugly hack for detecting we're on Travis we
-# check for the TRAVIS environment variable being set. This is quite
-# fragile.
 
 
 def compress(x, c_kwargs, return_block_offset=False, check_block_type=False):
@@ -170,17 +162,8 @@ def test_invalid_config_d_4(store_comp_size):
 
     if store_comp_size['store_comp_size'] >= 4:
 
-        if os.environ.get('TRAVIS') is not None:
-            pytest.skip('Skipping test on Travis due to insufficient memory')
-
         if sys.maxsize < 0xffffffff:
             pytest.skip('Py_ssize_t too small for this test')
-
-        if psutil.virtual_memory().available < 4 * d_kwargs['buffer_size']:
-            # The internal LZ4 context will request at least 3 times buffer_size
-            # as memory (2 buffer_size for the double-buffer, and 1.x buffer_size
-            # for the output buffer), so round up to 4 buffer_size.
-            pytest.skip('Insufficient system memory for this test')
 
         # Make sure the page size is larger than what the input bound will be,
         # but still fit in 4 bytes
@@ -195,17 +178,8 @@ def test_invalid_config_c_5():
     c_kwargs['strategy'] = "double_buffer"
     c_kwargs['buffer_size'] = lz4.stream.LZ4_MAX_INPUT_SIZE
 
-    if os.environ.get('TRAVIS') is not None:
-        pytest.skip('Skipping test on Travis due to insufficient memory')
-
     if sys.maxsize < 0xffffffff:
         pytest.skip('Py_ssize_t too small for this test')
-
-    if psutil.virtual_memory().available < 3 * c_kwargs['buffer_size']:
-        # The internal LZ4 context will request at least 3 times buffer_size
-        # as memory (2 buffer_size for the double-buffer, and 1.x buffer_size
-        # for the output buffer)
-        pytest.skip('Insufficient system memory for this test')
 
     # No failure expected
     lz4.stream.LZ4StreamCompressor(**c_kwargs)
@@ -228,51 +202,24 @@ def test_invalid_config_d_5():
     # No failure expected during instanciation/initialization
     d_kwargs['buffer_size'] = lz4.stream.LZ4_MAX_INPUT_SIZE
 
-    if os.environ.get('TRAVIS') is not None:
-        pytest.skip('Skipping test on Travis due to insufficient memory')
-
     if sys.maxsize < 0xffffffff:
         pytest.skip('Py_ssize_t too small for this test')
-
-    if psutil.virtual_memory().available < 3 * d_kwargs['buffer_size']:
-        # The internal LZ4 context will request at least 3 times buffer_size
-        # as memory (2 buffer_size for the double-buffer, and 1.x buffer_size
-        # for the output buffer)
-        pytest.skip('Insufficient system memory for this test')
 
     lz4.stream.LZ4StreamDecompressor(**d_kwargs)
 
     # No failure expected during instanciation/initialization
     d_kwargs['buffer_size'] = lz4.stream.LZ4_MAX_INPUT_SIZE + 1
 
-    if os.environ.get('TRAVIS') is not None:
-        pytest.skip('Skipping test on Travis due to insufficient memory')
-
     if sys.maxsize < 0xffffffff:
         pytest.skip('Py_ssize_t too small for this test')
-
-    if psutil.virtual_memory().available < 3 * d_kwargs['buffer_size']:
-        # The internal LZ4 context will request at least 3 times buffer_size
-        # as memory (2 buffer_size for the double-buffer, and 1.x buffer_size
-        # for the output buffer)
-        pytest.skip('Insufficient system memory for this test')
 
     lz4.stream.LZ4StreamDecompressor(**d_kwargs)
 
     # No failure expected during instanciation/initialization
     d_kwargs['buffer_size'] = _4GB - 1  # 4GB - 1 (to fit in 4 bytes)
 
-    if os.environ.get('TRAVIS') is not None:
-        pytest.skip('Skipping test on Travis due to insufficient memory')
-
     if sys.maxsize < 0xffffffff:
         pytest.skip('Py_ssize_t too small for this test')
-
-    if psutil.virtual_memory().available < 4 * d_kwargs['buffer_size']:
-        # The internal LZ4 context will request at least 3 times buffer_size
-        # as memory (2 buffer_size for the double-buffer, and 1.x buffer_size
-        # for the output buffer), so round up to 4 buffer_size.
-        pytest.skip('Insufficient system memory for this test')
 
     lz4.stream.LZ4StreamDecompressor(**d_kwargs)
 

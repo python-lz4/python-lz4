@@ -1,8 +1,6 @@
 import lz4.stream
 import pytest
 import sys
-import os
-import psutil
 
 
 _1KB = 1024
@@ -80,20 +78,8 @@ def test_block_decompress_mem_usage(data, buffer_size):
         'store_comp_size': 4,
     }
 
-    if os.environ.get('TRAVIS') is not None:
-        pytest.skip('Skipping test on Travis due to insufficient memory')
-
-    if os.environ.get('APPVEYOR') is not None:
-        pytest.skip('Skipping test on AppVeyor due to insufficient resources')
-
     if sys.maxsize < 0xffffffff:
         pytest.skip('Py_ssize_t too small for this test')
-
-    if psutil.virtual_memory().available < 3 * kwargs['buffer_size']:
-        # The internal LZ4 context will request at least 3 times buffer_size
-        # as memory (2 buffer_size for the double-buffer, and 1.x buffer_size
-        # for the output buffer)
-        pytest.skip('Insufficient system memory for this test')
 
     tracemalloc = pytest.importorskip('tracemalloc')
 
