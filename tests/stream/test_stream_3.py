@@ -3,29 +3,11 @@ import pytest
 import sys
 import os
 import psutil
-import gc
 
 
 _1KB = 1024
 _1MB = _1KB * 1024
 _1GB = _1MB * 1024
-
-
-def run_gc_param_data_buffer_size(func):
-    if os.environ.get('TRAVIS') is not None or os.environ.get('APPVEYOR') is not None:
-        def wrapper(data, buffer_size, *args, **kwargs):
-            return func(data, buffer_size, *args, **kwargs)
-    else:
-        def wrapper(data, buffer_size, *args, **kwargs):
-            gc.collect()
-            try:
-                result = func(data, buffer_size, *args, **kwargs)
-            finally:
-                gc.collect()
-            return result
-
-    wrapper.__name__ = func.__name__
-    return wrapper
 
 
 def compress(x, c_kwargs):
@@ -91,7 +73,6 @@ def data(request):
     return request.param
 
 
-@run_gc_param_data_buffer_size
 def test_block_decompress_mem_usage(data, buffer_size):
     kwargs = {
         'strategy': "double_buffer",
