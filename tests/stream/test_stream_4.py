@@ -1,25 +1,6 @@
 import lz4.stream
 import pytest
 import sys
-import os
-import gc
-
-
-def run_gc(func):
-    if os.environ.get('TRAVIS') is not None or os.environ.get('APPVEYOR') is not None:
-        def wrapper(*args, **kwargs):
-            return func(*args, **kwargs)
-    else:
-        def wrapper(*args, **kwargs):
-            gc.collect()
-            try:
-                result = func(*args, **kwargs)
-            finally:
-                gc.collect()
-            return result
-
-    wrapper.__name__ = func.__name__
-    return wrapper
 
 
 if sys.version_info < (3, ):
@@ -47,7 +28,6 @@ else:
 # Out-of-band block size record tests
 
 
-@run_gc
 def test_round_trip():
     data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123" * 24
     kwargs = {'strategy': "double_buffer", 'buffer_size': 256, 'store_comp_size': 4}
@@ -127,7 +107,6 @@ def test_round_trip():
     assert (data == oob_dstream), "Decompressed streams mismatch"
 
 
-@run_gc
 def test_invalid_usage():
     data = b"2099023098234882923049823094823094898239230982349081231290381209380981203981209381238901283098908123109238098123" * 24
     kwargs = {'strategy': "double_buffer", 'buffer_size': 256, 'store_comp_size': 0}

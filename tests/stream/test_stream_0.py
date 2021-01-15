@@ -1,27 +1,8 @@
 import lz4.stream
 import sys
 import pytest
-import gc
-import os
 if sys.version_info <= (3, 2):
     import struct
-
-
-def run_gc(func):
-    if os.environ.get('TRAVIS') is not None or os.environ.get('APPVEYOR') is not None:
-        def wrapper(*args, **kwargs):
-            return func(*args, **kwargs)
-    else:
-        def wrapper(*args, **kwargs):
-            gc.collect()
-            try:
-                result = func(*args, **kwargs)
-            finally:
-                gc.collect()
-            return result
-
-    wrapper.__name__ = func.__name__
-    return wrapper
 
 
 def get_stored_size(buff, block_length_size):
@@ -45,7 +26,6 @@ def get_stored_size(buff, block_length_size):
         return struct.unpack('<' + fmt[block_length_size], b[:block_length_size])[0]
 
 
-@run_gc
 def roundtrip(x, c_kwargs, d_kwargs, dictionary):
     if dictionary:
         if isinstance(dictionary, tuple):

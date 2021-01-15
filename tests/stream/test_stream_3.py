@@ -1,9 +1,6 @@
 import lz4.stream
 import pytest
 import sys
-import os
-import psutil
-import gc
 
 
 _1KB = 1024
@@ -11,49 +8,32 @@ _1MB = _1KB * 1024
 _1GB = _1MB * 1024
 
 
-def run_gc_param_data_buffer_size(func):
-    if os.environ.get('TRAVIS') is not None or os.environ.get('APPVEYOR') is not None:
-        def wrapper(data, buffer_size, *args, **kwargs):
-            return func(data, buffer_size, *args, **kwargs)
-    else:
-        def wrapper(data, buffer_size, *args, **kwargs):
-            gc.collect()
-            try:
-                result = func(data, buffer_size, *args, **kwargs)
-            finally:
-                gc.collect()
-            return result
-
-    wrapper.__name__ = func.__name__
-    return wrapper
-
-
 def compress(x, c_kwargs):
-    if c_kwargs.get('return_bytearray', False):
-        c = bytearray()
-    else:
-        c = bytes()
+    c = []
     with lz4.stream.LZ4StreamCompressor(**c_kwargs) as proc:
         for start in range(0, len(x), c_kwargs['buffer_size']):
             chunk = x[start:start + c_kwargs['buffer_size']]
             block = proc.compress(chunk)
-            c += block
-    return c
+            c.append(block)
+    if c_kwargs.get('return_bytearray', False):
+        return bytearray().join(c)
+    else:
+        return bytes().join(c)
 
 
 def decompress(x, d_kwargs):
-    if d_kwargs.get('return_bytearray', False):
-        d = bytearray()
-    else:
-        d = bytes()
+    d = []
     with lz4.stream.LZ4StreamDecompressor(**d_kwargs) as proc:
         start = 0
         while start < len(x):
             block = proc.get_block(x[start:])
             chunk = proc.decompress(block)
-            d += chunk
+            d.append(chunk)
             start += d_kwargs['store_comp_size'] + len(block)
-    return d
+    if d_kwargs.get('return_bytearray', False):
+        return bytearray().join(d)
+    else:
+        return bytes().join(d)
 
 
 test_buffer_size = sorted(
@@ -91,7 +71,6 @@ def data(request):
     return request.param
 
 
-@run_gc_param_data_buffer_size
 def test_block_decompress_mem_usage(data, buffer_size):
     kwargs = {
         'strategy': "double_buffer",
@@ -99,20 +78,8 @@ def test_block_decompress_mem_usage(data, buffer_size):
         'store_comp_size': 4,
     }
 
-    if os.environ.get('TRAVIS') is not None:
-        pytest.skip('Skipping test on Travis due to insufficient memory')
-
-    if os.environ.get('APPVEYOR') is not None:
-        pytest.skip('Skipping test on AppVeyor due to insufficient resources')
-
     if sys.maxsize < 0xffffffff:
         pytest.skip('Py_ssize_t too small for this test')
-
-    if psutil.virtual_memory().available < 3 * kwargs['buffer_size']:
-        # The internal LZ4 context will request at least 3 times buffer_size
-        # as memory (2 buffer_size for the double-buffer, and 1.x buffer_size
-        # for the output buffer)
-        pytest.skip('Insufficient system memory for this test')
 
     tracemalloc = pytest.importorskip('tracemalloc')
 
