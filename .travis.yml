@@ -25,6 +25,28 @@ matrix:
         - docker
       env:
         - CIBW_BUILD=cp37-*
+    - name: linux-py37
+      arch: arm64
+      language: python
+      python: 3.7
+      dist: xenial
+      sudo: required
+      services:
+        - docker
+      env:
+        - PIP_NO_CACHE_DIR=off
+        - CIBW_BUILD=cp37-manylinux_aarch64
+      install:
+        - python -m pip install -U pip
+        - python -m pip install cibuildwheel==1.7.4
+        - python -m pip install codecov tox twine
+      script:
+        - tox tests
+        - codecov
+        - git config --global user.email "junk@junk.com"
+        - git config --global user.name "junk"
+        - git stash --all # Restore fresh checkout
+        - cibuildwheel --output-dir dist
     - name: linux-py38
       language: python
       python: 3.8
@@ -34,6 +56,28 @@ matrix:
         - docker
       env:
         - CIBW_BUILD=cp38-*
+    - name: linux-py38
+      arch: arm64
+      language: python
+      python: 3.8
+      dist: xenial
+      sudo: required
+      services:
+        - docker
+      env:
+        - PIP_NO_CACHE_DIR=off
+        - CIBW_BUILD=cp38-manylinux_aarch64
+      install:
+        - python -m pip install -U pip
+        - python -m pip install cibuildwheel==1.7.4
+        - python -m pip install codecov tox twine
+      script:
+        - tox tests
+        - codecov
+        - git config --global user.email "junk@junk.com"
+        - git config --global user.name "junk"
+        - git stash --all # Restore fresh checkout
+        - cibuildwheel --output-dir dist
     - name: osx-py35
       os: osx
       language: generic
@@ -89,6 +133,8 @@ install:
 script:
   - tox tests
   - codecov
+  - git config --global user.email "junk@junk.com"
+  - git config --global user.name "junk"
   - git stash --all # Restore fresh checkout
   - cibuildwheel --output-dir dist
 deploy:
