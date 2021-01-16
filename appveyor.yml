@@ -10,20 +10,39 @@ environment:
 
   matrix:
 
-    - PYTHON: "C:\\Python35-x64"
     - PYTHON: "C:\\Python36-x64"
-    - PYTHON: "C:\\Python37-x64"
-    - PYTHON: "C:\\Python38-x64"
-    - PYTHON: "C:\\Python35"
+      TARGET: "x64"
+      VCVARS_VER: "14.2"
     - PYTHON: "C:\\Python36"
+      TARGET: "x86"
+      VCVARS_VER: "14.2"
+    - PYTHON: "C:\\Python37-x64"
+      TARGET: "x64"
+      VCVARS_VER: "14.2"
     - PYTHON: "C:\\Python37"
+      TARGET: "x86"
+      VCVARS_VER: "14.2"
+    - PYTHON: "C:\\Python38-x64"
+      TARGET: "x64"
+      VCVARS_VER: "14.2"
     - PYTHON: "C:\\Python38"
+      TARGET: "x86"
+      VCVARS_VER: "14.2"
+    - PYTHON: "C:\\Python39-x64"
+      TARGET: "x64"
+      VCVARS_VER: "14.2"
+    - PYTHON: "C:\\Python39"
+      TARGET: "x86"
+      VCVARS_VER: "14.2"
 
 matrix:
   # Immediately finish build once one of the jobs fails.
   fast_finish: true
 
 platform: x64
+
+image:
+  - Visual Studio 2019
 
 install:
   # If there is a newer build queued for the same PR, cancel this one.
@@ -39,39 +58,43 @@ install:
   - ps: "ls \"C:/\""
 
   - ECHO "Installed SDKs:"
-  - ps: "ls \"C:/Program Files/Microsoft SDKs/Windows\""
+  - ps: "ls \"C:/Program Files (x86)/\""
+  - ps: "ls \"C:/Program Files (x86)/Microsoft Visual Studio/\""
 
-  # Prepend relevant Python installation to the PATH. Also prepend the location
-  # of the build.cmd file.
-  - "SET PATH=%CD%\\appveyor;%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  # Prepend relevant Python installation to the PATH.
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+
+  # Set up the build/compiler/linker environment
+  # See: https://github.com/upx/upx/blob/master/.appveyor.yml
+  - call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" %TARGET% -vcvars_ver=%VCVARS_VER%
 
   # Check that we have the expected version and architecture for Python
-  - "build.cmd python --version"
-  - "build.cmd python -c \"import struct; print(struct.calcsize('P') * 8)\""
+  - "python --version"
+  - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
 
   # Upgrade to the latest version of pip to avoid it displaying warnings
   # about it being out of date.
-  - "build.cmd python -m pip install --disable-pip-version-check --user --upgrade pip"
+  - "python -m pip install --disable-pip-version-check --user --upgrade pip"
 
   # We need wheel installed to build wheels, and this isn't pulled in by setup.py
-  - "build.cmd python -m pip install wheel"
+  - "python -m pip install wheel"
 
   # Install tox for testing
-  - "build.cmd python -m pip install tox"
+  - "python -m pip install tox"
   
   # We need twine installed to push wheels to PyPI
-  - "build.cmd python -m pip install twine"
+  - "python -m pip install twine"
 
 build_script:
   # Build the compiled extension
-  - "build.cmd python setup.py build"
+  - "python setup.py build"
 
 test_script:
-  - "build.cmd tox -e py tests"
+  - "tox -e py tests"
 
 after_test:
   # If tests are successful, create binary packages for the project.
-  - "build.cmd python setup.py bdist_wheel"
+  - "python setup.py bdist_wheel"
   - ps: "ls dist"
 
 artifacts:
