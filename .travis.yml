@@ -1,13 +1,5 @@
 matrix:
   include:
-    - name: linux-py35
-      language: python
-      python: 3.5
-      sudo: required
-      services:
-        - docker
-      env:
-        - CIBW_BUILD=cp35-*
     - name: linux-py36
       language: python
       python: 3.6
@@ -19,7 +11,7 @@ matrix:
     - name: linux-py37
       language: python
       python: 3.7
-      dist: xenial
+      dist: focal
       sudo: required
       services:
         - docker
@@ -29,7 +21,7 @@ matrix:
       arch: arm64
       language: python
       python: 3.7
-      dist: xenial
+      dist: focal
       sudo: required
       services:
         - docker
@@ -50,7 +42,7 @@ matrix:
     - name: linux-py38
       language: python
       python: 3.8
-      dist: xenial
+      dist: focal
       sudo: required
       services:
         - docker
@@ -60,7 +52,7 @@ matrix:
       arch: arm64
       language: python
       python: 3.8
-      dist: xenial
+      dist: focal
       sudo: required
       services:
         - docker
@@ -78,57 +70,93 @@ matrix:
         - git config --global user.name "junk"
         - git stash --all # Restore fresh checkout
         - cibuildwheel --output-dir dist
-    - name: osx-py35
-      os: osx
-      language: generic
+
+    - name: linux-py39
+      language: python
+      python: 3.9
+      dist: focal
+      sudo: required
+      services:
+        - docker
       env:
-        - CIBW_BUILD=cp35-*
-        - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
-        - CIBW_BEFORE_BUILD="python -m pip install -U pip; python -m pip install tox twine"
+        - CIBW_BUILD=cp39-*
+    - name: linux-py39
+      arch: arm64
+      language: python
+      python: 3.9
+      dist: focal
+      sudo: required
+      services:
+        - docker
+      env:
+        - PIP_NO_CACHE_DIR=off
+        - CIBW_BUILD=cp39-manylinux_aarch64
       install:
-        - python -m pip install cibuildwheel==1.1.0
-        - python -m pip install twine
+        - python -m pip install -U pip
+        - python -m pip install cibuildwheel==1.7.4
+        - python -m pip install codecov tox twine
       script:
+        - tox tests
+        - codecov
+        - git config --global user.email "junk@junk.com"
+        - git config --global user.name "junk"
+        - git stash --all # Restore fresh checkout
         - cibuildwheel --output-dir dist
     - name: osx-py36
       os: osx
+      osx_image: xcode12.2
       language: generic
       env:
         - CIBW_BUILD=cp36-*
         - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
         - CIBW_BEFORE_BUILD="python -m pip install -U pip; python -m pip install tox twine"
       install:
-        - python -m pip install cibuildwheel==1.1.0
-        - python -m pip install twine
+        - python3 -m pip install cibuildwheel==1.7.4
+        - python3 -m pip install twine
       script:
         - cibuildwheel --output-dir dist
     - name: osx-py37
       os: osx
+      osx_image: xcode12.2
       language: generic
       env:
         - CIBW_BUILD=cp37-*
         - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
         - CIBW_BEFORE_BUILD="python -m pip install -U pip; python -m pip install tox twine"
       install:
-        - python -m pip install cibuildwheel==1.1.0
-        - python -m pip install twine
+        - python3 -m pip install cibuildwheel==1.7.4
+        - python3 -m pip install twine
       script:
         - cibuildwheel --output-dir dist
     - name: osx-py38
       os: osx
+      osx_image: xcode12.2
       language: generic
       env:
         - CIBW_BUILD=cp38-*
         - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
         - CIBW_BEFORE_BUILD="python -m pip install -U pip; python -m pip install tox twine"
       install:
-        - python -m pip install cibuildwheel==1.1.0
-        - python -m pip install twine
+        - python3 -m pip install cibuildwheel==1.7.4
+        - python3 -m pip install twine
+      script:
+        - cibuildwheel --output-dir dist
+    - name: osx-py39
+      os: osx
+      osx_image: xcode12.2
+      language: generic
+      env:
+        - CIBW_BUILD=cp39-*
+        - CIBW_TEST_COMMAND="pushd {project}; tox tests ; popd"
+        - CIBW_BEFORE_BUILD="python -m pip install -U pip; python -m pip install tox twine"
+      install:
+        - python3 -m pip install cibuildwheel==1.7.4
+        - python3 -m pip install twine
       script:
         - cibuildwheel --output-dir dist
 install:
   - python -m pip install -U pip
-  - python -m pip install cibuildwheel==1.1.0
+  - python -m pip install cibuildwheel==1.7.4
   - python -m pip install codecov tox twine
 script:
   - tox tests
