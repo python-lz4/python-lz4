@@ -3,6 +3,7 @@ matrix:
     - name: linux-py36
       language: python
       python: 3.6
+      dist: focal
       sudo: required
       services:
         - docker
