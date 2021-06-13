@@ -1,0 +1,53 @@
+name: Build
+
+on: [push, pull_request]
+
+# on:
+#   push:
+#     branches:
+#       - main
+#     tags:
+#       - '*'
+
+
+jobs:
+  sdist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v2
+    - name: Install Python 3.x
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.x
+    - name: Build sdist
+      run: python setup.py sdist
+    - name: Save sdist
+      uses: actions/upload-artifact@v2
+      with:
+        path: dist/*.tar.gz
+
+  wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+      - name: Install Python 3.x
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.x
+      - name: Build wheels
+        uses: joerick/cibuildwheel@v1.11.1
+        env:
+          CIBW_ARCHS_LINUX: auto aarch64
+          CIBW_BUILD: cp36-* cp37-* cp38-* cp39-*
+      - name: Save wheels
+        uses: actions/upload-artifact@v2
+        with:
+          path: wheelhouse/*.whl
