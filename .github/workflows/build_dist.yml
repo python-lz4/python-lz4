@@ -34,7 +34,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
-
+        cibw_build: [cp36-*, cp37-*, cp38-*, cp39-*]
+        cibw_archs_linux: [auto, aarch64]
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
@@ -43,15 +44,15 @@ jobs:
         with:
           python-version: 3.x
       - name: Set up QEMU  # Needed to build aarch64 wheels
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && matrix.cibw_archs_linux == 'aarch64'
         uses: docker/setup-qemu-action@v1
         with:
           platforms: all
       - name: Build wheels
         uses: joerick/cibuildwheel@v1.11.1
         env:
-          CIBW_ARCHS_LINUX: auto aarch64
-          CIBW_BUILD: cp36-* cp37-* cp38-* cp39-*
+          CIBW_ARCHS_LINUX: ${{ matrix.cibw_archs_linux }}
+          CIBW_BUILD: ${{ matrix.cibw_build }}
       - name: Save wheels
         uses: actions/upload-artifact@v2
         with:
