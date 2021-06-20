@@ -29,7 +29,7 @@ jobs:
         path: dist/*.tar.gz
 
   wheels:
-    name: Build wheels on ${{ matrix.os }}
+    name: Build wheels on ${{ matrix.os }} CIBW_BUILD=${{ matrix.cibw_build }} CIBW_ARCHS_LINUX=${{ matrix.cibw_archs_linux }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
