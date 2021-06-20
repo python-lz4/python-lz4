@@ -35,7 +35,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
         cibw_build: [cp36-*, cp37-*, cp38-*, cp39-*]
-        cibw_archs_linux: [auto, aarch64]
+        cibw_archs_linux: [auto, ] # aarch64]
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
