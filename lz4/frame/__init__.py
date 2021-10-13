@@ -829,6 +829,7 @@ def open(filename, mode="rb",
         block_checksum=block_checksum,
         auto_flush=auto_flush,
         return_bytearray=return_bytearray,
+        source_size=source_size,
     )
 
     if 't' in mode:
