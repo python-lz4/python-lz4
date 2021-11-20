@@ -84,7 +84,7 @@ def test_2(data, mode, store_size, dictionary):
 
     data_in = [data for i in range(32)]
 
-    pool = ThreadPool(8)
+    pool = ThreadPool(2)
     rt = partial(roundtrip, c_kwargs=c_kwargs,
                  d_kwargs=d_kwargs, dictionary=dictionary)
     data_out = pool.map(rt, data_in)
