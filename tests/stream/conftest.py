@@ -78,11 +78,11 @@ def buffer_size(request):
                 'store_comp_size': 2
             }
         ),
-        (
-            {
-                'store_comp_size': 4
-            }
-        ),
+        # (
+        #     {
+        #         'store_comp_size': 4
+        #     }
+        # ),
     ]
 )
 def store_comp_size(request):
