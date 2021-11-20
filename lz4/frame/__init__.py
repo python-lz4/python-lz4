@@ -387,6 +387,8 @@ class LZ4FrameDecompressor(object):
             bytes: Uncompressed data
 
         """
+        if not isinstance(data, (bytes, bytearray)):
+            data = memoryview(data).tobytes()
 
         if self._unconsumed_data:
             data = self._unconsumed_data + data
@@ -679,9 +681,10 @@ class LZ4FrameFile(_compression.BaseStream):
     def write(self, data):
         """Write a bytes object to the file.
 
-        Returns the number of uncompressed bytes written, which is always
-        ``len(data)``. Note that due to buffering, the file on disk may not
-        reflect the data written until close() is called.
+        Returns the number of uncompressed bytes written, which is
+        always the length of data in bytes. Note that due to buffering,
+        the file on disk may not reflect the data written until close()
+        is called.
 
         Args:
             data(bytes): uncompressed data to compress and write to the file
@@ -690,11 +693,18 @@ class LZ4FrameFile(_compression.BaseStream):
             int: the number of uncompressed bytes written to the file
 
         """
+        if isinstance(data, (bytes, bytearray)):
+            length = len(data)
+        else:
+            # accept any data that supports the buffer protocol
+            data = memoryview(data)
+            length = data.nbytes
+
         self._check_can_write()
         compressed = self._compressor.compress(data)
         self._fp.write(compressed)
-        self._pos += len(data)
-        return len(data)
+        self._pos += length
+        return length
 
     def seek(self, offset, whence=io.SEEK_SET):
         """Change the file position.
