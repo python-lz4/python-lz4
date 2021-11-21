@@ -33,7 +33,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
+        os: [ubuntu-latest, macOS-latest] # ,windows-latest] 
         cibw_build: [cp36-*, cp37-*, cp38-*, cp39-*]
         cibw_archs_linux: [auto, ] # aarch64]
     steps:
@@ -63,7 +63,7 @@ jobs:
   upload_pypi:
     name: Upload to PyPI
     needs: [sdist, wheels]
-    runs-on: ubuntu-latest
+    runs-on: [ubuntu-latest, macOS-latest] # ,windows-latest]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/download-artifact@v2
