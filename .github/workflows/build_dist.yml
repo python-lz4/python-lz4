@@ -62,7 +62,7 @@ jobs:
   upload_pypi:
     name: Upload to PyPI
     needs: [sdist, wheels]
-    runs-on: [ubuntu-latest, macOS-latest] # ,windows-latest]
+    runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/download-artifact@v2
