@@ -1,14 +1,13 @@
 name: Build
 
-on: [push, pull_request, release]
+# on: [push, pull_request, release]
 
-# on:
-#   push:
-#     branches:
-#       - main
-#     tags:
-#       - '*'
-
+on:
+  push:
+    branches:
+  release:
+    types: [created]
+  pull_request:
 
 jobs:
   sdist:
