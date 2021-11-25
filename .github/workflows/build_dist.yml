@@ -6,7 +6,7 @@ on:
   push:
     branches:
   release:
-    types: [created]
+    types: [published]
   pull_request:
 
 jobs:
