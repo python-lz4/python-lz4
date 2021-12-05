@@ -33,7 +33,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest] # ,windows-latest] 
-        cibw_build: [cp36-*, cp37-*, cp38-*, cp39-*]
+        cibw_build: [cp37-*, cp38-*, cp39-*, cp310-*]
         cibw_archs_linux: [auto, ] # aarch64]
     steps:
       - name: Check out repository
