@@ -139,6 +139,9 @@ ext_modules = [lz4version, lz4block, lz4frame]
 
 if experimental is True:
     ext_modules.append(lz4stream)
+    packages = find_packages()
+else:
+    packages = find_packages(exclude=("lz4.stream",))
 
 # Dependencies for testing. We define a list here, so that we can
 # refer to it for the tests_require and the extras_require arguments
@@ -172,7 +175,7 @@ setup(
     author='Jonathan Underwood',
     author_email='jonathan.underwood@gmail.com',
     url='https://github.com/python-lz4/python-lz4',
-    packages=find_packages(),
+    packages=packages,
     ext_modules=ext_modules,
     tests_require=tests_require,
     extras_require={
