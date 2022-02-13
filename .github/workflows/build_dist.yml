@@ -37,6 +37,7 @@ jobs:
         os: [ubuntu-latest, macOS-latest, windows-latest] 
         cibw_build: [cp37-*, cp38-*, cp39-*, cp310-*]
         cibw_archs_linux: [auto, ] # aarch64]
+        cibw_skip: ["cp*-musllinux*", ]
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
@@ -56,6 +57,7 @@ jobs:
         env:
           CIBW_ARCHS_LINUX: ${{ matrix.cibw_archs_linux }}
           CIBW_BUILD: ${{ matrix.cibw_build }}
+          CIBW_SKIP: ${{ matrix.cibw_skip }}
           CIBW_TEST_COMMAND: "tox -c {project}"
           CIBW_BEFORE_BUILD: "python -m pip install -U pip && python -m pip install tox"
       - name: Save wheels
