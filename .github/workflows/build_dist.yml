@@ -16,6 +16,8 @@ jobs:
     steps:
     - name: Check out repository
       uses: actions/checkout@v2
+      with:
+        fetch-depth: 0  # To ensure tags are retrieved to enabe setuptools_scm to work
     - name: Install Python 3.x
       uses: actions/setup-python@v2
       with:
@@ -38,6 +40,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # To ensure tags are retrieved to enabe setuptools_scm to work
       - name: Install Python 3.x
         uses: actions/setup-python@v2
         with:
