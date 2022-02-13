@@ -140,14 +140,6 @@ ext_modules = [lz4version, lz4block, lz4frame]
 if experimental is True:
     ext_modules.append(lz4stream)
 
-install_requires = []
-
-# On Python earlier than 3.0 the builtins package isn't included, but it is
-# provided by the future package
-if sys.version_info < (3, 0):
-    install_requires.append('future')
-
-
 # Dependencies for testing. We define a list here, so that we can
 # refer to it for the tests_require and the extras_require arguments
 # to setup below. The latter enables us to use pip install .[tests] to
@@ -175,7 +167,6 @@ setup(
         'setuptools_scm',
         'pkgconfig',
     ] + pytest_runner,
-    install_requires=install_requires,
     description="LZ4 Bindings for Python",
     long_description=open('README.rst', 'r').read(),
     author='Jonathan Underwood',
