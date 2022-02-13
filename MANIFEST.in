@@ -1,7 +1,1 @@
 include README.rst
-include tests/*.py
-exclude tests/*.pyc
-exclude .gitignore
-exclude .travis.yml
-prune appveyor*
-exclude appveyor.yml
