@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 from setuptools import setup, find_packages, Extension
 import sys
 from distutils import ccompiler
@@ -32,6 +33,14 @@ else:
             pass
         return installed
     liblz4_found = pkgconfig_installed_check('liblz4', LZ4_REQUIRED_VERSION, default=False)
+
+# Establish if we want to build experimental functionality or not.
+experimental = os.environ.get("PYLZ4_EXPERIMENTAL", False)
+if experimental is not False:
+    if experimental.upper() in ("1", "TRUE"):
+        experimental = True
+    else:
+        experimental = False
 
 # Set up the extension modules. If a system wide lz4 library is found, and is
 # recent enough, we'll use that. Otherwise we'll build with the bundled one. If
@@ -126,6 +135,11 @@ lz4stream = Extension('lz4.stream._stream',
                       lz4stream_sources,
                       **extension_kwargs)
 
+ext_modules = [lz4version, lz4block, lz4frame]
+
+if experimental is True:
+    ext_modules.append(lz4stream)
+
 install_requires = []
 
 # On Python earlier than 3.0 the builtins package isn't included, but it is
@@ -168,12 +182,7 @@ setup(
     author_email='jonathan.underwood@gmail.com',
     url='https://github.com/python-lz4/python-lz4',
     packages=find_packages(),
-    ext_modules=[
-        lz4version,
-        lz4block,
-        lz4frame,
-        lz4stream
-    ],
+    ext_modules=ext_modules,
     tests_require=tests_require,
     extras_require={
         'tests': tests_require,
