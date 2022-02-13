@@ -162,7 +162,7 @@ setup(
     use_scm_version={
         'write_to': "lz4/version.py",
     },
-    python_requires=">=3.5",
+    python_requires=">=3.7",
     setup_requires=[
         'setuptools_scm',
         'pkgconfig',
