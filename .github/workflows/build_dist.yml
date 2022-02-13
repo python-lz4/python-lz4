@@ -52,7 +52,7 @@ jobs:
         env:
           CIBW_ARCHS_LINUX: ${{ matrix.cibw_archs_linux }}
           CIBW_BUILD: ${{ matrix.cibw_build }}
-          CIBW_TEST_COMMAND: "pushd {project} && tox tests && popd"
+          CIBW_TEST_COMMAND: "pushd {project} && tox && popd"
           CIBW_BEFORE_BUILD: "python -m pip install -U pip && python -m pip install tox"
       - name: Save wheels
         uses: actions/upload-artifact@v2
