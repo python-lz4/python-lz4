@@ -4,6 +4,20 @@
 lz4.stream sub-package
 ======================
 
+.. warning::
+   This module is unmaintained.
+
+   This sub-package is considered experimental. It was submitted by a community
+   member who is not able to continue to maintain the module.
+
+   This module is not built as part of the distributed wheels. If you wish to
+   build and use this module you will need to download and build from source
+   with the environment variable PYLZ4_EXPERIMENTAL set to TRUE.
+
+   The module needs some re-write, and the tests need extensive work, for this
+   to become production ready. If you are interested in working on this, please
+   reach out to the package maintainers.
+
 This sub-package provides the capability to compress and decompress data using
 the `stream specification
 <https://github.com/lz4/lz4/blob/master/examples/streaming_api_basics.md>`_,
