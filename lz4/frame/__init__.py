@@ -219,13 +219,13 @@ class LZ4FrameCompressor(object):
                 block_checksum=self.block_checksum,
                 auto_flush=self.auto_flush,
                 return_bytearray=self.return_bytearray,
-                source_size=source_size
+                source_size=source_size,
             )
             self._started = True
             return result
         else:
             raise RuntimeError(
-                'LZ4FrameCompressor.begin() called after already initialized'
+                "LZ4FrameCompressor.begin() called after already initialized"
             )
 
     def compress(self, data):  # noqa: F811
@@ -293,6 +293,10 @@ class LZ4FrameCompressor(object):
         """
         self._context = None
         self._started = False
+
+    def has_context(self):
+
+        return self._context is not None
 
 
 class LZ4FrameDecompressor(object):
@@ -525,9 +529,8 @@ class LZ4FrameFile(_compression.BaseStream):
             self._buffer = io.BufferedReader(raw)
 
         if self._mode == _MODE_WRITE:
-            self._fp.write(
-                self._compressor.begin(source_size=source_size)
-            )
+            self._source_size = source_size
+            self._fp.write(self._compressor.begin(source_size=source_size))
 
     def close(self):
         """Flush and close the file.
@@ -542,7 +545,8 @@ class LZ4FrameFile(_compression.BaseStream):
                 self._buffer.close()
                 self._buffer = None
             elif self._mode == _MODE_WRITE:
-                self._fp.write(self._compressor.flush())
+                if self._compressor.has_context():
+                    self._fp.write(self._compressor.flush())
                 self._compressor = None
         finally:
             try:
@@ -719,6 +723,18 @@ class LZ4FrameFile(_compression.BaseStream):
         self._fp.write(compressed)
         self._pos += length
         return length
+
+    def flush(self):
+        """Flush the file, keeping it open.
+
+        May be called more than once without error. The file may continue
+        to be used normally after flushing.
+        """
+        if self.writable() and self._compressor.has_context():
+            self._fp.write(self._compressor.flush())
+            header = self._compressor.begin(source_size=self._source_size)
+            self._fp.write(header)
+        self._fp.flush()
 
     def seek(self, offset, whence=io.SEEK_SET):
         """Change the file position.
