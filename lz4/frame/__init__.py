@@ -295,8 +295,10 @@ class LZ4FrameCompressor(object):
         self._started = False
 
     def has_context(self):
-
         return self._context is not None
+
+    def started(self):
+        return self._started
 
 
 class LZ4FrameDecompressor(object):
@@ -719,6 +721,11 @@ class LZ4FrameFile(_compression.BaseStream):
             length = data.nbytes
 
         self._check_can_write()
+
+        if not self._compressor.started():
+            header = self._compressor.begin(source_size=self._source_size)
+            self._fp.write(header)
+
         compressed = self._compressor.compress(data)
         self._fp.write(compressed)
         self._pos += length
@@ -732,8 +739,6 @@ class LZ4FrameFile(_compression.BaseStream):
         """
         if self.writable() and self._compressor.has_context():
             self._fp.write(self._compressor.flush())
-            header = self._compressor.begin(source_size=self._source_size)
-            self._fp.write(header)
         self._fp.flush()
 
     def seek(self, offset, whence=io.SEEK_SET):
