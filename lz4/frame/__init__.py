@@ -559,8 +559,7 @@ class LZ4FrameFile(_compression.BaseStream):
                 self._buffer.close()
                 self._buffer = None
             elif self._mode == _MODE_WRITE:
-                if self._compressor.has_context():
-                    self._fp.write(self._compressor.flush())
+                self.flush()
                 self._compressor = None
         finally:
             try:
