@@ -295,9 +295,21 @@ class LZ4FrameCompressor(object):
         self._started = False
 
     def has_context(self):
+        """Return whether the compression context exists.
+
+        Returns:
+            bool: ``True`` if the compression context exists, ``False``
+                otherwise.
+        """
         return self._context is not None
 
     def started(self):
+        """Return whether the compression frame has been started.
+
+        Returns:
+            bool: ``True`` if the compression frame has been started, ``False``
+                otherwise.
+        """
         return self._started
 
 
