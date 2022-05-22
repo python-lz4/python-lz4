@@ -36,7 +36,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest] 
         cibw_build: [cp37-*, cp38-*, cp39-*, cp310-*]
-        cibw_archs_linux: [auto, aarch64]
+        cibw_archs_linux: [auto, ] # aarch64]
         cibw_skip: ["cp*-musllinux*", ]
     steps:
       - name: Check out repository
