@@ -1068,6 +1068,7 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
           PyErr_Format (PyExc_RuntimeError,
                         "LZ4F_decompress failed with code: %s",
                         LZ4F_getErrorName (result));
+          PyMem_Free (destination);
           return NULL;
         }
 
