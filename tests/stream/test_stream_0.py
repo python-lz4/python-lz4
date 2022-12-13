@@ -80,12 +80,12 @@ def setup_kwargs(strategy, mode, buffer_size, store_comp_size,
     c_kwargs['buffer_size'] = buffer_size
     c_kwargs.update(store_comp_size)
 
-    if(c_return_bytearray):
+    if c_return_bytearray:
         c_kwargs.update(c_return_bytearray)
 
     d_kwargs = {}
 
-    if(d_return_bytearray):
+    if d_return_bytearray:
         d_kwargs.update(d_return_bytearray)
 
     d_kwargs['strategy'] = strategy

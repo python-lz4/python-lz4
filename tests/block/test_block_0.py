@@ -55,12 +55,12 @@ def setup_kwargs(mode, store_size, c_return_bytearray=None, d_return_bytearray=N
 
     c_kwargs.update(store_size)
 
-    if(c_return_bytearray):
+    if c_return_bytearray:
         c_kwargs.update(c_return_bytearray)
 
     d_kwargs = {}
 
-    if(d_return_bytearray):
+    if d_return_bytearray:
         d_kwargs.update(d_return_bytearray)
 
     return (c_kwargs, d_kwargs)
