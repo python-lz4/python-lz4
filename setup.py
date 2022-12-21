@@ -35,8 +35,8 @@ else:
     liblz4_found = pkgconfig_installed_check('liblz4', LZ4_REQUIRED_VERSION, default=False)
 
 # Establish if we want to build experimental functionality or not.
-experimental = os.environ.get("PYLZ4_EXPERIMENTAL", True)
-if experimental is not True:
+experimental = os.environ.get("PYLZ4_EXPERIMENTAL", False)
+if experimental is not False:
     if experimental.upper() in ("1", "TRUE"):
         experimental = True
     else:
