@@ -53,5 +53,5 @@ def test_block_checksum_failure(data):
     message = r'^LZ4F_decompress failed with code: ERROR_blockChecksum_invalid$'
     if len(compressed) > 32:
         with pytest.raises(RuntimeError, match=message):
-            compressed[22] = compressed[18] ^ 0x42
+            compressed[22] = compressed[22] ^ 0x42
             lz4frame.decompress(compressed)
