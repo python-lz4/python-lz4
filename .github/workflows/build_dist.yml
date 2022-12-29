@@ -30,35 +30,36 @@ jobs:
         path: dist/*.tar.gz
 
   wheels:
-    name: Build wheels on ${{ matrix.os }} CIBW_BUILD=${{ matrix.cibw_build }} CIBW_ARCHS_LINUX=${{ matrix.cibw_archs_linux }}
+    name: Build wheels on ${{ matrix.os }} CIBW_BUILD=${{ matrix.cibw_build }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest] 
         cibw_build: [cp37-*, cp38-*, cp39-*, cp310-*, cp311-*]
-        cibw_archs_linux: [auto, ] # aarch64]
-        cibw_skip: ["cp*-musllinux*", ]
     steps:
       - name: Check out repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0  # To ensure tags are retrieved to enabe setuptools_scm to work
       - name: Install Python 3.x
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.x
       - name: Set up QEMU  # Needed to build aarch64 wheels
-        if: runner.os == 'Linux' && matrix.cibw_archs_linux == 'aarch64'
-        uses: docker/setup-qemu-action@v1
+        if: runner.os == 'Linux'
+        uses: docker/setup-qemu-action@v2
         with:
           platforms: all
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.11.2
+        uses: pypa/cibuildwheel@v2.11.4
         env:
-          CIBW_ARCHS_LINUX: ${{ matrix.cibw_archs_linux }}
+          CIBW_ARCHS_LINUX: "x86_64 i686 aarch64"
+          CIBW_ARCHS_MACOS: "x86_64 arm64" # universal2"
+          CIBW_ARCHS_WINDOWS: "AMD64 x86"
           CIBW_BUILD: ${{ matrix.cibw_build }}
-          CIBW_SKIP: ${{ matrix.cibw_skip }}
+          CIBW_SKIP: "cp*-musllinux*"
           CIBW_TEST_COMMAND: "tox -c {project}"
+          CIBW_TEST_SKIP: "*-macosx_arm64 *-macosx_universal2:arm64 *-*linux_{aarch64,ppc64le,s390x}"
           CIBW_BEFORE_BUILD: "python -m pip install -U pip && python -m pip install tox"
       - name: Save wheels
         uses: actions/upload-artifact@v2
@@ -71,11 +72,11 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: artifact
           path: dist
-      - uses: pypa/gh-action-pypi-publish@master
+      - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
           skip_existing: true
