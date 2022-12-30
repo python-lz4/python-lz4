@@ -68,7 +68,13 @@ lz4stream_sources = [
     'lz4/stream/_stream.c'
 ]
 
-if liblz4_found is True:
+use_system_liblz4_env = os.environ.get("PYLZ4_USE_SYSTEM_LZ4", "True")
+if use_system_liblz4_env.upper() in ("1", "TRUE"):
+    use_system_liblz4 = True
+else:
+    use_system_liblz4 = False
+
+if liblz4_found is True and use_system_liblz4 is True:
     extension_kwargs['libraries'] = ['lz4']
 else:
     extension_kwargs['include_dirs'] = ['lz4libs']
