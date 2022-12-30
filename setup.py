@@ -36,12 +36,11 @@ else:
     liblz4_found = pkgconfig_installed_check('liblz4', LZ4_REQUIRED_VERSION, default=False)
 
 # Establish if we want to build experimental functionality or not.
-experimental = os.environ.get("PYLZ4_EXPERIMENTAL", False)
-if experimental is not False:
-    if experimental.upper() in ("1", "TRUE"):
-        experimental = True
-    else:
-        experimental = False
+experimental_env = os.environ.get("PYLZ4_EXPERIMENTAL", "False")
+if experimental_env.upper() in ("1", "TRUE"):
+    experimental = True
+else:
+    experimental = False
 
 # Set up the extension modules. If a system wide lz4 library is found, and is
 # recent enough, we'll use that. Otherwise we'll build with the bundled one. If
