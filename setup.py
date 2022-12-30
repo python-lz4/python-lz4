@@ -113,7 +113,7 @@ if compiler == 'msvc':
         '/wd4820',
     ]
 elif compiler in ('unix', 'mingw32'):
-    if liblz4_found:
+    if liblz4_found is True and use_system_liblz4 is True:
         extension_kwargs = pkgconfig_parse('liblz4')
     else:
         extension_kwargs['extra_compile_args'] = [
