@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 import os
 from setuptools import setup, find_packages, Extension
+from setuptools.command.build_ext import new_compiler
 import sys
-from distutils import ccompiler
+
 
 # Note: if updating LZ4_REQUIRED_VERSION you need to update docs/install.rst as
 # well.
@@ -97,7 +98,7 @@ else:
         ]
     )
 
-compiler = ccompiler.get_default_compiler()
+compiler = new_compiler().compiler_type
 
 if compiler == 'msvc':
     extension_kwargs['extra_compile_args'] = [
