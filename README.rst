@@ -9,10 +9,6 @@ Status
    :target: https://github.com/python-lz4/python-lz4/actions/workflows/build_dist.yml
    :alt: Build Status
 
-.. image:: https://ci.appveyor.com/api/projects/status/r2qvw9mlfo63lklo/branch/master?svg=true
-   :target: https://ci.appveyor.com/project/jonathanunderwood/python-lz4
-   :alt: Build Status Windows
-
 .. image:: https://readthedocs.org/projects/python-lz4/badge/?version=stable
    :target: https://readthedocs.org/projects/python-lz4/
    :alt: Documentation
