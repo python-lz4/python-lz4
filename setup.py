@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 import os
 from setuptools import setup, find_packages, Extension
+from setuptools.command.build_ext import new_compiler
 import sys
-from distutils import ccompiler
+
 
 # Note: if updating LZ4_REQUIRED_VERSION you need to update docs/install.rst as
 # well.
@@ -35,12 +36,11 @@ else:
     liblz4_found = pkgconfig_installed_check('liblz4', LZ4_REQUIRED_VERSION, default=False)
 
 # Establish if we want to build experimental functionality or not.
-experimental = os.environ.get("PYLZ4_EXPERIMENTAL", False)
-if experimental is not False:
-    if experimental.upper() in ("1", "TRUE"):
-        experimental = True
-    else:
-        experimental = False
+experimental_env = os.environ.get("PYLZ4_EXPERIMENTAL", "False")
+if experimental_env.upper() in ("1", "TRUE"):
+    experimental = True
+else:
+    experimental = False
 
 # Set up the extension modules. If a system wide lz4 library is found, and is
 # recent enough, we'll use that. Otherwise we'll build with the bundled one. If
@@ -67,7 +67,13 @@ lz4stream_sources = [
     'lz4/stream/_stream.c'
 ]
 
-if liblz4_found is True:
+use_system_liblz4_env = os.environ.get("PYLZ4_USE_SYSTEM_LZ4", "True")
+if use_system_liblz4_env.upper() in ("1", "TRUE"):
+    use_system_liblz4 = True
+else:
+    use_system_liblz4 = False
+
+if liblz4_found is True and use_system_liblz4 is True:
     extension_kwargs['libraries'] = ['lz4']
 else:
     extension_kwargs['include_dirs'] = ['lz4libs']
@@ -97,7 +103,7 @@ else:
         ]
     )
 
-compiler = ccompiler.get_default_compiler()
+compiler = new_compiler().compiler_type
 
 if compiler == 'msvc':
     extension_kwargs['extra_compile_args'] = [
@@ -107,7 +113,7 @@ if compiler == 'msvc':
         '/wd4820',
     ]
 elif compiler in ('unix', 'mingw32'):
-    if liblz4_found:
+    if liblz4_found is True and use_system_liblz4 is True:
         extension_kwargs = pkgconfig_parse('liblz4')
     else:
         extension_kwargs['extra_compile_args'] = [

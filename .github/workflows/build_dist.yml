@@ -53,6 +53,7 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.11.4
         env:
+          CIBW_ENVIRONMENT: PYLZ4_USE_SYSTEM_LZ4="False"
           CIBW_ARCHS_LINUX: "x86_64 i686 aarch64"
           CIBW_ARCHS_MACOS: "x86_64 arm64" # universal2"
           CIBW_ARCHS_WINDOWS: "AMD64 x86"
