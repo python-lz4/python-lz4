@@ -171,7 +171,7 @@ setup(
     use_scm_version={
         'write_to': "lz4/version.py",
     },
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     setup_requires=[
         'setuptools_scm',
         'pkgconfig',
@@ -200,7 +200,6 @@ setup(
         'Intended Audience :: Developers',
         'Programming Language :: C',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
