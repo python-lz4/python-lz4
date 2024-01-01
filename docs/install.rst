@@ -22,7 +22,7 @@ The LZ4 bindings require linking to the LZ4 library, and so if there is not a
 pre-compiled wheel available for your platform you will need to have a suitable
 C compiler available, as well as the Python development header files. On
 Debian/Ubuntu based systems the header files for Python are found in the
-distribution package ``pythonX.Y-dev`` e.g. ``python3.7-dev``. On Fedora/Red Hat
+distribution package ``pythonX.Y-dev`` e.g. ``python3.8-dev``. On Fedora/Red Hat
 based systems, the Python header files are found in the distribution package
 ``python-devel``.
 
