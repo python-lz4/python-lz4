@@ -40,7 +40,7 @@ this command will result in the extension modules being compiled from source::
 On systems for which pre-built wheels are available, the following command will
 force a local compilation of the extension modules from source::
 
-  $ pip install --no-binary --no-cache-dir lz4
+  $ pip install --no-binary :all: --no-cache-dir lz4
 
 The package can also be installed manually from a checkout of the source code
 git repository::
