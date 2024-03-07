@@ -84,7 +84,7 @@ can be used in this case.
    True
 
 In this example we are catching the `lz4.block.LZ4BlockError`
-exception. This exception is raisedd if the LZ4 library call fails,
+exception. This exception is raised if the LZ4 library call fails,
 which can be caused by either the buffer used to store the
 uncompressed data (as set by `usize`) being too small, or the input
 compressed data being invalid - it is not possible to distinguish the
