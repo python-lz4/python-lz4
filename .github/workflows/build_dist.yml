@@ -4,7 +4,6 @@ name: Build
 
 on:
   push:
-    branches:
   release:
     types: [created]
   pull_request:
@@ -36,8 +35,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest] 
-        cibw_build: [cp38-*, cp39-*, cp310-*, cp311-*, cp312-*]
+        os: [ubuntu-latest, macos-13, windows-latest] 
+        cibw_build: [cp38-*, cp39-*, cp310-*, cp311-*, cp312-*, cp313-*]
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
@@ -53,7 +52,7 @@ jobs:
         with:
           platforms: all
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.16.2
+        uses: pypa/cibuildwheel@v2.21.3
         env:
           CIBW_ENVIRONMENT: PYLZ4_USE_SYSTEM_LZ4="False"
           CIBW_ARCHS_LINUX: "x86_64 i686 aarch64"
