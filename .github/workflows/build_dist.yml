@@ -65,7 +65,7 @@ jobs:
       - name: Save wheels
         uses: actions/upload-artifact@v4
         with:
-          name: cibw-${{ strategy.job-index }}
+          name: cibw-wheels-${{ strategy.job-index }}c 
           path: wheelhouse/*.whl
 
   upload_pypi:
