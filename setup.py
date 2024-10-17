@@ -161,9 +161,6 @@ tests_require = [
     'pytest-cov',
 ],
 
-# Only require pytest-runner if actually running the tests
-needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
-pytest_runner = ['pytest-runner'] if needs_pytest else []
 
 # Finally call setup with the extension modules as defined above.
 setup(
@@ -175,7 +172,7 @@ setup(
     setup_requires=[
         'setuptools_scm',
         'pkgconfig',
-    ] + pytest_runner,
+    ],
     description="LZ4 Bindings for Python",
     long_description=open('README.rst', 'r').read(),
     author='Jonathan Underwood',
