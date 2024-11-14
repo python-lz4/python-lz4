@@ -33,6 +33,7 @@ jobs:
       - name: Save sdist
         uses: actions/upload-artifact@v4
         with:
+          name: cibw-sdist.tar.gz
           path: dist/*.tar.gz
 
   wheels:
@@ -79,6 +80,7 @@ jobs:
       - name: Save wheels
         uses: actions/upload-artifact@v4
         with:
+          name: cibw-wheels-${{ strategy.job-index }}.whl
           path: wheelhouse/*.whl
 
   upload_pypi:
@@ -89,7 +91,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: artifact
+          pattern: cibw-*
           path: dist
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
