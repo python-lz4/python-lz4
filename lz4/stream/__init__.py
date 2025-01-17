@@ -60,7 +60,7 @@ class LZ4StreamDecompressor:
         """
         pass
 
-    def decompress(self, chunk):
+    def decompress(self, chunk) -> bytes | bytearray:
         """ Decompress streamed compressed data.
 
             Decompress the given ``chunk``, using the given LZ4 stream context,
@@ -86,7 +86,7 @@ class LZ4StreamDecompressor:
         """
         return _decompress(self._context, chunk)
 
-    def get_block(self, stream):
+    def get_block(self, stream) -> bytes | bytearray:
         """ Return the first LZ4 compressed block from ``stream``.
 
             Args:
@@ -181,7 +181,7 @@ class LZ4StreamCompressor:
         """
         pass
 
-    def compress(self, chunk):
+    def compress(self, chunk) -> bytes | bytearray:
         """ Stream compress given ``chunk`` of data.
 
             Compress the given ``chunk``, using the given LZ4 stream context,

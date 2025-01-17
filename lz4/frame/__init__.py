@@ -190,7 +190,7 @@ class LZ4FrameCompressor(object):
         self._context = None
         self._started = False
 
-    def begin(self, source_size=0):
+    def begin(self, source_size=0) -> bytes | bytearray:
         """Begin a compression frame.
 
         The returned data contains frame header information. The data returned
@@ -228,7 +228,7 @@ class LZ4FrameCompressor(object):
                 "LZ4FrameCompressor.begin() called after already initialized"
             )
 
-    def compress(self, data):  # noqa: F811
+    def compress(self, data) -> bytes | bytearray:  # noqa: F811
         """Compresses data and returns it.
 
         This compresses ``data`` (a ``bytes`` object), returning a bytes or
@@ -262,7 +262,7 @@ class LZ4FrameCompressor(object):
 
         return result
 
-    def flush(self):
+    def flush(self) -> bytes | bytearray:
         """Finish the compression process.
 
         This returns a ``bytes`` or ``bytearray`` object containing any data
@@ -294,7 +294,7 @@ class LZ4FrameCompressor(object):
         self._context = None
         self._started = False
 
-    def has_context(self):
+    def has_context(self) -> bool:
         """Return whether the compression context exists.
 
         Returns:
@@ -303,7 +303,7 @@ class LZ4FrameCompressor(object):
         """
         return self._context is not None
 
-    def started(self):
+    def started(self) -> bool:
         """Return whether the compression frame has been started.
 
         Returns:
@@ -369,7 +369,7 @@ class LZ4FrameDecompressor(object):
         self.unused_data = None
         self._unconsumed_data = b''
 
-    def decompress(self, data, max_length=-1):  # noqa: F811
+    def decompress(self, data, max_length=-1) -> bytes:  # noqa: F811
         """Decompresses part or all of an LZ4 frame of compressed data.
 
         The returned data should be concatenated with the output of any
@@ -571,7 +571,7 @@ class LZ4FrameFile(_compression.BaseStream):
                 self._mode = _MODE_CLOSED
 
     @property
-    def closed(self):
+    def closed(self) -> bool:
         """Returns ``True`` if this file is closed.
 
         Returns:
@@ -580,7 +580,7 @@ class LZ4FrameFile(_compression.BaseStream):
         """
         return self._mode == _MODE_CLOSED
 
-    def fileno(self):
+    def fileno(self) -> int:
         """Return the file descriptor for the underlying file.
 
         Returns:
@@ -590,7 +590,7 @@ class LZ4FrameFile(_compression.BaseStream):
         self._check_not_closed()
         return self._fp.fileno()
 
-    def seekable(self):
+    def seekable(self) -> bool:
         """Return whether the file supports seeking.
 
         Returns:
@@ -599,7 +599,7 @@ class LZ4FrameFile(_compression.BaseStream):
         """
         return self.readable() and self._buffer.seekable()
 
-    def readable(self):
+    def readable(self) -> bool:
         """Return whether the file was opened for reading.
 
         Returns:
@@ -610,7 +610,7 @@ class LZ4FrameFile(_compression.BaseStream):
         self._check_not_closed()
         return self._mode == _MODE_READ
 
-    def writable(self):
+    def writable(self) -> bool:
         """Return whether the file was opened for writing.
 
         Returns:
@@ -621,7 +621,7 @@ class LZ4FrameFile(_compression.BaseStream):
         self._check_not_closed()
         return self._mode == _MODE_WRITE
 
-    def peek(self, size=-1):
+    def peek(self, size=-1) -> bytes:
         """Return buffered data without advancing the file position.
 
         Always returns at least one byte of data, unless at EOF. The exact
@@ -636,7 +636,7 @@ class LZ4FrameFile(_compression.BaseStream):
         # returns at least one byte (except at EOF)
         return self._buffer.peek(size)
 
-    def readall(self):
+    def readall(self) -> bytes:
         chunks = bytearray()
 
         while True:
@@ -647,7 +647,7 @@ class LZ4FrameFile(_compression.BaseStream):
 
         return bytes(chunks)
 
-    def read(self, size=-1):
+    def read(self, size=-1) -> bytes:
         """Read up to ``size`` uncompressed bytes from the file.
 
         If ``size`` is negative or omitted, read until ``EOF`` is reached.
@@ -667,7 +667,7 @@ class LZ4FrameFile(_compression.BaseStream):
             return self.readall()
         return self._buffer.read(size)
 
-    def read1(self, size=-1):
+    def read1(self, size=-1) -> bytes:
         """Read up to ``size`` uncompressed bytes.
 
         This method tries to avoid making multiple reads from the underlying
@@ -691,7 +691,7 @@ class LZ4FrameFile(_compression.BaseStream):
             size = io.DEFAULT_BUFFER_SIZE
         return self._buffer.read1(size)
 
-    def readline(self, size=-1):
+    def readline(self, size=-1) -> bytes:
         """Read a line of uncompressed bytes from the file.
 
         The terminating newline (if present) is retained. If size is
@@ -709,7 +709,7 @@ class LZ4FrameFile(_compression.BaseStream):
         self._check_can_read()
         return self._buffer.readline(size)
 
-    def write(self, data):
+    def write(self, data) -> int:
         """Write a bytes object to the file.
 
         Returns the number of uncompressed bytes written, which is
@@ -752,7 +752,7 @@ class LZ4FrameFile(_compression.BaseStream):
             self._fp.write(self._compressor.flush())
         self._fp.flush()
 
-    def seek(self, offset, whence=io.SEEK_SET):
+    def seek(self, offset, whence=io.SEEK_SET) -> int:
         """Change the file position.
 
         The new position is specified by ``offset``, relative to the position
@@ -780,7 +780,7 @@ class LZ4FrameFile(_compression.BaseStream):
         self._check_can_seek()
         return self._buffer.seek(offset, whence)
 
-    def tell(self):
+    def tell(self) -> int:
         """Return the current file position.
 
         Args:
@@ -807,7 +807,7 @@ def open(filename, mode="rb",
          block_checksum=False,
          auto_flush=False,
          return_bytearray=False,
-         source_size=0):
+         source_size=0) -> io.TextIOWrapper | LZ4FrameFile:
     """Open an LZ4Frame-compressed file in binary or text mode.
 
     ``filename`` can be either an actual file name (given as a str, bytes, or
