@@ -21,6 +21,7 @@ from ._frame import (  # noqa: F401
     BLOCKSIZE_MAX4MB as _BLOCKSIZE_MAX4MB,
     __doc__ as _doc
 )
+from typing import Union, IO, Any
 
 __doc__ = _doc
 
@@ -153,13 +154,13 @@ class LZ4FrameCompressor(object):
     """
 
     def __init__(self,
-                 block_size=BLOCKSIZE_DEFAULT,
-                 block_linked=True,
-                 compression_level=COMPRESSIONLEVEL_MIN,
-                 content_checksum=False,
-                 block_checksum=False,
-                 auto_flush=False,
-                 return_bytearray=False):
+                 block_size: int = BLOCKSIZE_DEFAULT,
+                 block_linked: bool = True,
+                 compression_level: int = COMPRESSIONLEVEL_MIN,
+                 content_checksum: bool = False,
+                 block_checksum: bool = False,
+                 auto_flush: bool = False,
+                 return_bytearray: bool = False):
         self.block_size = block_size
         self.block_linked = block_linked
         self.compression_level = compression_level
@@ -190,7 +191,7 @@ class LZ4FrameCompressor(object):
         self._context = None
         self._started = False
 
-    def begin(self, source_size=0) -> bytes | bytearray:
+    def begin(self, source_size: int = 0) -> Union[bytes, bytearray]:
         """Begin a compression frame.
 
         The returned data contains frame header information. The data returned
@@ -209,7 +210,7 @@ class LZ4FrameCompressor(object):
         """
 
         if self._started is False:
-            self._context = create_compression_context()
+            self._context: Any = create_compression_context()
             result = compress_begin(
                 self._context,
                 block_size=self.block_size,
@@ -228,7 +229,7 @@ class LZ4FrameCompressor(object):
                 "LZ4FrameCompressor.begin() called after already initialized"
             )
 
-    def compress(self, data) -> bytes | bytearray:  # noqa: F811
+    def compress(self, data: Union[str, bytes, memoryview]) -> Union[bytes, bytearray]:  # noqa: F811
         """Compresses data and returns it.
 
         This compresses ``data`` (a ``bytes`` object), returning a bytes or
@@ -262,7 +263,7 @@ class LZ4FrameCompressor(object):
 
         return result
 
-    def flush(self) -> bytes | bytearray:
+    def flush(self) -> Union[bytes, bytearray]:
         """Finish the compression process.
 
         This returns a ``bytes`` or ``bytearray`` object containing any data
@@ -337,13 +338,13 @@ class LZ4FrameDecompressor(object):
 
     """
 
-    def __init__(self, return_bytearray=False):
+    def __init__(self, return_bytearray: bool = False):
         self._context = create_decompression_context()
-        self.eof = False
-        self.needs_input = True
-        self.unused_data = None
-        self._unconsumed_data = b''
-        self._return_bytearray = return_bytearray
+        self.eof: bool = False
+        self.needs_input: bool = True
+        self.unused_data: bytes = None
+        self._unconsumed_data: bytes = b''
+        self._return_bytearray: bool = return_bytearray
 
     def __enter__(self):
         # All necessary initialization is done in __init__
@@ -369,7 +370,7 @@ class LZ4FrameDecompressor(object):
         self.unused_data = None
         self._unconsumed_data = b''
 
-    def decompress(self, data, max_length=-1) -> bytes:  # noqa: F811
+    def decompress(self, data: Union[str, bytes, memoryview], max_length: int = -1) -> bytes:  # noqa: F811
         """Decompresses part or all of an LZ4 frame of compressed data.
 
         The returned data should be concatenated with the output of any
@@ -434,10 +435,10 @@ class LZ4FrameDecompressor(object):
         return decompressed
 
 
-_MODE_CLOSED = 0
-_MODE_READ = 1
+_MODE_CLOSED: int = 0
+_MODE_READ: int = 1
 # Value 2 no longer used
-_MODE_WRITE = 3
+_MODE_WRITE: int = 3
 
 
 class LZ4FrameFile(_compression.BaseStream):
@@ -488,15 +489,15 @@ class LZ4FrameFile(_compression.BaseStream):
 
     """
 
-    def __init__(self, filename=None, mode='r',
-                 block_size=BLOCKSIZE_DEFAULT,
-                 block_linked=True,
-                 compression_level=COMPRESSIONLEVEL_MIN,
-                 content_checksum=False,
-                 block_checksum=False,
-                 auto_flush=False,
-                 return_bytearray=False,
-                 source_size=0):
+    def __init__(self, filename: Union[str, bytes, os.PathLike, IO[Any]] = None, mode: str = 'r',
+                 block_size: int = BLOCKSIZE_DEFAULT,
+                 block_linked: bool = True,
+                 compression_level: int = COMPRESSIONLEVEL_MIN,
+                 content_checksum: bool = False,
+                 block_checksum: bool = False,
+                 auto_flush: bool = False,
+                 return_bytearray: bool = False,
+                 source_size: int = 0):
 
         self._fp = None
         self._closefp = False
@@ -621,7 +622,7 @@ class LZ4FrameFile(_compression.BaseStream):
         self._check_not_closed()
         return self._mode == _MODE_WRITE
 
-    def peek(self, size=-1) -> bytes:
+    def peek(self, size: int = -1) -> bytes:
         """Return buffered data without advancing the file position.
 
         Always returns at least one byte of data, unless at EOF. The exact
@@ -647,7 +648,7 @@ class LZ4FrameFile(_compression.BaseStream):
 
         return bytes(chunks)
 
-    def read(self, size=-1) -> bytes:
+    def read(self, size: int = -1) -> bytes:
         """Read up to ``size`` uncompressed bytes from the file.
 
         If ``size`` is negative or omitted, read until ``EOF`` is reached.
@@ -667,7 +668,7 @@ class LZ4FrameFile(_compression.BaseStream):
             return self.readall()
         return self._buffer.read(size)
 
-    def read1(self, size=-1) -> bytes:
+    def read1(self, size: int = -1) -> bytes:
         """Read up to ``size`` uncompressed bytes.
 
         This method tries to avoid making multiple reads from the underlying
@@ -691,7 +692,7 @@ class LZ4FrameFile(_compression.BaseStream):
             size = io.DEFAULT_BUFFER_SIZE
         return self._buffer.read1(size)
 
-    def readline(self, size=-1) -> bytes:
+    def readline(self, size: int = -1) -> bytes:
         """Read a line of uncompressed bytes from the file.
 
         The terminating newline (if present) is retained. If size is
@@ -709,7 +710,7 @@ class LZ4FrameFile(_compression.BaseStream):
         self._check_can_read()
         return self._buffer.readline(size)
 
-    def write(self, data) -> int:
+    def write(self, data: bytes) -> int:
         """Write a bytes object to the file.
 
         Returns the number of uncompressed bytes written, which is
@@ -752,7 +753,7 @@ class LZ4FrameFile(_compression.BaseStream):
             self._fp.write(self._compressor.flush())
         self._fp.flush()
 
-    def seek(self, offset, whence=io.SEEK_SET) -> int:
+    def seek(self, offset: int, whence: int = io.SEEK_SET) -> int:
         """Change the file position.
 
         The new position is specified by ``offset``, relative to the position
@@ -796,18 +797,18 @@ class LZ4FrameFile(_compression.BaseStream):
         return self._pos
 
 
-def open(filename, mode="rb",
-         encoding=None,
-         errors=None,
-         newline=None,
-         block_size=BLOCKSIZE_DEFAULT,
-         block_linked=True,
-         compression_level=COMPRESSIONLEVEL_MIN,
-         content_checksum=False,
-         block_checksum=False,
-         auto_flush=False,
-         return_bytearray=False,
-         source_size=0) -> io.TextIOWrapper | LZ4FrameFile:
+def open(filename, mode: str = "rb",
+         encoding: str = None,
+         errors: str = None,
+         newline: str = None,
+         block_size: int = BLOCKSIZE_DEFAULT,
+         block_linked: bool = True,
+         compression_level: int = COMPRESSIONLEVEL_MIN,
+         content_checksum: bool = False,
+         block_checksum: bool = False,
+         auto_flush: bool = False,
+         return_bytearray: bool = False,
+         source_size: int = 0) -> Union[io.TextIOWrapper, LZ4FrameFile]:
     """Open an LZ4Frame-compressed file in binary or text mode.
 
     ``filename`` can be either an actual file name (given as a str, bytes, or

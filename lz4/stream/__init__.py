@@ -1,6 +1,6 @@
 from ._stream import _create_context, _compress, _decompress, _get_block
 from ._stream import LZ4StreamError, _compress_bound, _input_bound, LZ4_MAX_INPUT_SIZE  # noqa: F401
-
+from typing import Union
 
 __doc__ = """\
 A Python wrapper for the LZ4 stream protocol.
@@ -12,7 +12,9 @@ class LZ4StreamDecompressor:
     """ LZ4 stream decompression context.
 
     """
-    def __init__(self, strategy, buffer_size, return_bytearray=False, store_comp_size=4, dictionary=""):
+
+    def __init__(self, strategy: str, buffer_size: int, return_bytearray: bool = False, store_comp_size: int = 4,
+                 dictionary: Union[str, bytes, memoryview] = ""):
         """ Instantiates and initializes a LZ4 stream decompression context.
 
             Args:
@@ -60,7 +62,7 @@ class LZ4StreamDecompressor:
         """
         pass
 
-    def decompress(self, chunk) -> bytes | bytearray:
+    def decompress(self, chunk: Union[str, bytes, memoryview]) -> Union[bytes, bytearray]:
         """ Decompress streamed compressed data.
 
             Decompress the given ``chunk``, using the given LZ4 stream context,
@@ -86,7 +88,7 @@ class LZ4StreamDecompressor:
         """
         return _decompress(self._context, chunk)
 
-    def get_block(self, stream) -> bytes | bytearray:
+    def get_block(self, stream: Union[bytes, bytearray, memoryview]) -> Union[bytes, bytearray]:
         """ Return the first LZ4 compressed block from ``stream``.
 
             Args:
@@ -115,8 +117,11 @@ class LZ4StreamCompressor:
     """ LZ4 stream compressing context.
 
     """
-    def __init__(self, strategy, buffer_size, mode="default", acceleration=True, compression_level=9,
-                 return_bytearray=False, store_comp_size=4, dictionary=""):
+
+    def __init__(self, strategy: str, buffer_size: int, mode: str = "default", acceleration: int = True,
+                 compression_level: int = 9,
+                 return_bytearray: bool = False, store_comp_size: int = 4,
+                 dictionary: Union[str, bytes, memoryview] = ""):
         """ Instantiates and initializes a LZ4 stream compression context.
 
             Args:
@@ -181,7 +186,7 @@ class LZ4StreamCompressor:
         """
         pass
 
-    def compress(self, chunk) -> bytes | bytearray:
+    def compress(self, chunk: Union[str, bytes, memoryview]) -> Union[bytes, bytearray]:
         """ Stream compress given ``chunk`` of data.
 
             Compress the given ``chunk``, using the given LZ4 stream context,
