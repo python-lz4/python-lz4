@@ -80,8 +80,8 @@ jobs:
       - name: Save wheels
         uses: actions/upload-artifact@v4
         with:
-          name: cibw-wheels-${{ strategy.job-index }}.whl
-          path: wheelhouse/*.whl
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          path: ./wheelhouse/*.whl
 
   upload_pypi:
     name: Upload to PyPI
@@ -93,6 +93,7 @@ jobs:
         with:
           pattern: cibw-*
           path: dist
+          merge-multiple: true
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
