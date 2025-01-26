@@ -69,7 +69,8 @@ jobs:
         uses: pypa/cibuildwheel@v2.21
         env:
           CIBW_ENVIRONMENT: PYLZ4_USE_SYSTEM_LZ4="False"
-          CIBW_ARCHS_LINUX: "x86_64 i686 aarch64"
+          # CIBW_ARCHS_LINUX: "x86_64 i686 aarch64"
+          CIBW_ARCHS_LINUX: "x86_64 i686"
           CIBW_ARCHS_MACOS: "auto64" # since we have both runner arches
           CIBW_ARCHS_WINDOWS: "AMD64 x86"
           CIBW_BUILD: ${{ matrix.cibw_build }}
