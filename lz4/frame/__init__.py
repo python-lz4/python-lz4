@@ -21,15 +21,20 @@ from ._frame import (  # noqa: F401
     BLOCKSIZE_MAX4MB as _BLOCKSIZE_MAX4MB,
     __doc__ as _doc
 )
-from typing import Union, IO, Any
+from typing import Union, IO, Any, NewType, Literal
 
 __doc__ = _doc
 
 try:
-    import _compression   # Python 3.6 and later
+    import _compression  # Python 3.6 and later
 except ImportError:
     from . import _compression
 
+CompressionContext = NewType("CompressionContext", Any)
+OpenModes = Union[Literal["a"], Literal["ab"], Literal["at"],
+Literal["r"], Literal["rb"], Literal["rt"],
+Literal["w"], Literal["wb"], Literal["wt"],
+Literal["x"], Literal["xb"], Literal["xt"]]
 
 BLOCKSIZE_DEFAULT = _BLOCKSIZE_DEFAULT
 """Specifier for the default block size.
@@ -210,7 +215,7 @@ class LZ4FrameCompressor(object):
         """
 
         if self._started is False:
-            self._context: Any = create_compression_context()
+            self._context: CompressionContext = create_compression_context()
             result = compress_begin(
                 self._context,
                 block_size=self.block_size,
@@ -435,10 +440,10 @@ class LZ4FrameDecompressor(object):
         return decompressed
 
 
-_MODE_CLOSED: int = 0
-_MODE_READ: int = 1
+_MODE_CLOSED: Literal[0] = 0
+_MODE_READ: Literal[1] = 1
 # Value 2 no longer used
-_MODE_WRITE: int = 3
+_MODE_WRITE: Literal[3] = 3
 
 
 class LZ4FrameFile(_compression.BaseStream):
@@ -489,7 +494,7 @@ class LZ4FrameFile(_compression.BaseStream):
 
     """
 
-    def __init__(self, filename: Union[str, bytes, os.PathLike, IO[Any]] = None, mode: str = 'r',
+    def __init__(self, filename: Union[str, bytes, os.PathLike, IO[Any]] = None, mode: OpenModes = 'r',
                  block_size: int = BLOCKSIZE_DEFAULT,
                  block_linked: bool = True,
                  compression_level: int = COMPRESSIONLEVEL_MIN,
@@ -753,7 +758,7 @@ class LZ4FrameFile(_compression.BaseStream):
             self._fp.write(self._compressor.flush())
         self._fp.flush()
 
-    def seek(self, offset: int, whence: int = io.SEEK_SET) -> int:
+    def seek(self, offset: int, whence: Union[Literal[0], Literal[1], Literal[2]] = io.SEEK_SET) -> int:
         """Change the file position.
 
         The new position is specified by ``offset``, relative to the position
@@ -797,7 +802,7 @@ class LZ4FrameFile(_compression.BaseStream):
         return self._pos
 
 
-def open(filename, mode: str = "rb",
+def open(filename, mode: OpenModes = "rb",
          encoding: str = None,
          errors: str = None,
          newline: str = None,

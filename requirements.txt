@@ -4,3 +4,4 @@ pytest-runner
 setuptools_scm
 pkgconfig
 future
+mypy
