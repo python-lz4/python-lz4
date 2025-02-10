@@ -35,6 +35,7 @@ OpenModes = Union[Literal["a"], Literal["ab"], Literal["at"],
 Literal["r"], Literal["rb"], Literal["rt"],
 Literal["w"], Literal["wb"], Literal["wt"],
 Literal["x"], Literal["xb"], Literal["xt"]]
+BytesLike = Union[str, bytes, memoryview]
 
 BLOCKSIZE_DEFAULT = _BLOCKSIZE_DEFAULT
 """Specifier for the default block size.
@@ -234,7 +235,7 @@ class LZ4FrameCompressor(object):
                 "LZ4FrameCompressor.begin() called after already initialized"
             )
 
-    def compress(self, data: Union[str, bytes, memoryview]) -> Union[bytes, bytearray]:  # noqa: F811
+    def compress(self, data: BytesLike) -> Union[bytes, bytearray]:  # noqa: F811
         """Compresses data and returns it.
 
         This compresses ``data`` (a ``bytes`` object), returning a bytes or
@@ -375,7 +376,7 @@ class LZ4FrameDecompressor(object):
         self.unused_data = None
         self._unconsumed_data = b''
 
-    def decompress(self, data: Union[str, bytes, memoryview], max_length: int = -1) -> bytes:  # noqa: F811
+    def decompress(self, data: BytesLike, max_length: int = -1) -> bytes:  # noqa: F811
         """Decompresses part or all of an LZ4 frame of compressed data.
 
         The returned data should be concatenated with the output of any

@@ -20,7 +20,8 @@ def decompress(
         uncompressed_size: int = -1,
         return_bytearray: bool = False,
         dict: Union[str, bytes] = None
-) -> Union[bytes, bytearray]: ...
+) -> Union[bytes, bytearray]:
+    ...
 
 
 class LZ4BlockError(Exception):

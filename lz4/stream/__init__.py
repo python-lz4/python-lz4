@@ -7,6 +7,8 @@ A Python wrapper for the LZ4 stream protocol.
 
 """
 
+BytesLike = Union[str, bytes, memoryview]
+
 
 class LZ4StreamDecompressor:
     """ LZ4 stream decompression context.
@@ -14,7 +16,7 @@ class LZ4StreamDecompressor:
     """
 
     def __init__(self, strategy: str, buffer_size: int, return_bytearray: bool = False, store_comp_size: int = 4,
-                 dictionary: Union[str, bytes, memoryview] = ""):
+                 dictionary: BytesLike = ""):
         """ Instantiates and initializes a LZ4 stream decompression context.
 
             Args:
@@ -62,7 +64,7 @@ class LZ4StreamDecompressor:
         """
         pass
 
-    def decompress(self, chunk: Union[str, bytes, memoryview]) -> Union[bytes, bytearray]:
+    def decompress(self, chunk: BytesLike) -> Union[bytes, bytearray]:
         """ Decompress streamed compressed data.
 
             Decompress the given ``chunk``, using the given LZ4 stream context,
@@ -121,7 +123,7 @@ class LZ4StreamCompressor:
     def __init__(self, strategy: str, buffer_size: int, mode: str = "default", acceleration: int = True,
                  compression_level: int = 9,
                  return_bytearray: bool = False, store_comp_size: int = 4,
-                 dictionary: Union[str, bytes, memoryview] = ""):
+                 dictionary: BytesLike = ""):
         """ Instantiates and initializes a LZ4 stream compression context.
 
             Args:
@@ -186,7 +188,7 @@ class LZ4StreamCompressor:
         """
         pass
 
-    def compress(self, chunk: Union[str, bytes, memoryview]) -> Union[bytes, bytearray]:
+    def compress(self, chunk: BytesLike) -> Union[bytes, bytearray]:
         """ Stream compress given ``chunk`` of data.
 
             Compress the given ``chunk``, using the given LZ4 stream context,
