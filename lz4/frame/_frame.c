@@ -1677,5 +1677,9 @@ PyInit__frame(void)
   PyModule_AddIntConstant (module, "BLOCKSIZE_MAX1MB", LZ4F_max1MB);
   PyModule_AddIntConstant (module, "BLOCKSIZE_MAX4MB", LZ4F_max4MB);
 
+  #ifdef Py_GIL_DISABLED
+    PyUnstable_Module_SetGIL(mod, Py_MOD_GIL_NOT_USED);
+  #endif
+
   return module;
 }

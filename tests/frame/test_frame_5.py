@@ -8,6 +8,8 @@ test_data = [
     (b'a' * 1024 * 1024),
 ]
 
+pytestmark = pytest.mark.thread_unsafe
+
 
 @pytest.fixture(
     params=test_data,
@@ -66,17 +68,17 @@ def test_frame_decompress_chunk_mem_usage(data):
             prev_snapshot = snapshot
 
 
-def test_frame_open_decompress_mem_usage(data):
+def test_frame_open_decompress_mem_usage(tmp_path, data):
     tracemalloc = pytest.importorskip('tracemalloc')
     tracemalloc.start()
 
-    with lz4.frame.open('test.lz4', 'w') as f:
+    with lz4.frame.open(tmp_path / 'test.lz4', 'w') as f:
         f.write(data)
 
     prev_snapshot = None
 
     for i in range(1000):
-        with lz4.frame.open('test.lz4', 'r') as f:
+        with lz4.frame.open(tmp_path / 'test.lz4', 'r') as f:
             decompressed = f.read()  # noqa: F841
 
         if i % 100 == 0:
