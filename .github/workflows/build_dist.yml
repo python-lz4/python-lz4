@@ -48,7 +48,7 @@ jobs:
           - macos-13 # x86
           - macos-latest # arm
           - windows-latest
-        cibw_build: [cp39-*, cp310-*, cp311-*, cp312-*, cp313-*]
+        cibw_build: [cp39-*, cp310-*, cp311-*, cp312-*, cp313-*, cp313t-*]
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -63,6 +63,14 @@ jobs:
         uses: docker/setup-qemu-action@v3
         with:
           platforms: all
+
+      - name: Setup free-threading variables
+        if: ${{ endsWith(matrix.cibw_build, 't-*') }}
+        shell: bash -l {0}
+        run: |
+          echo "CIBW_BEFORE_TEST=pip install pytest pytest-run-parallel" >> "$GITHUB_ENV"
+          echo "TOX_OVERRIDE=testenv.deps+=pytest-run-parallel" >> "$GITHUB_ENV"
+          echo "PYTEST_ADDOPTS=--parallel-threads=4" >> "$GITHUB_ENV"
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.21
         env:
@@ -110,6 +118,7 @@ jobs:
           CIBW_ARCHS_LINUX: "aarch64 armv7l"
           CIBW_BUILD: ${{ matrix.cibw_build }}
           CIBW_SKIP: "cp*-musllinux*"
+          CIBW_ENABLE: cpython-freethreading
           CIBW_TEST_COMMAND: "tox -c {project}"
           CIBW_BEFORE_BUILD: "python -m pip install -U pip && python -m pip install tox"
       - name: Save wheels

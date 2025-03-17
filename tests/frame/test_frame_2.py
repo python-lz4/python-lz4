@@ -1,6 +1,8 @@
 import lz4.frame as lz4frame
 import pytest
 import os
+import copy
+import inspect
 import sys
 from . helpers import (
     get_chunked,
@@ -40,6 +42,11 @@ def test_roundtrip_chunked(data, block_size, block_linked,
                            auto_flush, store_size):
 
     data, c_chunks, d_chunks = data
+
+    if isinstance(data, memoryview):
+        data = memoryview(copy.deepcopy(data.obj))
+    elif isinstance(data, bytearray):
+        data = bytearray(copy.deepcopy(data.__buffer__(inspect.BufferFlags.FULL_RO).obj))
 
     c_context = lz4frame.create_compression_context()
 

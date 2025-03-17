@@ -1,6 +1,9 @@
 import lz4.block
 from multiprocessing.pool import ThreadPool
 import sys
+import copy
+import inspect
+import pytest
 from functools import partial
 if sys.version_info <= (3, 2):
     import struct
@@ -79,10 +82,19 @@ def test_1(data, mode, store_size, c_return_bytearray, d_return_bytearray, dicti
 
 
 # Test multi threaded usage with all valid variations of input
+@pytest.mark.thread_unsafe
 def test_2(data, mode, store_size, dictionary):
     (c_kwargs, d_kwargs) = setup_kwargs(mode, store_size)
 
-    data_in = [data for i in range(32)]
+    def copy_buf(data):
+        data_x = data
+        if isinstance(data, memoryview):
+            data_x = memoryview(copy.deepcopy(data.obj))
+        elif isinstance(data, bytearray):
+            data_x = bytearray(copy.deepcopy(data.__buffer__(inspect.BufferFlags.FULL_RO).obj))
+        return data_x
+
+    data_in = [copy_buf(data) for i in range(32)]
 
     pool = ThreadPool(2)
     rt = partial(roundtrip, c_kwargs=c_kwargs,
