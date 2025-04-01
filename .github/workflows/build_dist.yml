@@ -26,10 +26,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: 3.x
-      - name: Install setuptools
-        run: pip install setuptools
       - name: Build sdist
-        run: python setup.py sdist
+        run: pipx run build --sdist
       - name: Save sdist
         uses: actions/upload-artifact@v4
         with:
@@ -72,11 +70,47 @@ jobs:
           # CIBW_ARCHS_LINUX: "x86_64 i686 aarch64"
           CIBW_ARCHS_LINUX: "x86_64 i686"
           CIBW_ARCHS_MACOS: "auto64" # since we have both runner arches
-          CIBW_ARCHS_WINDOWS: "AMD64 x86"
+          CIBW_ARCHS_WINDOWS: "AMD64 x86 ARM64"
           CIBW_BUILD: ${{ matrix.cibw_build }}
           CIBW_SKIP: "cp*-musllinux*"
           CIBW_TEST_COMMAND: "tox -c {project}"
-          CIBW_TEST_SKIP: "*-macosx_arm64 *-macosx_universal2:arm64 *-*linux_{aarch64,ppc64le,s390x}"
+          CIBW_TEST_SKIP: "*-macosx_arm64 *-macosx_universal2:arm64 *-*linux_{ppc64le,s390x} *-win_arm64"
+          CIBW_BEFORE_BUILD: "python -m pip install -U pip && python -m pip install tox"
+      - name: Save wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          path: ./wheelhouse/*.whl
+
+  wheels_linux_arm:
+    name: Build wheels on ${{ matrix.os }} CIBW_BUILD=${{ matrix.cibw_build }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # since multiple builds run at the same time, cancelling them all when one
+      # fails is wasteful and forces handling build problems one by one instead
+      # of showing a "full picture"
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-24.04-arm
+        cibw_build: [cp39-*, cp310-*, cp311-*, cp312-*, cp313-*]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # To ensure tags are retrieved to enabe setuptools_scm to work
+      - name: Install Python 3.x
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.21
+        env:
+          CIBW_ENVIRONMENT: PYLZ4_USE_SYSTEM_LZ4="False"
+          CIBW_ARCHS_LINUX: "aarch64 armv7l"
+          CIBW_BUILD: ${{ matrix.cibw_build }}
+          CIBW_SKIP: "cp*-musllinux*"
+          CIBW_TEST_COMMAND: "tox -c {project}"
           CIBW_BEFORE_BUILD: "python -m pip install -U pip && python -m pip install tox"
       - name: Save wheels
         uses: actions/upload-artifact@v4
@@ -86,7 +120,7 @@ jobs:
 
   upload_pypi:
     name: Upload to PyPI
-    needs: [sdist, wheels]
+    needs: [sdist, wheels, wheels_linux_arm]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
