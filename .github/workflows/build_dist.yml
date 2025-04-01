@@ -69,12 +69,12 @@ jobs:
         shell: bash -l {0}
         run: |
           echo "CIBW_BEFORE_TEST=pip install pytest pytest-run-parallel" >> "$GITHUB_ENV"
-          echo "CIBW_ENVIRONMENT=PYLZ4_USE_SYSTEM_LZ4=False PYTEST_ADDOPTS=--parallel-threads=4 TOX_OVERRIDE=testenv.deps+=pytest-run-parallel;testenv.pass_env=PYTEST_ADDOPTS"
+          echo "CIBW_ENVIRONMENT=PYLZ4_USE_SYSTEM_LZ4=False PYTEST_ADDOPTS=--parallel-threads=4 TOX_OVERRIDE=testenv.deps+=pytest-run-parallel;testenv.pass_env=PYTEST_ADDOPTS" >> "$GITHUB_ENV"
       - name: Setup environment
         if: ${{ !endsWith(matrix.cibw_build, 't-*') }}
         shell: bash -l {0}
         run: |
-          echo "CIBW_ENVIRONMENT=PYLZ4_USE_SYSTEM_LZ4="False" >> "$GITHUB_ENV"
+          echo "CIBW_ENVIRONMENT=PYLZ4_USE_SYSTEM_LZ4=False" >> "$GITHUB_ENV"
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.23.2
         env:
