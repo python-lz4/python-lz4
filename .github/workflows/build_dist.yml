@@ -69,12 +69,15 @@ jobs:
         shell: bash -l {0}
         run: |
           echo "CIBW_BEFORE_TEST=pip install pytest pytest-run-parallel" >> "$GITHUB_ENV"
-          echo "TOX_OVERRIDE=testenv.deps+=pytest-run-parallel" >> "$GITHUB_ENV"
-          echo "PYTEST_ADDOPTS=--parallel-threads=4" >> "$GITHUB_ENV"
+          echo "CIBW_ENVIRONMENT=PYLZ4_USE_SYSTEM_LZ4=False PYTEST_ADDOPTS=--parallel-threads=4 TOX_OVERRIDE=testenv.deps+=pytest-run-parallel;testenv.pass_env=PYTEST_ADDOPTS"
+      - name: Setup environment
+        if: ${{ !endsWith(matrix.cibw_build, 't-*') }}
+        shell: bash -l {0}
+        run: |
+          echo "CIBW_ENVIRONMENT=PYLZ4_USE_SYSTEM_LZ4="False" >> "$GITHUB_ENV"
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.23.2
         env:
-          CIBW_ENVIRONMENT: PYLZ4_USE_SYSTEM_LZ4="False"
           # CIBW_ARCHS_LINUX: "x86_64 i686 aarch64"
           CIBW_ARCHS_LINUX: "x86_64 i686"
           CIBW_ARCHS_MACOS: "auto64" # since we have both runner arches
