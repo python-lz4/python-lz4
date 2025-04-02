@@ -70,6 +70,13 @@ def setup_kwargs(mode, store_size, c_return_bytearray=None, d_return_bytearray=N
 
 # Test single threaded usage with all valid variations of input
 def test_1(data, mode, store_size, c_return_bytearray, d_return_bytearray, dictionary):
+    if isinstance(data, memoryview):
+        data = memoryview(copy.deepcopy(data.obj))
+    elif isinstance(data, bytearray):
+        data_x = bytearray()
+        data_x[:] = data
+        data = data_x
+
     (c_kwargs, d_kwargs) = setup_kwargs(
         mode, store_size, c_return_bytearray, d_return_bytearray)
 
