@@ -2,7 +2,6 @@ import lz4.frame as lz4frame
 import pytest
 import os
 import copy
-import inspect
 import sys
 from . helpers import (
     get_chunked,
