@@ -3,24 +3,6 @@ import os
 import sys
 
 
-class EmptyMemoryView():
-    def __init__(self):
-        self.data = b''
-        self.view = None
-
-    def __buffer__(self, flags: int, /) -> memoryview:
-        if self.view is None:
-            self.view = memoryview(self.data)
-            return self.view
-
-    def __release_buffer__(self, buffer: memoryview, /):
-        breakpoint()
-        buffer.release()
-
-    def __len__(self):
-        return 0
-
-
 test_data = [
     (b''),
     (os.urandom(8 * 1024)),

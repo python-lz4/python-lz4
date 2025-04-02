@@ -91,7 +91,8 @@ def test_2(data, mode, store_size, dictionary):
         if isinstance(data, memoryview):
             data_x = memoryview(copy.deepcopy(data.obj))
         elif isinstance(data, bytearray):
-            data_x = bytearray(copy.deepcopy(data.__buffer__(inspect.BufferFlags.FULL_RO).obj))
+            data_x = bytearray()
+            data_x[:] = data
         return data_x
 
     data_in = [copy_buf(data) for i in range(32)]

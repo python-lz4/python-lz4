@@ -46,7 +46,9 @@ def test_roundtrip_chunked(data, block_size, block_linked,
     if isinstance(data, memoryview):
         data = memoryview(copy.deepcopy(data.obj))
     elif isinstance(data, bytearray):
-        data = bytearray(copy.deepcopy(data.__buffer__(inspect.BufferFlags.FULL_RO).obj))
+        data_2 = bytearray()
+        data_2[:] = data
+        data = data_2
 
     c_context = lz4frame.create_compression_context()
 
