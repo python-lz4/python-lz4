@@ -2,7 +2,6 @@ import lz4.block
 from multiprocessing.pool import ThreadPool
 import sys
 import copy
-import inspect
 import pytest
 from functools import partial
 if sys.version_info <= (3, 2):
