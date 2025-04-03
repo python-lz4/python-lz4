@@ -130,7 +130,7 @@ jobs:
           echo "CIBW_ENVIRONMENT=PYLZ4_USE_SYSTEM_LZ4=False" >> "$GITHUB_ENV"
           echo "CIBW_TEST_COMMAND=tox -c {project}" >> "$GITHUB_ENV"
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.21
+        uses: pypa/cibuildwheel@v2.23.2
         env:
           CIBW_ARCHS_LINUX: "aarch64 armv7l"
           CIBW_BUILD: ${{ matrix.cibw_build }}
