@@ -93,12 +93,13 @@ def test_2(data, mode, store_size, dictionary):
     (c_kwargs, d_kwargs) = setup_kwargs(mode, store_size)
 
     def copy_buf(data):
-        data_x = data
         if isinstance(data, memoryview):
             data_x = memoryview(copy.deepcopy(data.obj))
         elif isinstance(data, bytearray):
             data_x = bytearray()
             data_x[:] = data
+        else:
+            data_x = data
         return data_x
 
     data_in = [copy_buf(data) for i in range(32)]

@@ -120,6 +120,8 @@ jobs:
         if: ${{ endsWith(matrix.cibw_build, 't-*') }}
         shell: bash -l {0}
         run: |
+          # Variables are set in order to be passed down to both cibuildwheel and the
+          # Docker image spawned by that action
           echo "CIBW_BEFORE_TEST=pip install pytest pytest-run-parallel" >> "$GITHUB_ENV"
           echo "CIBW_ENVIRONMENT=PYLZ4_USE_SYSTEM_LZ4=False PYTEST_ADDOPTS=--parallel-threads=1" >> "$GITHUB_ENV"
           echo "CIBW_TEST_COMMAND=tox -x testenv.deps+=pytest-run-parallel -x testenv.pass_env+=PYTEST_ADDOPTS -c {project}" >> "$GITHUB_ENV"
