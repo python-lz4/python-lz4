@@ -25,9 +25,9 @@ from ._frame import (  # noqa: F401
 __doc__ = _doc
 
 try:
-    import _compression   # Python 3.6 and later
+    import compression._common._streams as _compression  # Python 3.14
 except ImportError:
-    from . import _compression
+    import _compression   # Python 3.6 - 3.13
 
 
 BLOCKSIZE_DEFAULT = _BLOCKSIZE_DEFAULT
