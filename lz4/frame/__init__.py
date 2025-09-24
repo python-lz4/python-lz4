@@ -268,7 +268,7 @@ class LZ4FrameCompressor(object):
         This returns a ``bytes`` or ``bytearray`` object containing any data
         stored in the compressor's internal buffers and a frame footer.
 
-        The LZ4FrameCompressor instance may be re-used after this method has
+        The LZ4FrameCompressor instance may be reused after this method has
         been called to create a new frame of compressed data.
 
         Returns:
@@ -287,7 +287,7 @@ class LZ4FrameCompressor(object):
     def reset(self):
         """Reset the `LZ4FrameCompressor` instance.
 
-        This allows the `LZ4FrameCompression` instance to be re-used after an
+        This allows the `LZ4FrameCompression` instance to be reused after an
         error.
 
         """
@@ -360,7 +360,7 @@ class LZ4FrameDecompressor(object):
     def reset(self):
         """Reset the decompressor state.
 
-        This is useful after an error occurs, allowing re-use of the instance.
+        This is useful after an error occurs, allowing reuse of the instance.
 
         """
         reset_decompression_context(self._context)
