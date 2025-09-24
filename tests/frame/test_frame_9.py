@@ -65,7 +65,7 @@ def test_issue_227_1():
 
 @pytest.mark.skipif(
     sys.version_info < (3, 8),
-    reason="PickleBuffer only availiable in Python 3.8 or greater"
+    reason="PickleBuffer only available in Python 3.8 or greater"
 )
 def test_issue_227_2():
     q = array.array('Q', [1, 2, 3, 4, 5])
