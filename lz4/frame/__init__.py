@@ -27,7 +27,7 @@ __doc__ = _doc
 try:
     import compression._common._streams as _compression  # Python 3.14
 except ImportError:
-    import _compression   # Python 3.6 - 3.13
+    import _compression   # Python 3.9 - 3.13
 
 
 BLOCKSIZE_DEFAULT = _BLOCKSIZE_DEFAULT
