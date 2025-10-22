@@ -1,12 +1,11 @@
 import gc
-import os
 import sys
 import lz4.block
 import pytest
 
 
 def free_threading() -> bool:
-    return os.version_info >= (3, 13) and not sys._is_gil_enabled()
+    return sys.version_info >= (3, 13) and not sys._is_gil_enabled()
 
 
 test_data = [
