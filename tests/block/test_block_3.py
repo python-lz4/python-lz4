@@ -1,4 +1,5 @@
 import gc
+import sys
 import lz4.block
 import pytest
 
@@ -19,6 +20,11 @@ def data(request):
 
 
 @pytest.mark.thread_unsafe
+@pytest.mark.xfail(
+    sys._is_gil_enabled(),
+    reason="Fails without a Global Interpreter Lock",
+    strict=True
+)
 def test_block_decompress_mem_usage(data):
     tracemalloc = pytest.importorskip('tracemalloc')
 
