@@ -1,6 +1,11 @@
 import gc
+import sys
 import lz4.block
 import pytest
+
+
+def free_threading() -> bool:
+    return sys.version_info >= (3, 13) and not sys._is_gil_enabled()
 
 
 test_data = [
@@ -19,6 +24,7 @@ def data(request):
 
 
 @pytest.mark.thread_unsafe
+@pytest.mark.xfail(free_threading(), reason="May fail without a Global Interpreter Lock")
 def test_block_decompress_mem_usage(data):
     tracemalloc = pytest.importorskip('tracemalloc')
 
