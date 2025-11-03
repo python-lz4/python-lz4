@@ -88,7 +88,10 @@ def test_1(data, mode, store_size, c_return_bytearray, d_return_bytearray, dicti
 
 
 # Test multi threaded usage with all valid variations of input
-@pytest.mark.thread_unsafe
+@pytest.mark.thread_unsafe(
+    reason=("Test is already explicitly multithreaded, should "
+            "not be run in a thread pool.")
+)
 def test_2(data, mode, store_size, dictionary):
     (c_kwargs, d_kwargs) = setup_kwargs(mode, store_size)
 
