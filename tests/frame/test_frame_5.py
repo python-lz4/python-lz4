@@ -19,6 +19,8 @@ def data(request):
     return request.param
 
 
+# coverage might allocate and cause this test to fail
+@pytest.mark.no_cover
 @pytest.mark.thread_unsafe(
     reason="tracemalloc captures global snapshots"
 )
@@ -44,6 +46,8 @@ def test_frame_decompress_mem_usage(data):
             prev_snapshot = snapshot
 
 
+# coverage might allocate and cause this test to fail
+@pytest.mark.no_cover
 @pytest.mark.thread_unsafe(
     reason="tracemalloc captures global snapshots"
 )
@@ -72,6 +76,8 @@ def test_frame_decompress_chunk_mem_usage(data):
             prev_snapshot = snapshot
 
 
+# coverage might allocate and cause this test to fail
+@pytest.mark.no_cover
 @pytest.mark.thread_unsafe(
     reason="tracemalloc captures global snapshots"
 )
