@@ -48,7 +48,7 @@ jobs:
           - macos-15-intel # x86
           - macos-latest # arm
           - windows-latest
-        cibw_build: [cp39-*, cp310-*, cp311-*, cp312-*, cp313-*, cp313t-*, cp314-*]
+        cibw_build: [cp39-*, cp310-*, cp311-*, cp312-*, cp313-*, cp313t-*, cp314-*, cp314t-*]
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -106,7 +106,7 @@ jobs:
       matrix:
         os:
           - ubuntu-24.04-arm
-        cibw_build: [cp39-*, cp310-*, cp311-*, cp312-*, cp313-*, cp313t-*, cp314-*]
+        cibw_build: [cp39-*, cp310-*, cp311-*, cp312-*, cp313-*, cp313t-*, cp314-*, cp314t-*]
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -116,17 +116,7 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: 3.x
-      - name: Setup free-threading variables
-        if: ${{ endsWith(matrix.cibw_build, 't-*') }}
-        shell: bash -l {0}
-        run: |
-          # Variables are set in order to be passed down to both cibuildwheel and the
-          # Docker image spawned by that action
-          echo "CIBW_BEFORE_TEST=pip install pytest pytest-run-parallel" >> "$GITHUB_ENV"
-          echo "CIBW_ENVIRONMENT=PYLZ4_USE_SYSTEM_LZ4=False PYTEST_ADDOPTS=--parallel-threads=1" >> "$GITHUB_ENV"
-          echo "CIBW_TEST_COMMAND=tox -x testenv.deps+=pytest-run-parallel -x testenv.pass_env+=PYTEST_ADDOPTS -c {project}" >> "$GITHUB_ENV"
       - name: Setup environment
-        if: ${{ !endsWith(matrix.cibw_build, 't-*') }}
         shell: bash -l {0}
         run: |
           echo "CIBW_ENVIRONMENT=PYLZ4_USE_SYSTEM_LZ4=False" >> "$GITHUB_ENV"
