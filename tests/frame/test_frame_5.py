@@ -21,6 +21,9 @@ def data(request):
     return request.param
 
 
+@pytest.mark.thread_unsafe(
+    reason="tracemalloc captures global snapshots"
+)
 def test_frame_decompress_mem_usage(data):
     tracemalloc = pytest.importorskip('tracemalloc')
 
@@ -43,6 +46,9 @@ def test_frame_decompress_mem_usage(data):
             prev_snapshot = snapshot
 
 
+@pytest.mark.thread_unsafe(
+    reason="tracemalloc captures global snapshots"
+)
 def test_frame_decompress_chunk_mem_usage(data):
     tracemalloc = pytest.importorskip('tracemalloc')
     tracemalloc.start()
@@ -68,6 +74,9 @@ def test_frame_decompress_chunk_mem_usage(data):
             prev_snapshot = snapshot
 
 
+@pytest.mark.thread_unsafe(
+    reason="tracemalloc captures global snapshots"
+)
 def test_frame_open_decompress_mem_usage(data):
     tracemalloc = pytest.importorskip('tracemalloc')
     tracemalloc.start()

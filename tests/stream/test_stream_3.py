@@ -71,7 +71,9 @@ def data(request):
     return request.param
 
 
-@pytest.mark.thread_unsafe
+@pytest.mark.thread_unsafe(
+    reason="tracemalloc captures global snapshots"
+)
 def test_block_decompress_mem_usage(data, buffer_size):
     kwargs = {
         'strategy': "double_buffer",

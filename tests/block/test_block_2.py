@@ -19,6 +19,10 @@ _4GB = 0x100000000  # 4GB
 # fragile.
 
 
+@pytest.mark.thread_unsafe(
+    reason=("Large multithreaded allocations will likely exhaust "
+            "system memory.")
+)
 @pytest.mark.skipif(
     os.environ.get('TRAVIS') is not None,
     reason='Skipping test on Travis due to insufficient memory'
