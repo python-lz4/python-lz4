@@ -8,9 +8,6 @@ test_data = [
     (b'a' * 1024 * 1024),
 ]
 
-pytestmark = pytest.mark.thread_unsafe
-
-
 @pytest.fixture(
     params=test_data,
     ids=[
