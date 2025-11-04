@@ -96,7 +96,10 @@ def setup_kwargs(strategy, mode, buffer_size, store_comp_size,
 
 
 # Test single threaded usage with all valid variations of input
-@pytest.mark.thread_unsafe
+@pytest.mark.thread_unsafe(
+    reason=("test modifies fixtures that would be shared, see "
+            "https://github.com/Quansight-Labs/pytest-run-parallel/issues/14")
+)
 def test_1(data, strategy, mode, buffer_size, store_comp_size,
            c_return_bytearray, d_return_bytearray, dictionary):
     if buffer_size >= (1 << (8 * store_comp_size['store_comp_size'])):

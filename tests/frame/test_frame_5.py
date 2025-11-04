@@ -8,8 +8,6 @@ test_data = [
     (b'a' * 1024 * 1024),
 ]
 
-pytestmark = pytest.mark.thread_unsafe
-
 
 @pytest.fixture(
     params=test_data,
@@ -21,6 +19,11 @@ def data(request):
     return request.param
 
 
+# coverage might allocate and cause this test to fail
+@pytest.mark.no_cover
+@pytest.mark.thread_unsafe(
+    reason="tracemalloc captures global snapshots"
+)
 def test_frame_decompress_mem_usage(data):
     tracemalloc = pytest.importorskip('tracemalloc')
 
@@ -43,6 +46,11 @@ def test_frame_decompress_mem_usage(data):
             prev_snapshot = snapshot
 
 
+# coverage might allocate and cause this test to fail
+@pytest.mark.no_cover
+@pytest.mark.thread_unsafe(
+    reason="tracemalloc captures global snapshots"
+)
 def test_frame_decompress_chunk_mem_usage(data):
     tracemalloc = pytest.importorskip('tracemalloc')
     tracemalloc.start()
@@ -68,6 +76,11 @@ def test_frame_decompress_chunk_mem_usage(data):
             prev_snapshot = snapshot
 
 
+# coverage might allocate and cause this test to fail
+@pytest.mark.no_cover
+@pytest.mark.thread_unsafe(
+    reason="tracemalloc captures global snapshots"
+)
 def test_frame_open_decompress_mem_usage(data):
     tracemalloc = pytest.importorskip('tracemalloc')
     tracemalloc.start()

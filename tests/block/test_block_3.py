@@ -18,7 +18,11 @@ def data(request):
     return request.param
 
 
-@pytest.mark.thread_unsafe
+# coverage might allocate and cause this test to fail
+@pytest.mark.no_cover
+@pytest.mark.thread_unsafe(
+    reason="tracemalloc captures global snapshots"
+)
 def test_block_decompress_mem_usage(data):
     tracemalloc = pytest.importorskip('tracemalloc')
 
