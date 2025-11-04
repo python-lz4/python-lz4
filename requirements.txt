@@ -1,6 +1,5 @@
 tox
 pytest
-pytest-runner
 setuptools_scm
 pkgconfig
 future
