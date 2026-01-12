@@ -121,6 +121,8 @@ elif compiler in ('unix', 'mingw32'):
             '-Wall',
             '-Wundef'
         ]
+        # strip debug symbols from libraries to reduce wheel size
+        extension_kwargs['extra_link_args'] = ['-s']
 else:
     print('Unrecognized compiler: {0}'.format(compiler))
     sys.exit(1)
