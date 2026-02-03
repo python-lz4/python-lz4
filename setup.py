@@ -180,6 +180,7 @@ setup(
     long_description=open('README.rst', 'r').read(),
     author='Jonathan Underwood',
     author_email='jonathan.underwood@gmail.com',
+    license='BSD-3-Clause',
     url='https://github.com/python-lz4/python-lz4',
     packages=packages,
     ext_modules=ext_modules,
@@ -196,7 +197,6 @@ setup(
     },
     classifiers=[
         'Development Status :: 5 - Production/Stable',
-        'License :: OSI Approved :: BSD License',
         'Intended Audience :: Developers',
         'Programming Language :: C',
         'Programming Language :: Python',
