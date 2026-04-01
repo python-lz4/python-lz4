@@ -36,13 +36,13 @@
 #include <lz4hc.h>
 
 static PyObject *
-library_version_number (PyObject * Py_UNUSED (self), PyObject * Py_UNUSED (args))
+library_version_number (PyObject * Py_UNUSED (self))
 {
   return Py_BuildValue ("i", LZ4_versionNumber ());
 }
 
 static PyObject *
-library_version_string (PyObject * Py_UNUSED (self), PyObject * Py_UNUSED (args))
+library_version_string (PyObject * Py_UNUSED (self))
 {
   return Py_BuildValue ("s", LZ4_versionString ());
 }
@@ -78,13 +78,13 @@ static PyMethodDef module_methods[] = {
   {
     "library_version_number",
     (PyCFunction) library_version_number,
-    METH_VARARGS,
+    METH_NOARGS,
     library_version_number__doc
   },
   {
     "library_version_string",
     (PyCFunction) library_version_string,
-    METH_VARARGS,
+    METH_NOARGS,
     library_version_string__doc
   },
   {

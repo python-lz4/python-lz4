@@ -56,13 +56,8 @@ struct compression_context
 static void
 destroy_compression_context (PyObject * py_context)
 {
-#ifndef PyCapsule_Type
   struct compression_context *context =
     PyCapsule_GetPointer (py_context, compression_context_capsule_name);
-#else
-  /* Compatibility with 2.6 via capsulethunk. */
-  struct compression_context *context =  py_context;
-#endif
   Py_BEGIN_ALLOW_THREADS
   LZ4F_freeCompressionContext (context->context);
   Py_END_ALLOW_THREADS
@@ -829,13 +824,8 @@ get_frame_info (PyObject * Py_UNUSED (self), PyObject * args,
 static void
 destroy_decompression_context (PyObject * py_context)
 {
-#ifndef PyCapsule_Type
   LZ4F_dctx * context =
     PyCapsule_GetPointer (py_context, decompression_context_capsule_name);
-#else
-  /* Compatibility with 2.6 via capsulethunk. */
-  LZ4F_dctx * context =  py_context;
-#endif
   Py_BEGIN_ALLOW_THREADS
   LZ4F_freeDecompressionContext (context);
   Py_END_ALLOW_THREADS
