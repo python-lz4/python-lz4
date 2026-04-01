@@ -215,6 +215,8 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   dest = PyMem_Malloc (total_size * sizeof * dest);
   if (dest == NULL)
     {
+      PyBuffer_Release(&source);
+      PyBuffer_Release(&dict);
       return PyErr_NoMemory();
     }
 
@@ -349,6 +351,8 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
   dest = PyMem_Malloc (dest_size * sizeof * dest);
   if (dest == NULL)
     {
+      PyBuffer_Release(&source);
+      PyBuffer_Release(&dict);
       return PyErr_NoMemory();
     }
 
