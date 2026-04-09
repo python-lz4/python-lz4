@@ -345,16 +345,6 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
       return NULL;
     }
 
-  if (block_linked)
-    {
-      preferences.frameInfo.blockMode = LZ4F_blockLinked;
-    }
-  else
-    {
-      preferences.frameInfo.blockMode = LZ4F_blockIndependent;
-    }
-
-
   preferences.frameInfo.contentSize = source_size;
 
   context =
