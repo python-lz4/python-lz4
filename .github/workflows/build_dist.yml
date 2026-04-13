@@ -78,7 +78,7 @@ jobs:
           echo "CIBW_ENVIRONMENT=PYLZ4_USE_SYSTEM_LZ4=False" >> "$GITHUB_ENV"
           echo "CIBW_TEST_COMMAND=tox -c {project}" >> "$GITHUB_ENV"
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.4.1
+        uses: pypa/cibuildwheel@v3.3.0
         env:
           # CIBW_ARCHS_LINUX: "x86_64 i686 aarch64"
           CIBW_ARCHS_LINUX: "x86_64 i686"
@@ -128,7 +128,7 @@ jobs:
           CIBW_BUILD: ${{ matrix.cibw_build }}
           CIBW_SKIP: "cp*-musllinux*"
           CIBW_ENABLE: cpython-freethreading
-          CIBW_BEFORE_BUILD: "python -m pip install -U pip && python -m pip install tox"
+          CIBW_BEFORE_BUILD: "python -m pip install -U pip && python -m pip install tox virtualenv"
       - name: Save wheels
         uses: actions/upload-artifact@v7
         with:
