@@ -513,10 +513,16 @@ PyInit__block(void)
   LZ4BlockError = PyErr_NewExceptionWithDoc("_block.LZ4BlockError", "Call to LZ4 library failed.", NULL, NULL);
   if (LZ4BlockError == NULL)
     {
+      Py_DECREF(module);
       return NULL;
     }
   Py_INCREF(LZ4BlockError);
-  PyModule_AddObject(module, "LZ4BlockError", LZ4BlockError);
+  if (PyModule_AddObject(module, "LZ4BlockError", LZ4BlockError) < 0)
+    {
+      Py_DECREF(LZ4BlockError);
+      Py_DECREF(module);
+      return NULL;
+    }
 
   #ifdef Py_GIL_DISABLED
     PyUnstable_Module_SetGIL(module, Py_MOD_GIL_NOT_USED);

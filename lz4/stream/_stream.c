@@ -1644,10 +1644,16 @@ PyInit__stream(void)
                                               NULL, NULL);
   if (LZ4StreamError == NULL)
     {
+      Py_DECREF (module);
       return NULL;
     }
   Py_INCREF (LZ4StreamError);
-  PyModule_AddObject (module, "LZ4StreamError", LZ4StreamError);
+  if (PyModule_AddObject (module, "LZ4StreamError", LZ4StreamError) < 0)
+    {
+      Py_DECREF (LZ4StreamError);
+      Py_DECREF (module);
+      return NULL;
+    }
 
   #ifdef Py_GIL_DISABLED
     PyUnstable_Module_SetGIL(module, Py_MOD_GIL_NOT_USED);
