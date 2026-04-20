@@ -63,6 +63,8 @@ destroy_compression_context (PyObject * py_context)
   /* Compatibility with 2.6 via capsulethunk. */
   struct compression_context *context =  py_context;
 #endif
+  if (context == NULL)
+    return;
   Py_BEGIN_ALLOW_THREADS
   LZ4F_freeCompressionContext (context->context);
   Py_END_ALLOW_THREADS
@@ -836,6 +838,8 @@ destroy_decompression_context (PyObject * py_context)
   /* Compatibility with 2.6 via capsulethunk. */
   LZ4F_dctx * context =  py_context;
 #endif
+  if (context == NULL)
+    return;
   Py_BEGIN_ALLOW_THREADS
   LZ4F_freeDecompressionContext (context);
   Py_END_ALLOW_THREADS
@@ -852,7 +856,6 @@ create_decompression_context (PyObject * Py_UNUSED (self))
   if (LZ4F_isError (result))
     {
       Py_BLOCK_THREADS
-      LZ4F_freeDecompressionContext (context);
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_createDecompressionContext failed with code: %s",
                     LZ4F_getErrorName (result));
@@ -913,7 +916,6 @@ reset_decompression_context (PyObject * Py_UNUSED (self), PyObject * args,
       result = LZ4F_createDecompressionContext (&context, LZ4F_VERSION);
       if (LZ4F_isError (result))
         {
-          LZ4F_freeDecompressionContext (context);
           Py_BLOCK_THREADS
           PyErr_Format (PyExc_RuntimeError,
                         "LZ4F_createDecompressionContext failed with code: %s",
@@ -927,7 +929,7 @@ reset_decompression_context (PyObject * Py_UNUSED (self), PyObject * args,
         {
           LZ4F_freeDecompressionContext (context);
           PyErr_SetString (PyExc_RuntimeError,
-                           "PyCapsule_SetPointer failed with code: %s");
+                           "PyCapsule_SetPointer failed");
           return NULL;
         }
     }
