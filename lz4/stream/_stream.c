@@ -44,37 +44,7 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#if defined(_WIN32) && defined(_MSC_VER) && _MSC_VER < 1600
-/* MSVC 2008 and earlier lacks stdint.h */
-typedef signed __int8 int8_t;
-typedef signed __int16 int16_t;
-typedef signed __int32 int32_t;
-typedef signed __int64 int64_t;
-typedef unsigned __int8 uint8_t;
-typedef unsigned __int16 uint16_t;
-typedef unsigned __int32 uint32_t;
-typedef unsigned __int64 uint64_t;
-
-#if !defined(UINT8_MAX)
-#define UINT8_MAX 0xff
-#endif
-#if !defined(UINT16_MAX)
-#define UINT16_MAX 0xffff
-#endif
-#if !defined(UINT32_MAX)
-#define UINT32_MAX 0xffffffff
-#endif
-#if !defined(INT32_MAX)
-#define INT32_MAX 0x7fffffff
-#endif
-#if !defined(CHAR_BIT)
-#define CHAR_BIT 8
-#endif
-
-#else
-/* Not MSVC, or MSVC 2010 or higher */
 #include <stdint.h>
-#endif /* _WIN32 && _MSC_VER && _MSC_VER < 1600 */
 
 #define LZ4_VERSION_NUMBER_1_9_0 10900
 
@@ -219,14 +189,8 @@ struct stream_context_t {
 };
 
 
-#ifndef PyCapsule_Type
 #define _PyCapsule_get_context(py_ctx) \
   ((stream_context_t *) PyCapsule_GetPointer((py_ctx), stream_context_capsule_name))
-#else
-/* Compatibility with 2.6 via capsulethunk. */
-#define _PyCapsule_get_context(py_ctx) \
-  ((stream_context_t *) (py_ctx))
-#endif
 
 
 static inline void
