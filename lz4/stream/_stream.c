@@ -1063,7 +1063,7 @@ _compress_bound (PyObject * Py_UNUSED (self), PyObject * args)
   /* Positional arguments: input_size
    * Keyword arguments   : none
    */
-  if (!PyArg_ParseTuple (args, "OI", &input_size))
+  if (!PyArg_ParseTuple (args, "I", &input_size))
     {
       goto exit_now;
     }
@@ -1211,6 +1211,7 @@ _compress (PyObject * Py_UNUSED (self), PyObject * args)
 
   if (context->strategy.ops->update_context_after_process (context) != 0)
     {
+      Py_CLEAR (py_dest);
       PyErr_Format (PyExc_RuntimeError, "Internal error");
       goto exit_now;
     }

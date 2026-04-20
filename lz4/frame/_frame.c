@@ -184,6 +184,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
     }
   else if (block_checksum)
     {
+      PyBuffer_Release(&source);
       PyErr_SetString (PyExc_RuntimeError,
                        "block_checksum specified but not supported by LZ4 library version");
       return NULL;
@@ -383,6 +384,7 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
 
   if (LZ4F_isError (result))
     {
+      PyMem_Free (destination);
       PyErr_Format (PyExc_RuntimeError,
                     "LZ4F_compressBegin failed with code: %s",
                     LZ4F_getErrorName (result));
@@ -1115,6 +1117,7 @@ __decompress(LZ4F_dctx * context, char * source, size_t source_size,
               buff = PyMem_Realloc (destination, destination_size);
               if (buff == NULL)
                 {
+                  PyMem_Free (destination);
                   PyErr_SetString (PyExc_RuntimeError,
                                    "Failed to resize buffer");
                   return NULL;
