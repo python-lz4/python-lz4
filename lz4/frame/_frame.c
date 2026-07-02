@@ -1654,23 +1654,9 @@ PyDoc_STRVAR(lz4frame__doc,
              "A Python wrapper for the LZ4 frame protocol"
              );
 
-static struct PyModuleDef moduledef =
+static int
+_frame_exec (PyObject *module)
 {
-  PyModuleDef_HEAD_INIT,
-  "_frame",
-  lz4frame__doc,
-  -1,
-  module_methods
-};
-
-PyMODINIT_FUNC
-PyInit__frame(void)
-{
-  PyObject *module = PyModule_Create (&moduledef);
-
-  if (module == NULL)
-    return NULL;
-
   PyModule_AddIntConstant (module, "BLOCKSIZE_DEFAULT", LZ4F_default);
   PyModule_AddIntConstant (module, "BLOCKSIZE_MAX64KB", LZ4F_max64KB);
   PyModule_AddIntConstant (module, "BLOCKSIZE_MAX256KB", LZ4F_max256KB);
@@ -1681,5 +1667,32 @@ PyInit__frame(void)
     PyUnstable_Module_SetGIL(module, Py_MOD_GIL_NOT_USED);
   #endif
 
-  return module;
+  return 0;
+}
+
+static PyModuleDef_Slot _frame_slots[] =
+{
+  {Py_mod_exec, _frame_exec},
+#if PY_VERSION_HEX >= 0x030c0000
+  /* No shared global state: each context is allocated per call, so _frame is
+     safe in isolated sub-interpreters that each have their own GIL. */
+  {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+#endif
+  {0, NULL},
+};
+
+static struct PyModuleDef moduledef =
+{
+  .m_base = PyModuleDef_HEAD_INIT,
+  .m_name = "_frame",
+  .m_doc = lz4frame__doc,
+  .m_size = 0,
+  .m_methods = module_methods,
+  .m_slots = _frame_slots,
+};
+
+PyMODINIT_FUNC
+PyInit__frame(void)
+{
+  return PyModuleDef_Init (&moduledef);
 }
