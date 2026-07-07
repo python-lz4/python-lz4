@@ -100,7 +100,12 @@ typedef enum {
 
 
 /* Forward declarations */
-static PyObject * LZ4StreamError;
+struct module_state
+{
+  PyObject * LZ4StreamError;
+};
+
+#define GETSTATE(module) ((struct module_state *) PyModule_GetState (module))
 
 #define DOUBLE_BUFFER_PAGE_COUNT (2)
 
@@ -351,11 +356,7 @@ store_block_length (int block_length, int block_length_size, char * buf)
         break;
     }
 
-  if (status != 1)
-    {
-      PyErr_SetString (LZ4StreamError, "Compressed stream size too large");
-    }
-
+  /* On failure the caller raises LZ4StreamError (it holds the module). */
   return status;
 }
 
@@ -756,7 +757,7 @@ destroy_py_context (PyObject * py_context)
  * Python API *
  **************/
 static PyObject *
-_create_context (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwds)
+_create_context (PyObject * self, PyObject * args, PyObject * kwds)
 {
   stream_context_t * context = NULL;
 
@@ -914,7 +915,7 @@ _create_context (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwds)
         {
           /* The maximal/"worst case" compressed data length cannot fit in the
            * store_comp_size bytes. */
-          PyErr_Format (LZ4StreamError,
+          PyErr_Format (GETSTATE (self)->LZ4StreamError,
                         "Inconsistent buffer_size/store_comp_size values. "
                         "Maximal compressed length (%u) cannot fit in a %u byte-long integer",
                         buffer_size, store_comp_size);
@@ -1135,7 +1136,7 @@ _compress_generic (stream_context_t * lz4_ctxt, char * source, int source_size,
 #endif
 
 static PyObject *
-_compress (PyObject * Py_UNUSED (self), PyObject * args)
+_compress (PyObject * self, PyObject * args)
 {
   stream_context_t * context = NULL;
   PyObject * py_context = NULL;
@@ -1180,14 +1181,14 @@ _compress (PyObject * Py_UNUSED (self), PyObject * args)
   if (output_size <= 0)
     {
       /* No error code set in output_size! */
-      PyErr_SetString (LZ4StreamError,
+      PyErr_SetString (GETSTATE (self)->LZ4StreamError,
                        "Compression failed");
       goto exit_now;
     }
 
   if (!store_block_length (output_size, context->config.store_comp_size, context->output.buf))
     {
-      PyErr_SetString (LZ4StreamError,
+      PyErr_SetString (GETSTATE (self)->LZ4StreamError,
                        "Compressed stream size too large");
       goto exit_now;
     }
@@ -1225,7 +1226,7 @@ exit_now:
 }
 
 static PyObject *
-_get_block (PyObject * Py_UNUSED (self), PyObject * args)
+_get_block (PyObject * self, PyObject * args)
 {
   stream_context_t * context = NULL;
   PyObject * py_context = NULL;
@@ -1258,14 +1259,14 @@ _get_block (PyObject * Py_UNUSED (self), PyObject * args)
 
   if (context->config.store_comp_size == 0)
     {
-      PyErr_Format (LZ4StreamError,
+      PyErr_Format (GETSTATE (self)->LZ4StreamError,
                     "LZ4 context is configured for storing block size out-of-band");
       goto exit_now;
     }
 
   if (source.len < context->config.store_comp_size)
     {
-      PyErr_Format (LZ4StreamError,
+      PyErr_Format (GETSTATE (self)->LZ4StreamError,
                     "Invalid source, too small for holding any block");
       goto exit_now;
     }
@@ -1275,7 +1276,7 @@ _get_block (PyObject * Py_UNUSED (self), PyObject * args)
 
   if ((source.len - context->config.store_comp_size) < block.len)
     {
-      PyErr_Format (LZ4StreamError,
+      PyErr_Format (GETSTATE (self)->LZ4StreamError,
                     "Requested input size (%d) larger than source size (%ld)",
                     block.len, (source.len - context->config.store_comp_size));
       goto exit_now;
@@ -1305,7 +1306,7 @@ exit_now:
 }
 
 static PyObject *
-_decompress (PyObject * Py_UNUSED (self), PyObject * args)
+_decompress (PyObject * self, PyObject * args)
 {
   stream_context_t * context = NULL;
   PyObject * py_context = NULL;
@@ -1352,7 +1353,7 @@ _decompress (PyObject * Py_UNUSED (self), PyObject * args)
   if ((get_input_bound (source.len) == 0) ||
       (get_input_bound (source.len) > context->strategy.ops->get_dest_buffer_size (context)))
     {
-      PyErr_Format (LZ4StreamError,
+      PyErr_Format (GETSTATE (self)->LZ4StreamError,
                     "Maximal decompressed data (%d) cannot fit in LZ4 internal buffer (%u)",
                     get_input_bound (source.len),
                     context->strategy.ops->get_dest_buffer_size (context));
@@ -1372,7 +1373,7 @@ _decompress (PyObject * Py_UNUSED (self), PyObject * args)
   if (output_size < 0)
     {
       /* In case of LZ4 decompression error, output_size holds the error code */
-      PyErr_Format (LZ4StreamError,
+      PyErr_Format (GETSTATE (self)->LZ4StreamError,
                     "Decompression failed. error: %d",
                     -output_size);
       goto exit_now;
@@ -1614,24 +1615,10 @@ static PyMethodDef module_methods[] = {
   }
 };
 
-static PyModuleDef moduledef = {
-    PyModuleDef_HEAD_INIT,
-    /* m_name     */ "_stream",
-    /* m_doc      */ lz4stream__doc,
-    /* m_size     */ -1,
-    /* m_methods  */ module_methods,
-};
-
-
-PyMODINIT_FUNC
-PyInit__stream(void)
+static int
+_stream_exec (PyObject * module)
 {
-  PyObject * module = PyModule_Create (&moduledef);
-
-  if (module == NULL)
-    {
-      return NULL;
-    }
+  struct module_state * state = GETSTATE (module);
 
   PyModule_AddIntConstant (module, "HC_LEVEL_MIN", LZ4HC_CLEVEL_MIN);
   PyModule_AddIntConstant (module, "HC_LEVEL_DEFAULT", LZ4HC_CLEVEL_DEFAULT);
@@ -1639,19 +1626,73 @@ PyInit__stream(void)
   PyModule_AddIntConstant (module, "HC_LEVEL_MAX", LZ4HC_CLEVEL_MAX);
   PyModule_AddIntConstant (module, "LZ4_MAX_INPUT_SIZE", LZ4_MAX_INPUT_SIZE);
 
-  LZ4StreamError = PyErr_NewExceptionWithDoc ("_stream.LZ4StreamError",
-                                              "Call to LZ4 library failed.",
-                                              NULL, NULL);
-  if (LZ4StreamError == NULL)
+  state->LZ4StreamError = PyErr_NewExceptionWithDoc ("_stream.LZ4StreamError",
+                                                     "Call to LZ4 library failed.",
+                                                     NULL, NULL);
+  if (state->LZ4StreamError == NULL)
     {
-      return NULL;
+      return -1;
     }
-  Py_INCREF (LZ4StreamError);
-  PyModule_AddObject (module, "LZ4StreamError", LZ4StreamError);
+  Py_INCREF (state->LZ4StreamError);
+  if (PyModule_AddObject (module, "LZ4StreamError", state->LZ4StreamError) < 0)
+    {
+      Py_DECREF (state->LZ4StreamError);
+      return -1;
+    }
 
   #ifdef Py_GIL_DISABLED
-    PyUnstable_Module_SetGIL(module, Py_MOD_GIL_NOT_USED);
+    PyUnstable_Module_SetGIL (module, Py_MOD_GIL_NOT_USED);
   #endif
 
-  return module;
+  return 0;
+}
+
+static int
+_stream_traverse (PyObject * module, visitproc visit, void * arg)
+{
+  Py_VISIT (GETSTATE (module)->LZ4StreamError);
+  return 0;
+}
+
+static int
+_stream_clear (PyObject * module)
+{
+  Py_CLEAR (GETSTATE (module)->LZ4StreamError);
+  return 0;
+}
+
+static void
+_stream_free (void * module)
+{
+  _stream_clear ((PyObject *) module);
+}
+
+static PyModuleDef_Slot _stream_slots[] = {
+    {Py_mod_exec, _stream_exec},
+#if PY_VERSION_HEX >= 0x030c0000
+    /* The exception lives in per-interpreter module state and liblz4 is
+       reentrant, so _stream is safe in isolated sub-interpreters with their
+       own GIL. */
+    {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+#endif
+    {0, NULL},
+};
+
+static PyModuleDef moduledef = {
+    /* m_base     */ PyModuleDef_HEAD_INIT,
+    /* m_name     */ "_stream",
+    /* m_doc      */ lz4stream__doc,
+    /* m_size     */ sizeof (struct module_state),
+    /* m_methods  */ module_methods,
+    /* m_slots    */ _stream_slots,
+    /* m_traverse */ _stream_traverse,
+    /* m_clear    */ _stream_clear,
+    /* m_free     */ _stream_free,
+};
+
+
+PyMODINIT_FUNC
+PyInit__stream(void)
+{
+  return PyModuleDef_Init (&moduledef);
 }
