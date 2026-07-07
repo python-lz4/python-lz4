@@ -88,7 +88,12 @@ typedef enum
   HIGH_COMPRESSION
 } compression_type;
 
-static PyObject * LZ4BlockError;
+struct module_state
+{
+  PyObject * LZ4BlockError;
+};
+
+#define GETSTATE(module) ((struct module_state *) PyModule_GetState (module))
 
 static inline int
 lz4_compress_generic (int comp, char* source, char* dest, int source_size, int dest_size,
@@ -125,7 +130,7 @@ lz4_compress_generic (int comp, char* source, char* dest, int source_size, int d
 #endif
 
 static PyObject *
-compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
+compress (PyObject * self, PyObject * args, PyObject * kwargs)
 {
   const char *mode = "default";
   size_t dest_size, total_size;
@@ -241,7 +246,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 
   if (output_size <= 0)
     {
-      PyErr_SetString (LZ4BlockError, "Compression failed");
+      PyErr_SetString (GETSTATE (self)->LZ4BlockError, "Compression failed");
       PyMem_Free (dest);
       return NULL;
     }
@@ -271,7 +276,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 }
 
 static PyObject *
-decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
+decompress (PyObject * self, PyObject * args, PyObject * kwargs)
 {
   Py_buffer source;
   const char * source_start;
@@ -365,7 +370,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 
   if (output_size < 0)
     {
-      PyErr_Format (LZ4BlockError,
+      PyErr_Format (GETSTATE (self)->LZ4BlockError,
                     "Decompression failed: corrupt input or insufficient space in destination buffer. Error code: %u",
                     -output_size);
       PyMem_Free (dest);
@@ -373,7 +378,7 @@ decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
     }
   else if (((size_t)output_size != dest_size) && (uncompressed_size < 0))
     {
-      PyErr_Format (LZ4BlockError,
+      PyErr_Format (GETSTATE (self)->LZ4BlockError,
                     "Decompressor wrote %u bytes, but %zu bytes expected from header",
                     output_size, dest_size);
       PyMem_Free (dest);
@@ -488,39 +493,82 @@ static PyMethodDef module_methods[] = {
   }
 };
 
-static struct PyModuleDef moduledef =
+static int
+_block_exec (PyObject *module)
 {
-  PyModuleDef_HEAD_INIT,
-  "_block",
-  lz4block__doc,
-  -1,
-  module_methods
-};
-
-PyMODINIT_FUNC
-PyInit__block(void)
-{
-  PyObject *module = PyModule_Create (&moduledef);
-
-  if (module == NULL)
-    return NULL;
+  struct module_state *state = GETSTATE (module);
 
   PyModule_AddIntConstant (module, "HC_LEVEL_MIN", LZ4HC_CLEVEL_MIN);
   PyModule_AddIntConstant (module, "HC_LEVEL_DEFAULT", LZ4HC_CLEVEL_DEFAULT);
   PyModule_AddIntConstant (module, "HC_LEVEL_OPT_MIN", LZ4HC_CLEVEL_OPT_MIN);
   PyModule_AddIntConstant (module, "HC_LEVEL_MAX", LZ4HC_CLEVEL_MAX);
 
-  LZ4BlockError = PyErr_NewExceptionWithDoc("_block.LZ4BlockError", "Call to LZ4 library failed.", NULL, NULL);
-  if (LZ4BlockError == NULL)
+  state->LZ4BlockError = PyErr_NewExceptionWithDoc ("_block.LZ4BlockError", "Call to LZ4 library failed.", NULL, NULL);
+  if (state->LZ4BlockError == NULL)
     {
-      return NULL;
+      return -1;
     }
-  Py_INCREF(LZ4BlockError);
-  PyModule_AddObject(module, "LZ4BlockError", LZ4BlockError);
+  Py_INCREF (state->LZ4BlockError);
+  if (PyModule_AddObject (module, "LZ4BlockError", state->LZ4BlockError) < 0)
+    {
+      Py_DECREF (state->LZ4BlockError);
+      return -1;
+    }
 
   #ifdef Py_GIL_DISABLED
-    PyUnstable_Module_SetGIL(module, Py_MOD_GIL_NOT_USED);
+    PyUnstable_Module_SetGIL (module, Py_MOD_GIL_NOT_USED);
   #endif
 
-  return module;
+  return 0;
+}
+
+static int
+_block_traverse (PyObject *module, visitproc visit, void *arg)
+{
+  Py_VISIT (GETSTATE (module)->LZ4BlockError);
+  return 0;
+}
+
+static int
+_block_clear (PyObject *module)
+{
+  Py_CLEAR (GETSTATE (module)->LZ4BlockError);
+  return 0;
+}
+
+static void
+_block_free (void *module)
+{
+  _block_clear ((PyObject *) module);
+}
+
+static PyModuleDef_Slot _block_slots[] =
+{
+  {Py_mod_exec, _block_exec},
+#if PY_VERSION_HEX >= 0x030c0000
+  /* The exception lives in per-interpreter module state and liblz4 is
+     reentrant, so _block is safe in isolated sub-interpreters with their own
+     GIL. */
+  {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+#endif
+  {0, NULL},
+};
+
+static struct PyModuleDef moduledef =
+{
+  .m_base     = PyModuleDef_HEAD_INIT,
+  .m_name     = "_block",
+  .m_doc      = lz4block__doc,
+  .m_size     = sizeof (struct module_state),
+  .m_methods  = module_methods,
+  .m_slots    = _block_slots,
+  .m_traverse = _block_traverse,
+  .m_clear    = _block_clear,
+  .m_free     = _block_free,
+};
+
+PyMODINIT_FUNC
+PyInit__block(void)
+{
+  return PyModuleDef_Init (&moduledef);
 }
