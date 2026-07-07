@@ -96,26 +96,39 @@ static PyMethodDef module_methods[] = {
   }
 };
 
+static int
+_version_exec (PyObject *module)
+{
+  #ifdef Py_GIL_DISABLED
+    PyUnstable_Module_SetGIL (module, Py_MOD_GIL_NOT_USED);
+  #endif
+
+  return 0;
+}
+
+static PyModuleDef_Slot _version_slots[] =
+  {
+    {Py_mod_exec, _version_exec},
+#if PY_VERSION_HEX >= 0x030c0000
+    /* No state and the LZ4 version calls are reentrant, so _version is safe in
+       isolated sub-interpreters with their own GIL. */
+    {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+#endif
+    {0, NULL},
+  };
+
 static struct PyModuleDef moduledef =
   {
-    PyModuleDef_HEAD_INIT,
-    "_version",
-    NULL,
-    -1,
-    module_methods
+    .m_base    = PyModuleDef_HEAD_INIT,
+    .m_name    = "_version",
+    .m_doc     = NULL,
+    .m_size    = 0,
+    .m_methods = module_methods,
+    .m_slots   = _version_slots,
   };
 
 PyMODINIT_FUNC
 PyInit__version(void)
 {
-  PyObject *module = PyModule_Create (&moduledef);
-
-  if (module == NULL)
-    return NULL;
-
-  #ifdef Py_GIL_DISABLED
-    PyUnstable_Module_SetGIL(module, Py_MOD_GIL_NOT_USED);
-  #endif
-
-  return module;
+  return PyModuleDef_Init (&moduledef);
 }
