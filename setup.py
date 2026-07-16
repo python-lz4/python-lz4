@@ -183,6 +183,11 @@ setup(
     author='Jonathan Underwood',
     author_email='jonathan.underwood@gmail.com',
     license='BSD-3-Clause',
+    license_files=[
+        'LICENSE',
+        'lz4libs/LICENSE',
+        'lz4libs/LICENSE.xxhash',
+    ],
     url='https://github.com/python-lz4/python-lz4',
     packages=packages,
     ext_modules=ext_modules,

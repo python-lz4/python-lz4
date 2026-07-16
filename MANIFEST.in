@@ -1,1 +1,4 @@
 include README.rst
+include LICENSE
+include lz4libs/LICENSE
+include lz4libs/LICENSE.xxhash
