@@ -1,6 +1,9 @@
+import os
+import threading
+from concurrent.futures import ThreadPoolExecutor
+
 import lz4.frame as lz4frame
 import pytest
-import os
 
 test_data = [
     (os.urandom(32) * 256),
@@ -100,3 +103,23 @@ def test_roundtrip_multiframe_4(data):
 
     assert len(decompressed) == nframes * len(data)
     assert data * nframes == decompressed
+
+
+def test_independent_frame_contexts_can_run_concurrently():
+    workers = 4
+    barrier = threading.Barrier(workers)
+
+    def roundtrip(worker):
+        data = os.urandom(128 * 1024) + bytes([worker])
+        compressor = lz4frame.LZ4FrameCompressor()
+
+        barrier.wait()
+        compressed = compressor.begin() + compressor.compress(data)
+        compressed += compressor.flush()
+
+        return lz4frame.decompress(compressed), data
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        results = list(executor.map(roundtrip, range(workers)))
+
+    assert all(decompressed == data for decompressed, data in results)
