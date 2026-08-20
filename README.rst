@@ -40,8 +40,11 @@ library. As such, these LZ4 bindings should provide a drop-in alternative to the
 compression libraries shipped with Python. The package provides context managers
 and file handler support.
 
-The bindings drop the GIL when calling in to the underlying LZ4 library, and is
-thread safe. An extensive test suite is included.
+The bindings drop the GIL when calling in to the underlying LZ4 library.
+Stateless operations and operations using separate compression or decompression
+contexts can run concurrently. Incremental frame and stream contexts are
+mutable; a context must be owned by one thread at a time, or access to it must
+be synchronized by the caller. An extensive test suite is included.
 
 Documentation
 =============
@@ -67,4 +70,3 @@ Licensing
 =========
 Code specific to this project is covered by the `BSD 3-Clause License
 <http://opensource.org/licenses/BSD-3-Clause>`_
-
