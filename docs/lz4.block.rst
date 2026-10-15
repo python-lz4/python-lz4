@@ -94,9 +94,37 @@ did not take this precaution, the code, if ppassed invalid compressed
 data would continuously try to allocate a larger and larger buffer for
 decompression until the system ran out of memory.
    
+Compressing into a fixed-size block
+----------------------------------
+
+``compress_dest_size`` wraps ``LZ4_compress_destSize``. It compresses as much of
+its input as fits in ``target_size`` bytes and returns both the compressed block
+and the number of source bytes consumed. Unlike ``compress`` with its default
+settings, it does not prepend an uncompressed-size header.
+
+.. doctest::
+
+   >>> source = bytes(range(256)) * 4
+   >>> block, consumed = lz4.block.compress_dest_size(source, target_size=64)
+   >>> len(block) <= 64 and 0 < consumed < len(source)
+   True
+   >>> lz4.block.decompress(block, uncompressed_size=consumed) == source[:consumed]
+   True
+
+To compress the rest, call it again with ``source[consumed:]``. Each result is an
+independent block; keep its consumed count for decompression. A very small target
+can produce an empty block while consuming zero input bytes. Check for this
+before advancing through input, and increase the target size if necessary.
+``return_bytearray=True`` selects a mutable compressed result.
+
+This function requires LZ4 1.9.2 or newer and raises ``RuntimeError`` with older
+libraries. Earlier LZ4 versions have a known ``LZ4_compress_destSize`` issue that
+can require an extra byte in the decompression buffer. The existing compression
+and decompression APIs retain their library-version requirements.
+
 Contents
 ----------------
 
 .. automodule:: lz4.block
-    :members: compress, decompress
+    :members: compress, compress_dest_size, decompress
 
