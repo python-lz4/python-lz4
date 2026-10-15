@@ -271,6 +271,82 @@ compress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 }
 
 static PyObject *
+compress_dest_size (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
+{
+  Py_buffer source;
+  int target_size, source_size, dest_size, output_size;
+  int return_bytearray = 0;
+  char *dest;
+  PyObject *py_dest;
+  static char *argnames[] = {"source", "target_size", "return_bytearray", NULL};
+
+  if (!PyArg_ParseTupleAndKeywords (args, kwargs, "y*i|p", argnames,
+                                   &source, &target_size, &return_bytearray))
+    {
+      return NULL;
+    }
+
+  if (LZ4_versionNumber () < 10902)
+    {
+      PyBuffer_Release (&source);
+      PyErr_SetString (PyExc_RuntimeError,
+                      "compress_dest_size requires LZ4 1.9.2 or newer");
+      return NULL;
+    }
+  if (target_size < 1)
+    {
+      PyBuffer_Release (&source);
+      PyErr_SetString (PyExc_ValueError, "target_size must be positive");
+      return NULL;
+    }
+  if (source.len > LZ4_MAX_INPUT_SIZE)
+    {
+      PyBuffer_Release (&source);
+      PyErr_SetString (PyExc_OverflowError, "Input too large for LZ4 API");
+      return NULL;
+    }
+
+  source_size = (int) source.len;
+  dest_size = LZ4_compressBound (source_size);
+  if (dest_size > target_size)
+    {
+      dest_size = target_size;
+    }
+  dest = PyMem_Malloc ((size_t) dest_size);
+  if (dest == NULL)
+    {
+      PyBuffer_Release (&source);
+      return PyErr_NoMemory ();
+    }
+
+  Py_BEGIN_ALLOW_THREADS
+  output_size = LZ4_compress_destSize (source.buf, dest, &source_size, dest_size);
+  Py_END_ALLOW_THREADS
+  PyBuffer_Release (&source);
+
+  if (output_size <= 0)
+    {
+      PyMem_Free (dest);
+      PyErr_SetString (LZ4BlockError, "Compression failed");
+      return NULL;
+    }
+  if (return_bytearray)
+    {
+      py_dest = PyByteArray_FromStringAndSize (dest, output_size);
+    }
+  else
+    {
+      py_dest = PyBytes_FromStringAndSize (dest, output_size);
+    }
+  PyMem_Free (dest);
+  if (py_dest == NULL)
+    {
+      return NULL;
+    }
+  return Py_BuildValue ("Ni", py_dest, source_size);
+}
+
+static PyObject *
 decompress (PyObject * Py_UNUSED (self), PyObject * args, PyObject * kwargs)
 {
   Py_buffer source;
@@ -432,6 +508,21 @@ PyDoc_STRVAR(compress__doc,
              "Returns:\n"                                               \
              "    bytes or bytearray: Compressed data.\n");
 
+PyDoc_STRVAR(compress_dest_size__doc,
+             "compress_dest_size(source, target_size, return_bytearray=False)\n\n"
+             "Compress as much of source as fits in target_size bytes.\n\n"
+             "Args:\n"
+             "    source (bytes or buffer-compatible object): Data to compress.\n"
+             "    target_size (int): Positive maximum compressed block size.\n\n"
+             "Keyword Args:\n"
+             "    return_bytearray (bool): Return a bytearray instead of bytes.\n\n"
+             "Returns:\n"
+             "    tuple: (compressed block, number of source bytes consumed).\n"
+             "    No size prefix is stored. Pass the consumed count as\n"
+             "    uncompressed_size to decompress(). A very small target may\n"
+             "    consume zero bytes; increase target_size before retrying.\n\n"
+             "Requires LZ4 1.9.2 or newer. Older versions raise RuntimeError.\n");
+
 PyDoc_STRVAR(decompress__doc,
              "decompress(source, uncompressed_size=-1, return_bytearray=False)\n\n" \
              "Decompress source, returning the uncompressed data as a string.\n" \
@@ -472,6 +563,12 @@ static PyMethodDef module_methods[] = {
     (PyCFunction) compress,
     METH_VARARGS | METH_KEYWORDS,
     compress__doc
+  },
+  {
+    "compress_dest_size",
+    (PyCFunction) compress_dest_size,
+    METH_VARARGS | METH_KEYWORDS,
+    compress_dest_size__doc
   },
   {
     "decompress",
