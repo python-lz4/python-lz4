@@ -56,6 +56,22 @@ generated using Sphinx. Documentation is also hosted on readthedocs.
 :master: http://python-lz4.readthedocs.io/en/stable/
 :development: http://python-lz4.readthedocs.io/en/latest/
 
+Building on z/OS
+================
+
+The package can be built on z/OS UNIX System Services with the IBM Open
+Enterprise SDK for Python and IBM Open XL C/C++ 2.2. The bundled LZ4 sources
+are always used, and the extensions are compiled in ASCII mode to match the
+Python interpreter::
+
+  $ export CC=ibm-clang64
+  $ export CXX=ibm-clang++64
+  $ export SETUPTOOLS_SCM_PRETEND_VERSION=<version>   # if not a git checkout
+  $ python -m pip wheel . --no-deps --no-build-isolation -w dist
+
+Use the ``python -m pip`` of the interpreter you want to install into, since the
+wheel is tagged for that Python version. See ``docs/install.rst`` for details.
+
 Homepage
 ========
 

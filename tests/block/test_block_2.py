@@ -1,8 +1,15 @@
 import pytest
 import sys
 import lz4.block
-import psutil
 import os
+
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
+_NO_PSUTIL = 'psutil is not installed; ' \
+    'cannot determine available memory'
 
 # This test requires allocating a big lump of memory. In order to
 # avoid a massive memory allocation during byte compilation, we have
@@ -32,9 +39,10 @@ _4GB = 0x100000000  # 4GB
     reason='Py_ssize_t too small for this test'
 )
 @pytest.mark.skipif(
-    psutil.virtual_memory().available < _4GB,
+    psutil is not None and psutil.virtual_memory().available < _4GB,
     reason='Insufficient system memory for this test'
 )
+@pytest.mark.skipif(psutil is None, reason=_NO_PSUTIL)
 def test_huge():
     try:
         huge = b'\0' * _4GB

@@ -1,5 +1,11 @@
 import threading
+import pytest
 import lz4.frame as lz4frame
+
+pytestmark = pytest.mark.skipif(
+    not threading._HAVE_THREAD_NATIVE_ID,
+    reason='needs native_id'
+)
 
 
 def test_lz4frame_open_write_read_text_iter(tmp_path):

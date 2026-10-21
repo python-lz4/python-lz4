@@ -52,6 +52,21 @@ They can be installed using ``pip``::
 
   $ pip install -r requirements.txt
 
+Building on z/OS USS
+--------------------
+
+The package can be built on z/OS UNIX System Services using the IBM Open
+Enterprise SDK for Python and IBM Open XL C/C++ 2.2 (``ibm-clang64``). On z/OS
+the bundled LZ4 sources are always used (system ``liblz4`` and ``pkg-config``
+are ignored). ``setup.py`` adds ``-fzos-le-char-mode=ascii -m64`` unless a
+character mode / ``-m64`` is already present in ``CC`` or ``CFLAGS``, so that
+the extension matches the (ASCII) Python interpreter::
+
+  $ export CC=ibm-clang64
+  $ export CXX=ibm-clang++64   # required by the IBM-patched distutils
+  $ export SETUPTOOLS_SCM_PRETEND_VERSION=<version>   # if not building from a git checkout
+  $ pip install .
+
 Test suite
 ----------
 

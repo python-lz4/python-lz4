@@ -3,6 +3,10 @@ import os
 from setuptools import setup, find_packages, Extension
 from setuptools.command.build_ext import new_compiler
 import sys
+import sysconfig
+
+# z/OS USS (IBM Open XL C/C++, i.e. ibm-clang64). Python reports 'zos'.
+is_zos = sys.platform == 'zos' or os.environ.get('PYLZ4_FORCE_ZOS', '') == '1'
 
 
 # Note: if updating LZ4_REQUIRED_VERSION you need to update docs/install.rst as
@@ -14,6 +18,9 @@ LZ4_REQUIRED_VERSION = '>= 1.7.5'
 liblz4_found = False
 
 try:
+    if is_zos:
+        # The bundled lz4 sources are always used on z/OS.
+        raise ImportError
     from pkgconfig import installed as pkgconfig_installed
     from pkgconfig import parse as pkgconfig_parse
 except ImportError:
@@ -68,7 +75,9 @@ lz4stream_sources = [
 ]
 
 use_system_liblz4_env = os.environ.get("PYLZ4_USE_SYSTEM_LZ4", "True")
-if use_system_liblz4_env.upper() in ("1", "TRUE"):
+if is_zos:
+    use_system_liblz4 = False
+elif use_system_liblz4_env.upper() in ("1", "TRUE"):
     use_system_liblz4 = True
 else:
     use_system_liblz4 = False
@@ -112,6 +121,22 @@ if compiler == 'msvc':
         '/wd4711',
         '/wd4820',
     ]
+elif is_zos:
+    # IBM Open XL C/C++ (ibm-clang64). The extension must be compiled in the
+    # same character mode as the Python interpreter (ASCII for the IBM Open
+    # Enterprise SDK for Python), unless the user's flags already set one.
+    zos_flags = ' '.join([
+        os.environ.get('CC', ''),
+        os.environ.get('CFLAGS', ''),
+        sysconfig.get_config_var('CC') or '',
+        sysconfig.get_config_var('CFLAGS') or '',
+    ])
+    extra = ['-O3', '-Wall', '-Wundef']
+    if '-fzos-le-char-mode' not in zos_flags:
+        extra.append('-fzos-le-char-mode=ascii')
+    if '-m64' not in zos_flags:
+        extra.append('-m64')
+    extension_kwargs['extra_compile_args'] = extra
 elif compiler in ('unix', 'mingw32'):
     if liblz4_found is True and use_system_liblz4 is True:
         extension_kwargs = pkgconfig_parse('liblz4')
@@ -159,9 +184,8 @@ else:
 # https://github.com/pytest-dev/pytest/issues/2957
 tests_require = [
     'pytest!=3.3.0',
-    'psutil',
     'pytest-cov',
-],
+] + ([] if is_zos else ['psutil']),  # psutil is not available on z/OS
 
 # Only require pytest-runner if actually running the tests
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
@@ -176,8 +200,7 @@ setup(
     python_requires=">=3.9",
     setup_requires=[
         'setuptools_scm',
-        'pkgconfig',
-    ] + pytest_runner,
+    ] + ([] if is_zos else ['pkgconfig']) + pytest_runner,
     description="LZ4 Bindings for Python",
     long_description=open('README.rst', 'r').read(),
     author='Jonathan Underwood',

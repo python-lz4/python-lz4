@@ -7,7 +7,13 @@ import threading
 import lz4.frame
 import pytest
 
+needs_native_id = pytest.mark.skipif(
+    not threading._HAVE_THREAD_NATIVE_ID,
+    reason='needs native_id'
+)
 
+
+@needs_native_id
 def test_issue_172_1(tmp_path):
     """Test reproducer for issue 172
 
@@ -27,6 +33,7 @@ def test_issue_172_1(tmp_path):
         assert len(data) == 10
 
 
+@needs_native_id
 def test_issue_172_2(tmp_path):
     input_data = 9 * os.urandom(1024)
     thread_id = threading.get_native_id()
@@ -38,6 +45,7 @@ def test_issue_172_2(tmp_path):
         assert len(data) == 10
 
 
+@needs_native_id
 def test_issue_172_3(tmp_path):
     input_data = 9 * os.urandom(1024)
     thread_id = threading.get_native_id()

@@ -3,6 +3,11 @@ import pytest
 import threading
 import lz4.frame as lz4frame
 
+pytestmark = pytest.mark.skipif(
+    not threading._HAVE_THREAD_NATIVE_ID,
+    reason='needs native_id'
+)
+
 test_data = [
     b'',
     (128 * (32 * os.urandom(32))),

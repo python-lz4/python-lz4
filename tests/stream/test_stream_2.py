@@ -1,8 +1,15 @@
 import pytest
 import sys
 import lz4.stream
-import psutil
 import os
+
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
+_NO_PSUTIL = 'psutil is not installed; ' \
+    'cannot determine available memory'
 
 
 # This test requires allocating a big lump of memory. In order to
@@ -20,8 +27,8 @@ _4GB = 0xffffffff  # actually 4GB - 1B, the maximum size on 4 bytes.
 # check for the TRAVIS environment variable being set. This is quite
 # fragile.
 
-if os.environ.get('TRAVIS') is not None or sys.maxsize < _4GB or \
-   psutil.virtual_memory().available < _4GB:
+if psutil is None or os.environ.get('TRAVIS') is not None or \
+   sys.maxsize < _4GB or psutil.virtual_memory().available < _4GB:
     huge = None
 else:
     try:
@@ -39,9 +46,10 @@ else:
     reason='Py_ssize_t too small for this test'
 )
 @pytest.mark.skipif(
-    psutil.virtual_memory().available < _4GB or huge is None,
+    psutil is not None and (psutil.virtual_memory().available < _4GB or huge is None),
     reason='Insufficient system memory for this test'
 )
+@pytest.mark.skipif(psutil is None, reason=_NO_PSUTIL)
 def test_huge_1():
     data = b''
     kwargs = {
@@ -78,9 +86,10 @@ def test_huge_1():
     reason='Py_ssize_t too small for this test'
 )
 @pytest.mark.skipif(
-    psutil.virtual_memory().available < _4GB or huge is None,
+    psutil is not None and (psutil.virtual_memory().available < _4GB or huge is None),
     reason='Insufficient system memory for this test'
 )
+@pytest.mark.skipif(psutil is None, reason=_NO_PSUTIL)
 def test_huge_2():
     data = huge
     kwargs = {
@@ -118,9 +127,10 @@ def test_huge_2():
     reason='Py_ssize_t too small for this test'
 )
 @pytest.mark.skipif(
-    psutil.virtual_memory().available < _4GB or huge is None,
+    psutil is not None and (psutil.virtual_memory().available < _4GB or huge is None),
     reason='Insufficient system memory for this test'
 )
+@pytest.mark.skipif(psutil is None, reason=_NO_PSUTIL)
 def test_huge_3():
     data = huge
     kwargs = {
