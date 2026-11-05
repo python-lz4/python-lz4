@@ -748,7 +748,12 @@ class LZ4FrameFile(_compression.BaseStream):
         May be called more than once without error. The file may continue
         to be used normally after flushing.
         """
-        if self.writable() and self._compressor.has_context():
+        # Read mode has nothing to write. Touching the underlying file here
+        # raises once that file is already closed, which is what a buffered
+        # reader's finalizer does on Python 3.13.
+        if not self.writable():
+            return
+        if self._compressor.has_context():
             self._fp.write(self._compressor.flush())
         self._fp.flush()
 

@@ -1,4 +1,7 @@
+import gc
+import io
 import os
+import sys
 import pytest
 import threading
 import lz4.frame as lz4frame
@@ -125,3 +128,41 @@ def test_lz4frame_flush(tmp_path):
 
         with lz4frame.open(tmp_path / f"testfile_{thread_id}", mode="r") as fp_read:
             assert fp_read.read() == data_1 + data_2
+
+
+def test_read_mode_flush_leaves_a_closed_file_alone(tmp_path):
+    payload = b"x" * 100
+    path = tmp_path / "closed.lz4"
+    path.write_bytes(lz4frame.compress(payload))
+
+    with open(path, "rb") as raw:
+        fp = lz4frame.LZ4FrameFile(raw, mode="rb")
+        assert fp.read(1) == b"x"
+        fp.flush()
+        assert fp.read() == payload[1:]
+
+    fp.flush()
+    fp.flush()
+
+
+def test_buffered_reader_gc_does_not_flush_a_closed_file(tmp_path):
+    payload = b"x" * 100
+    path = tmp_path / "closed.lz4"
+    path.write_bytes(lz4frame.compress(payload))
+    seen = []
+    previous = sys.unraisablehook
+
+    def remember(unraisable):
+        seen.append(unraisable)
+
+    sys.unraisablehook = remember
+    try:
+        with open(path, "rb") as raw:
+            buffered = io.BufferedReader(lz4frame.LZ4FrameFile(raw, mode="rb"))
+            assert buffered.read() == payload
+        del buffered
+        gc.collect()
+    finally:
+        sys.unraisablehook = previous
+
+    assert seen == []
