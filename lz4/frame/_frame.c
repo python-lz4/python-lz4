@@ -120,6 +120,7 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
   int content_checksum = 0;
   int block_checksum = 0;
   int block_linked = 1;
+  int number_of_threads = 0;
   LZ4F_preferences_t preferences;
   size_t destination_size;
   size_t compressed_size;
@@ -134,13 +135,14 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
                             "block_linked",
                             "store_size",
                             "return_bytearray",
+                            "number_of_threads",
                             NULL
                           };
 
 
   memset (&preferences, 0, sizeof preferences);
 
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|iippppp", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "y*|iipppppi", kwlist,
                                     &source,
                                     &preferences.compressionLevel,
                                     &preferences.frameInfo.blockSizeID,
@@ -148,7 +150,8 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
                                     &block_checksum,
                                     &block_linked,
                                     &store_size,
-                                    &return_bytearray))
+                                    &return_bytearray,
+                                    &number_of_threads))
     {
       return NULL;
     }
@@ -201,6 +204,16 @@ compress (PyObject * Py_UNUSED (self), PyObject * args,
       preferences.frameInfo.contentSize = 0;
     }
 
+  if (number_of_threads < 0) 
+    {
+      number_of_threads = 0;
+    }
+  else if (number_of_threads > LZ4F_getMaxNbWorkers()) 
+    {
+      number_of_threads = LZ4F_getMaxNbWorkers();
+    }
+  preferences.nbWorkers = number_of_threads;
+  
   Py_BEGIN_ALLOW_THREADS
   destination_size =
     LZ4F_compressFrameBound (source_size, &preferences);
@@ -271,6 +284,7 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
   int content_checksum = 0;
   int block_checksum = 0;
   int block_linked = 1;
+  int number_of_threads = 0;
   LZ4F_preferences_t preferences;
   PyObject *py_destination;
   char * destination;
@@ -289,12 +303,13 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
                             "block_linked",
                             "auto_flush",
                             "return_bytearray",
+                            "number_of_threads",
                             NULL
                           };
 
   memset (&preferences, 0, sizeof preferences);
 
-  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiippppp", kwlist,
+  if (!PyArg_ParseTupleAndKeywords (args, keywds, "O|kiipppppi", kwlist,
                                     &py_context,
                                     &source_size,
                                     &preferences.compressionLevel,
@@ -303,7 +318,8 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
                                     &block_checksum,
                                     &block_linked,
                                     &preferences.autoFlush,
-                                    &return_bytearray
+                                    &return_bytearray,
+                                    &number_of_threads
                                     ))
     {
       return NULL;
@@ -354,8 +370,17 @@ compress_begin (PyObject * Py_UNUSED (self), PyObject * args,
       preferences.frameInfo.blockMode = LZ4F_blockIndependent;
     }
 
-
   preferences.frameInfo.contentSize = source_size;
+
+  if (number_of_threads < 0) 
+    {
+      number_of_threads = 0;
+    }
+  else if (number_of_threads > LZ4F_getMaxNbWorkers()) 
+    {
+      number_of_threads = LZ4F_getMaxNbWorkers();
+    }
+  preferences.nbWorkers = number_of_threads;
 
   context =
     (struct compression_context *) PyCapsule_GetPointer (py_context, compression_context_capsule_name);
@@ -1367,6 +1392,9 @@ PyDoc_STRVAR(
   "        library has version >= 1.8.0. Attempting to set this value\n" \
   "        to ``True`` with a version of LZ4 < 1.8.0 will cause a\n"    \
   "        ``RuntimeError`` to be raised.\n"                            \
+  "    number_of_threads (int): since LZ4 1.11.0 it is possible to set the\n" \
+  "        number of working threads used for compression. With the default\n" \
+  "        value set to 0 the old behavior is kept (single thread compression).\n" \
   "    return_bytearray (bool): If ``True`` a ``bytearray`` object will be\n" \
   "        returned. If ``False``, a string of bytes is returned. The default\n" \
   "        is ``False``.\n" \
@@ -1374,7 +1402,8 @@ PyDoc_STRVAR(
 PyDoc_STRVAR(
  compress__doc,
  "compress(data, compression_level=0, block_size=0, content_checksum=0,\n" \
- "block_linked=True, store_size=True, return_bytearray=False)\n"        \
+ "block_linked=True, store_size=True, return_bytearray=False,\n"        \
+ "number_of_threads=0)\n"                                               \
  "\n"                                                                   \
  "Compresses ``data`` returning the compressed data as a complete frame.\n" \
  "\n"                                                                   \
@@ -1398,7 +1427,7 @@ PyDoc_STRVAR
  compress_begin__doc,
  "compress_begin(context, source_size=0, compression_level=0, block_size=0,\n" \
  "content_checksum=0, content_size=1, block_linked=0, frame_type=0,\n"    \
- "auto_flush=1)\n"                                                      \
+ "auto_flush=1, number_of_threads=0)\n"                                   \
  "\n"                                                                   \
  "Creates a frame header from a compression context.\n\n"               \
  "Args:\n"                                                              \
