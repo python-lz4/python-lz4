@@ -7,7 +7,7 @@ import sys
 
 # Note: if updating LZ4_REQUIRED_VERSION you need to update docs/install.rst as
 # well.
-LZ4_REQUIRED_VERSION = '>= 1.7.5'
+LZ4_REQUIRED_VERSION = '>= 1.11.0'
 
 # Check to see if we have a suitable lz4 library installed on the system and
 # use if so. If not, we'll use the bundled libraries.
@@ -49,7 +49,9 @@ else:
 # against the bundled lz4 files, we'll set the compiler flags to be consistent
 # with what upstream lz4 recommends.
 
-extension_kwargs = {}
+extension_kwargs = {
+    "define_macros": [("LZ4F_MULTITHREAD", "1")]
+}
 
 lz4version_sources = [
     'lz4/_version.c'

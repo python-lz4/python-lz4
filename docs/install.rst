@@ -30,7 +30,7 @@ The LZ4 library bindings provided by this package require the LZ4 library. If
 the system already has an LZ4 library and development header files present, and
 the library is a recent enough version the package will build against that.
 Otherwise, the package will use a bundled version of the library files to link
-against. The package currently requires LZ4 version 1.7.5 or later. 
+against. The package currently requires LZ4 version 1.11.0 or later. 
 
 On a system for which there are no pre-built wheels available on PyPi, running
 this command will result in the extension modules being compiled from source::
